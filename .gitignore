@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment Variables (Keep sensitive keys out of repo)
+.env
+.env*.local
+*.env
+backend/.env
+frontend/.env
+
+# Expo & Web Builds
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Backend Database & Uploads
+backend/generated/prisma/
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs & Debugging
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# Mobile Native Builds
+/ios/
+/android/
+frontend/ios/
+frontend/android/
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# System & Cache
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+.metro-health-check*

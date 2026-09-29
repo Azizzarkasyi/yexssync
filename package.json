@@ -1,0 +1,12 @@
+{
+  "name": "yexssync-attendance-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-Tenant Attendance and Payroll Management System with Face Recognition & Geofencing",
+  "scripts": {
+    "web": "npm --prefix frontend run web",
+    "frontend": "npm --prefix frontend run web",
+    "backend": "npm --prefix backend run dev",
+    "dev": "npm --prefix frontend run web"
+  }
+}

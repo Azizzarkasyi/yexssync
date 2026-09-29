@@ -1,0 +1,215 @@
+import {Request, Response, NextFunction} from "express";
+import jwt from "jsonwebtoken";
+import {getPublicPrisma} from "../prisma/tenant-prisma";
+
+if (!process.env.JWT_SECRET) {
+  throw new Error("FATAL: JWT_SECRET environment variable is not set!");
+}
+const JWT_SECRET: string = process.env.JWT_SECRET;
+
+// Extend Express Request type
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: number;
+        email: string;
+        role: string;
+        isSuperAdmin?: boolean;
+      };
+    }
+  }
+}
+
+/**
+ * Authentication middleware for tenant users
+ * Requires valid JWT token in Authorization header
+ */
+export async function authenticate(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "No token provided",
+      });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      id: number;
+      email: string;
+      role: string;
+      isSuperAdmin?: boolean;
+    };
+
+    // Check if user exists in tenant schema
+    if (!decoded.isSuperAdmin && req.prisma) {
+      const userRows = await req.prisma.$queryRawUnsafe<any[]>(
+        'SELECT "id", "isActive" FROM "User" WHERE "id" = $1 LIMIT 1',
+        decoded.id,
+      );
+      const user = userRows[0];
+
+      if (!user || !user.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: "User not found or inactive",
+        });
+      }
+    }
+
+    req.user = decoded;
+    next();
+  } catch (error: any) {
+    if (error.name === "TokenExpiredError") {
+      console.log(`Auth warning: Token expired for a user at ${error.expiredAt}`);
+    } else {
+      console.error("Auth error:", error.message || error);
+    }
+    res.status(401).json({
+      success: false,
+      message: "Sesi Anda telah berakhir, silakan login kembali.",
+    });
+  }
+}
+
+/**
+ * Authorization middleware for admin-only routes
+ */
+export function authorizeAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  if (req.user.role !== "ADMIN" && !req.user.isSuperAdmin) {
+    return res.status(403).json({
+      success: false,
+      message: "Admin access required",
+    });
+  }
+
+  next();
+}
+
+/**
+ * Authorization middleware for leader or admin routes
+ */
+export function authorizeLeaderOrAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  if (!["ADMIN", "LEADER"].includes(req.user.role) && !req.user.isSuperAdmin) {
+    return res.status(403).json({
+      success: false,
+      message: "Leader or Admin access required",
+    });
+  }
+
+  next();
+}
+
+/**
+ * Authentication middleware for super admin
+ */
+export async function superAdminAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "No token provided",
+      });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      id: number;
+      email: string;
+      role: string;
+      isSuperAdmin?: boolean;
+    };
+
+    if (!decoded.isSuperAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Super admin access required",
+      });
+    }
+
+    // Verify super admin exists
+    const prisma = getPublicPrisma();
+    const superAdmin = await prisma.superAdmin.findUnique({
+      where: {id: decoded.id},
+    });
+
+    if (!superAdmin) {
+      return res.status(401).json({
+        success: false,
+        message: "Super admin not found",
+      });
+    }
+
+    req.user = decoded;
+    req.isSuperAdmin = true;
+    next();
+  } catch (error) {
+    console.error("Super admin auth error:", error);
+    res.status(401).json({
+      success: false,
+      message: "Invalid token",
+    });
+  }
+}
+
+/**
+ * Role-based authorization middleware
+ */
+export const authorize = (roles: string[] = []) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    if (req.user.isSuperAdmin) {
+      return next(); // Super admin has access to everything
+    }
+
+    if (roles.length && !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Insufficient permissions",
+      });
+    }
+
+    next();
+  };
+};

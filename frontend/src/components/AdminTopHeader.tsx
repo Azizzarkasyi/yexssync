@@ -1,0 +1,330 @@
+import React, { useState, useContext } from 'react';
+import { View, Text, TouchableOpacity, Image, Modal } from 'react-native';
+import { Menu, Sun, Moon, Bell, ChevronDown, CheckCircle, Clock, AlertCircle, X, Shield } from 'lucide-react-native';
+import { useAdminTheme } from '@/hooks/useAdminTheme';
+import { AuthContext } from '@/context/AuthContext';
+
+export interface AdminTopHeaderProps {
+  title: string;
+  subtitle?: string;
+  isDesktop: boolean;
+  onOpenMobileMenu: () => void;
+  rightAction?: React.ReactNode;
+}
+
+export default function AdminTopHeader({
+  title,
+  subtitle,
+  isDesktop,
+  onOpenMobileMenu,
+  rightAction,
+}: AdminTopHeaderProps) {
+  const theme = useAdminTheme();
+  const { user } = useContext(AuthContext);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const notificationsList = [
+    {
+      id: 1,
+      title: 'Presensi Karyawan Hari Ini',
+      time: '10 menit lalu',
+      desc: '238 dari 250 pegawai telah melakukan presensi masuk.',
+      icon: CheckCircle,
+      color: theme.success,
+    },
+    {
+      id: 2,
+      title: 'Permohonan Cuti Baru',
+      time: '45 menit lalu',
+      desc: 'Budi Santoso mengajukan cuti tahunan (3 hari).',
+      icon: Clock,
+      color: theme.primaryBlue,
+    },
+    {
+      id: 3,
+      title: 'Pegawai Terlambat',
+      time: '1 jam lalu',
+      desc: '8 pegawai terdeteksi terlambat masuk kerja.',
+      icon: AlertCircle,
+      color: theme.warning,
+    },
+  ];
+
+  return (
+    <>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingVertical: 18,
+          marginBottom: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.borderColor,
+        }}
+      >
+        {/* Left Title & Mobile Hamburger */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          {!isDesktop && (
+            <TouchableOpacity
+              onPress={onOpenMobileMenu}
+              style={{
+                padding: 9,
+                borderRadius: 8,
+                backgroundColor: theme.cardBg,
+                borderWidth: 1,
+                borderColor: theme.borderColor,
+              }}
+            >
+              <Menu size={20} color={theme.textDark} />
+            </TouchableOpacity>
+          )}
+
+          <View>
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: '700',
+                color: theme.primaryBlue,
+                letterSpacing: -0.3,
+              }}
+            >
+              {title}
+            </Text>
+            {subtitle && (
+              <Text style={{ fontSize: 13, color: theme.textMuted, marginTop: 2 }}>
+                {subtitle}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Right Actions */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {rightAction}
+
+          {/* Theme Toggle Sun / Moon */}
+          <TouchableOpacity
+            onPress={theme.toggleTheme}
+            style={{
+              padding: 9,
+              borderRadius: 8,
+              backgroundColor: theme.cardBg,
+              borderWidth: 1,
+              borderColor: theme.borderColor,
+            }}
+          >
+            {theme.isDark ? (
+              <Sun size={18} color="#f59e0b" />
+            ) : (
+              <Moon size={18} color={theme.textDark} />
+            )}
+          </TouchableOpacity>
+
+          {/* Notification Bell */}
+          <TouchableOpacity
+            onPress={() => setShowNotifications(true)}
+            style={{
+              position: 'relative',
+              padding: 9,
+              borderRadius: 8,
+              backgroundColor: theme.cardBg,
+              borderWidth: 1,
+              borderColor: theme.borderColor,
+            }}
+          >
+            <Bell size={18} color={theme.textDark} />
+            <View
+              style={{
+                position: 'absolute',
+                top: -3,
+                right: -3,
+                backgroundColor: theme.danger,
+                width: 17,
+                height: 17,
+                borderRadius: 9,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: 2,
+                borderColor: theme.cardBg,
+              }}
+            >
+              <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>3</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Profile Card */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              paddingVertical: 5,
+              paddingHorizontal: 10,
+              borderRadius: 24,
+              backgroundColor: theme.cardBg,
+              borderWidth: 1,
+              borderColor: theme.borderColor,
+            }}
+          >
+            <Image
+              source={{
+                uri:
+                  user?.avatar ||
+                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+              }}
+              style={{ width: 32, height: 32, borderRadius: 16 }}
+            />
+            {isDesktop && (
+              <View>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '700',
+                    color: theme.textDark,
+                  }}
+                  numberOfLines={1}
+                >
+                  {user?.name || 'Andi Setiawan'}
+                </Text>
+                <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                  {(user as any)?.companyName || 'Admin Perusahaan'}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <Modal
+          visible={showNotifications}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowNotifications(false)}
+        >
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              justifyContent: 'flex-start',
+              alignItems: 'flex-end',
+              paddingTop: 70,
+              paddingRight: 24,
+            }}
+            activeOpacity={1}
+            onPress={() => setShowNotifications(false)}
+          >
+            <View
+              style={{
+                width: 360,
+                backgroundColor: theme.cardBg,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: theme.borderColor,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.15,
+                shadowRadius: 20,
+                elevation: 10,
+                overflow: 'hidden',
+              }}
+              onStartShouldSetResponder={() => true}
+            >
+              <View
+                style={{
+                  padding: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: theme.borderColor,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Bell size={18} color={theme.primaryBlue} />
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: theme.textDark }}>
+                    Notifikasi Terbaru
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                  <X size={18} color={theme.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ padding: 10 }}>
+                {notificationsList.map((n) => {
+                  const Icon = n.icon;
+                  return (
+                    <View
+                      key={n.id}
+                      style={{
+                        padding: 12,
+                        borderRadius: 8,
+                        backgroundColor: theme.subtleBg,
+                        marginBottom: 8,
+                        flexDirection: 'row',
+                        gap: 12,
+                      }}
+                    >
+                      <View style={{ marginTop: 2 }}>
+                        <Icon size={18} color={n.color} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            marginBottom: 2,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: '700',
+                              color: theme.textDark,
+                            }}
+                          >
+                            {n.title}
+                          </Text>
+                          <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                            {n.time}
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 12, color: theme.textMuted, lineHeight: 17 }}>
+                          {n.desc}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              <View
+                style={{
+                  padding: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: theme.borderColor,
+                  alignItems: 'center',
+                }}
+              >
+                <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: theme.primaryBlue,
+                    }}
+                  >
+                    Tandai Semua Sudah Dibaca
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
+    </>
+  );
+}

@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// PUBLIC SCHEMA - Shared across all tenants
+// ============================================
+
+model Tenant {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  schemaName String   @unique // e.g., "tenant_1", "tenant_2"
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  billings   SubscriptionBilling[]
+}
+
+model SubscriptionBilling {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  month           Int      // 1 - 12
+  year            Int      // e.g. 2026
+  activeUserCount Int      // Snapshot of active users at generation
+  amount          Float    // activeUserCount * 10000
+  status          PaymentStatus @default(PENDING)
+  paymentProof    String?
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tenantId, month, year])
+}
+
+model SuperAdmin {
+  id              Int      @id @default(autoincrement())
+  email           String   @unique
+  password        String
+  name            String
+  bankName        String?
+  bankAccount     String?
+  bankAccountName String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ============================================
+// TENANT SCHEMA - Replicated per tenant
+// These models define the template for tenant schemas
+// ============================================
+
+model User {
+  id             Int          @id @default(autoincrement())
+  email          String       @unique
+  password       String
+  name           String
+  role           Role         @default(USER)
+  photo          String?
+  faceDescriptor String?      @db.Text
+  faceRegistered Boolean      @default(false)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  attends        Attendance[]
+  breaks         Break[]
+
+  tasksAssigned Task[] @relation("AssignedTo")
+  tasksCreated  Task[] @relation("CreatedBy")
+
+  // Salary Info
+  salaryType    SalaryType @default(MONTHLY)
+  salary        Float      @default(0)
+  startWorkTime String     @default("09:00")
+  endWorkTime   String     @default("17:00")
+  latePenalty   Float      @default(0)
+  
+  // Break Time Override
+  maxBreakMinutes Int?
+
+  // Custom Location Config
+  workLatitude     Float?
+  workLongitude    Float?
+  workRadius       Int?
+  workLocations    Json?
+  overrideLocation Boolean   @default(false)
+  locationName     String?
+
+  // Employee Profile & Organization Details
+  nik               String?
+  address           String?   @db.Text
+  employeeId        String?
+  department        String?
+  position          String?
+  jobType           String?   @default("Full Time (Tetap)")
+  phone             String?
+  joinDate          DateTime?
+
+  // Bank Payroll Account
+  bankName          String?
+  bankAccountNumber String?
+  bankAccountHolder String?
+
+  payrolls Payroll[]
+}
+
+model CompanyConfig {
+  id                     Int      @id @default(autoincrement())
+  companyName            String   @default("My Company")
+  companyEmail           String?
+  companyPhone           String?
+  companyAddress         String?  @db.Text
+  companyWebsite         String?
+  workStartTime          String?  @default("08:00")
+  workEndTime            String?  @default("17:00")
+  workDays               String?  @default("6")
+  requireGps             Boolean  @default(true)
+  requireSelfie          Boolean  @default(true)
+  rejectOutsideShift     Boolean  @default(false)
+  maxBreakMinutesPerDay  Int      @default(60)
+  lateThresholdMinutes   Int      @default(15)
+  overtimeRateMultiplier Float    @default(1.5)
+  officeLatitude         Float?
+  officeLongitude        Float?
+  allowedRadiusMeters    Int      @default(50)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model Attendance {
+  id                Int              @id @default(autoincrement())
+  userId            Int
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date              DateTime         @default(now()) @db.Date
+  clockIn           DateTime?
+  clockOut          DateTime?
+  clockInPhoto      String?
+  clockOutPhoto     String?
+  status              AttendanceStatus    @default(PRESENT)
+  lateReason          String?
+  lateDeductionStatus String?             @default("PENDING") // PENDING, APPROVED, REJECTED
+  leaveApprovalStatus LeaveApprovalStatus @default(PENDING)
+  leaveType           String?
+  leaveDuration       Int?                @default(1)
+  leaveDocument       String?
+  leaveReviewNote     String?
+  leaveReviewedAt     DateTime?
+  faceVerified        Boolean?            @default(false)
+  correctionStatus    CorrectionStatus    @default(NONE)
+  correctionReason    String?
+  correctionRequestedClockIn  DateTime?
+  correctionRequestedClockOut DateTime?
+  correctionReviewNote String?
+  correctionRequestedAt DateTime?
+  correctionReviewedAt DateTime?
+  leaveDescription    String?
+  latitude            Float?
+  longitude           Float?
+  totalBreakMinutes Int              @default(0)
+  breaks            Break[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([userId, date])
+}
+
+model Break {
+  id           Int         @id @default(autoincrement())
+  userId       Int
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attendanceId Int?
+  attendance   Attendance? @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  startTime    DateTime
+  endTime      DateTime?
+  duration     Int?
+  startPhoto   String?
+  endPhoto     String?
+  createdAt    DateTime    @default(now())
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String
+  assigneeId  Int
+  assignee    User       @relation("AssignedTo", fields: [assigneeId], references: [id], onDelete: Cascade)
+  creatorId   Int
+  creator     User       @relation("CreatedBy", fields: [creatorId], references: [id], onDelete: Cascade)
+  status      TaskStatus @default(PENDING)
+  dueDate     DateTime?
+  priority    String?    @default("MEDIUM")
+  project     String?
+  location    String?
+  notes       String?
+  progress    Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Payroll {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodStart     DateTime
+  periodEnd       DateTime
+  baseSalary      Float
+  workingDays     Int      @default(0)
+  workingHours    Float    @default(0)
+  overtimeHours   Float    @default(0)
+  lateDeductions  Float    @default(0)
+  breakDeductions Float    @default(0)
+  overtimeBonus   Float    @default(0)
+  deductions      Float
+  netSalary       Float
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentProof    String?
+  createdAt       DateTime @default(now())
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+enum Role {
+  ADMIN
+  LEADER
+  USER
+}
+
+enum SalaryType {
+  HOURLY
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  SICK
+  LEAVE
+  ALPHA
+}
+
+enum LeaveApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CorrectionStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+}
+
+
