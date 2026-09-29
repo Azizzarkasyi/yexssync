@@ -204,7 +204,7 @@ export default function SuperAdminBillingScreen() {
         alert('Fitur ekspor CSV diaktifkan di platform web.');
       }
     } catch (err: any) {
-      showError('Gagal mengunduh CSV invoice: ' + err.message);
+      showError('Ekspor Gagal', 'Gagal mengunduh CSV invoice: ' + (err?.message || 'Terjadi kesalahan sistem.'));
     }
   };
 

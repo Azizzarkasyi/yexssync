@@ -639,7 +639,6 @@ export default function LoginScreen() {
             {/* Bottom Registration Notice */}
             <View
               style={{
-                textAlign: 'center',
                 marginTop: 25,
                 alignItems: 'center',
               }}

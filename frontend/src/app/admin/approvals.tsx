@@ -1048,7 +1048,7 @@ export default function AdminApprovalsScreen() {
                                   setPreviewAttachmentUrl(l.attachment.url);
                                 } else {
                                   if (Platform.OS === 'web') {
-                                    window.alert(`Membuka lampiran: ${l.attachment.name}`);
+                                    window.alert(`Membuka lampiran: ${l.attachment?.name || 'Dokumen'}`);
                                   }
                                 }
                               }}
