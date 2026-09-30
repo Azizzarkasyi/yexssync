@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,14 @@ import {
   ActivityIndicator,
   Image,
   Alert,
-  Modal,
   TextInput,
   RefreshControl,
   SafeAreaView,
   useColorScheme,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Plus,
   Calendar,
   Paperclip,
   Info,
@@ -26,12 +24,18 @@ import {
   UploadCloud,
   X,
   Check,
+  Send,
+  ChevronDown,
+  AlertCircle,
+  PlusCircle,
+  Sparkles,
+  ExternalLink,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
 
-interface LeaveItem {
+export interface LeaveItem {
   id: string;
   type: string;
   typeCategory: 'sakit' | 'cuti' | 'izin';
@@ -50,18 +54,40 @@ export default function UserLeaveScreen() {
   const isDark = colorScheme === 'dark';
   const { user } = useContext(AuthContext);
 
+  // Segmented Control: 'CREATE' (Buat Pengajuan) | 'HISTORY' (Riwayat Saya)
+  const [activeTab, setActiveTab] = useState<'CREATE' | 'HISTORY'>('CREATE');
+
+  // Form State
+  const [leaveType, setLeaveType] = useState<'SICK' | 'LEAVE' | 'OTHER'>('SICK');
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
+
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(todayStr);
+  const [description, setDescription] = useState('');
+
+  // Selected file/photo
+  const [selectedFile, setSelectedFile] = useState<{
+    uri: string;
+    name: string;
+    fileObj?: any;
+    isPdf?: boolean;
+  } | null>(null);
+
+  // History State
   const [leaves, setLeaves] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
 
-  // Modal State for New Leave Submission
-  const [showModal, setShowModal] = useState(false);
-  const [leaveType, setLeaveType] = useState<'Sakit' | 'Cuti Tahunan' | 'Izin Penting'>('Sakit');
-  const [leaveDate, setLeaveDate] = useState(new Date().toISOString().split('T')[0]);
-  const [description, setDescription] = useState('');
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<any>(null);
+
+  const avatarUri =
+    (user as any)?.photo ||
+    (user as any)?.avatar ||
+    (user as any)?.profilePicture ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=2a75d3&color=fff`;
 
   useEffect(() => {
     fetchLeaves();
@@ -78,9 +104,12 @@ export default function UserLeaveScreen() {
             item.leaveApprovalStatus
         );
         setLeaves(leaveRecords);
+      } else {
+        setLeaves([]);
       }
     } catch (err) {
-      console.error('Failed to fetch leave history:', err);
+      console.warn('Failed to fetch leave history:', err);
+      setLeaves([]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -92,50 +121,143 @@ export default function UserLeaveScreen() {
     fetchLeaves();
   };
 
-  const pickImage = async () => {
+  // Calculate duration in days
+  const leaveDuration = useMemo(() => {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return 1;
+      const diffTime = end.getTime() - start.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return diffDays > 0 ? diffDays : 1;
+    } catch {
+      return 1;
+    }
+  }, [startDate, endDate]);
+
+  // File Upload Handlers
+  const handleUploadClick = () => {
+    if (Platform.OS === 'web') {
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+    } else {
+      pickMobileImage();
+    }
+  };
+
+  const handleWebFileChange = (e: any) => {
+    const file = e.target?.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      if (Platform.OS === 'web') {
+        window.alert('Ukuran file maksimal 5MB.');
+      } else {
+        Alert.alert('Perhatian', 'Ukuran file maksimal 5MB.');
+      }
+      return;
+    }
+
+    const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+    const objectUrl = URL.createObjectURL(file);
+    setSelectedFile({
+      uri: objectUrl,
+      name: file.name,
+      fileObj: file,
+      isPdf,
+    });
+  };
+
+  const pickMobileImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.8,
+        quality: 0.85,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPhotoUri(result.assets[0].uri);
+        const asset = result.assets[0];
+        setSelectedFile({
+          uri: asset.uri,
+          name: asset.uri.split('/').pop() || 'lampiran.jpg',
+          isPdf: false,
+        });
       }
-    } catch (err) {
-      Alert.alert('Gagal', 'Tidak dapat membuka galeri.');
+    } catch {
+      Alert.alert('Gagal', 'Tidak dapat membuka galeri foto.');
     }
   };
 
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Submit Leave Request
   const handleSubmitLeave = async () => {
-    if (!description.trim()) {
-      Alert.alert('Perhatian', 'Keterangan/Alasan pengajuan wajib diisi.');
+    if (!startDate || !endDate) {
+      const msg = 'Tanggal mulai dan selesai wajib diisi.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Perhatian', msg);
       return;
     }
 
-    if (leaveType === 'Sakit' && !photoUri) {
-      Alert.alert('Perhatian', 'Dokumen / Foto Surat Dokter wajib dilampirkan untuk izin Sakit.');
+    if (new Date(endDate) < new Date(startDate)) {
+      const msg = 'Tanggal selesai tidak boleh lebih awal dari tanggal mulai.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Perhatian', msg);
+      return;
+    }
+
+    if (!description.trim()) {
+      const msg = 'Keterangan/alasan pengajuan wajib diisi.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Perhatian', msg);
+      return;
+    }
+
+    if (leaveType === 'SICK' && !selectedFile) {
+      const msg = 'Pengajuan Sakit wajib melampirkan foto Surat Keterangan Dokter.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Perhatian', msg);
       return;
     }
 
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-      const statusToSend = leaveType === 'Sakit' ? 'SICK' : 'LEAVE';
+      const statusToSend = leaveType === 'SICK' ? 'SICK' : 'LEAVE';
       formData.append('status', statusToSend);
-      formData.append('date', leaveDate);
-      formData.append('description', `[${leaveType}] ${description}`);
+      formData.append('date', startDate);
 
-      if (photoUri) {
-        const filename = photoUri.split('/').pop() || 'leave_proof.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : `image/jpeg`;
-        formData.append('photo', {
-          uri: photoUri,
-          name: filename,
-          type,
-        } as any);
+      const typeLabel =
+        leaveType === 'SICK'
+          ? 'Sakit'
+          : leaveType === 'LEAVE'
+          ? 'Cuti Tahunan'
+          : 'Izin Lainnya';
+
+      formData.append('leaveType', typeLabel);
+      formData.append('leaveDuration', String(leaveDuration));
+      formData.append('description', `[${typeLabel}] ${description.trim()}`);
+
+      if (selectedFile) {
+        if (Platform.OS === 'web' && selectedFile.fileObj) {
+          formData.append('photo', selectedFile.fileObj);
+        } else {
+          const filename = selectedFile.name || 'lampiran.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : `image/jpeg`;
+          formData.append('photo', {
+            uri: selectedFile.uri,
+            name: filename,
+            type,
+          } as any);
+        }
       }
 
       const res = await api.post('/attendance/leave', formData, {
@@ -143,70 +265,35 @@ export default function UserLeaveScreen() {
       });
 
       if (res.data?.success) {
-        Alert.alert('Sukses', 'Pengajuan izin berhasil dikirim dan menunggu persetujuan.');
+        const successMsg = 'Pengajuan izin berhasil dikirim dan menunggu persetujuan.';
+        if (Platform.OS === 'web') window.alert(successMsg);
+        else Alert.alert('Sukses', successMsg);
+
+        // Reset form
         setDescription('');
-        setPhotoUri(null);
-        setShowModal(false);
-        fetchLeaves();
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+
+        // Refresh and switch to history tab
+        await fetchLeaves();
+        setActiveTab('HISTORY');
       } else {
-        Alert.alert('Info', res.data?.message || 'Gagal mengirim pengajuan.');
+        const err = res.data?.message || 'Gagal mengirim pengajuan.';
+        if (Platform.OS === 'web') window.alert(err);
+        else Alert.alert('Info', err);
       }
     } catch (error: any) {
-      const msg = error.response?.data?.message || 'Terjadi kesalahan sistem saat mengirim pengajuan.';
-      Alert.alert('Gagal', msg);
+      const msg =
+        error.response?.data?.message ||
+        'Terjadi kendala saat mengirim pengajuan. Pastikan tanggal belum terdaftar.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Gagal', msg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const avatarUri =
-    user?.photo ||
-    user?.avatar ||
-    'https://i.pravatar.cc/150?img=12';
-
-  // Sample items matching HTML design if DB is empty
-  const defaultItems: LeaveItem[] = useMemo(
-    () => [
-      {
-        id: 'sample-1',
-        type: 'Sakit',
-        typeCategory: 'sakit',
-        status: 'PENDING',
-        statusLabel: 'Menunggu',
-        dateText: '08 Sep 2026 - 09 Sep 2026 (2 Hari)',
-        description: 'Demam tinggi, disarankan istirahat oleh dokter.',
-        attachment: 'surat_dokter.pdf',
-        submittedAt: 'Hari ini',
-        rejectionReason: null,
-      },
-      {
-        id: 'sample-2',
-        type: 'Cuti Tahunan',
-        typeCategory: 'cuti',
-        status: 'APPROVED',
-        statusLabel: 'Disetujui',
-        dateText: '25 Agu 2026 - 28 Agu 2026 (4 Hari)',
-        description: 'Acara keluarga di luar kota.',
-        attachment: null,
-        submittedAt: '15 Agu 2026',
-        rejectionReason: null,
-      },
-      {
-        id: 'sample-3',
-        type: 'Izin Penting',
-        typeCategory: 'izin',
-        status: 'REJECTED',
-        statusLabel: 'Ditolak',
-        dateText: '17 Agu 2026 (1 Hari)',
-        description: 'Cuti tambahan setelah acara kemerdekaan.',
-        attachment: null,
-        submittedAt: '16 Agu 2026',
-        rejectionReason: 'Kuota cuti habis',
-      },
-    ],
-    []
-  );
-
+  // Map backend history data
   const displayLeaves: LeaveItem[] = useMemo(() => {
     if (leaves && leaves.length > 0) {
       return leaves.map((item: any) => {
@@ -215,8 +302,8 @@ export default function UserLeaveScreen() {
         let type = isSick ? 'Sakit' : 'Cuti Tahunan';
         let typeCategory: 'sakit' | 'cuti' | 'izin' = isSick ? 'sakit' : 'cuti';
 
-        if (rawDesc.includes('[Izin Penting]')) {
-          type = 'Izin Penting';
+        if (rawDesc.includes('[Izin Lainnya]') || rawDesc.includes('[Izin Penting]')) {
+          type = 'Izin Lainnya';
           typeCategory = 'izin';
         } else if (rawDesc.includes('[Cuti Tahunan]')) {
           type = 'Cuti Tahunan';
@@ -226,7 +313,7 @@ export default function UserLeaveScreen() {
           typeCategory = 'sakit';
         }
 
-        const cleanDesc = rawDesc.replace(/^\[(Sakit|Cuti Tahunan|Izin Penting)\]\s*/, '');
+        const cleanDesc = rawDesc.replace(/^\[(Sakit|Cuti Tahunan|Izin Lainnya|Izin Penting)\]\s*/, '');
         const status = item.leaveApprovalStatus || 'PENDING';
         const statusLabel =
           status === 'APPROVED' ? 'Disetujui' : status === 'REJECTED' ? 'Ditolak' : 'Menunggu';
@@ -236,17 +323,23 @@ export default function UserLeaveScreen() {
           ? String(item.date)
           : d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 
+        const duration = item.leaveDuration || 1;
+
         return {
           id: String(item.id),
           type,
           typeCategory,
           status,
           statusLabel,
-          dateText: `${dateFormatted} (1 Hari)`,
+          dateText: `${dateFormatted} (${duration} Hari)`,
           description: cleanDesc || 'Tidak ada keterangan.',
           attachment: item.clockInPhoto ? item.clockInPhoto.split('/').pop() : null,
           submittedAt: item.createdAt
-            ? new Date(item.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+            ? new Date(item.createdAt).toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })
             : 'Hari ini',
           rejectionReason: item.leaveRejectionReason || null,
         };
@@ -282,19 +375,41 @@ export default function UserLeaveScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
-      <View className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm" style={{ flex: 1, height: '100%', minHeight: 0 }}>
-        
-        {/* Top Header */}
-        <View className="flex-row justify-between items-center px-5 pt-4 pb-3 bg-[#f4f7fb] dark:bg-slate-950 z-10">
-          <Text className="text-[18px] font-bold text-[#222222] dark:text-white">
-            Izin & Cuti
-          </Text>
+    <SafeAreaView
+      className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center"
+      style={{ flex: 1, height: '100%', minHeight: '100%' }}
+    >
+      {/* Hidden file input for Web */}
+      {Platform.OS === 'web' && (
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleWebFileChange}
+          accept="image/*,.pdf"
+          style={{ display: 'none' }}
+        />
+      )}
+
+      {/* Main Responsive App Container */}
+      <View
+        className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm"
+        style={{ flex: 1, height: '100%', minHeight: 0 }}
+      >
+        {/* Header */}
+        <View className="flex-row justify-between items-center px-6 pt-5 pb-4 bg-[#f4f7fb] dark:bg-slate-950 z-10 border-b border-[#eef1f6] dark:border-slate-800">
+          <View>
+            <Text className="text-[20px] font-bold text-[#1e293b] dark:text-white tracking-tight">
+              Izin & Cuti
+            </Text>
+            <Text className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Kelola pengajuan izin, sakit, dan cuti tahunan Anda
+            </Text>
+          </View>
 
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => router.push('/user/profile')}
-            className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700"
+            className="w-10 h-10 rounded-full overflow-hidden border-2 border-white dark:border-slate-800 shadow-sm"
           >
             <Image
               source={{ uri: avatarUri }}
@@ -304,11 +419,63 @@ export default function UserLeaveScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Scrollable Content */}
+        {/* Segmented Control Tabs */}
+        <View className="px-6 pt-4 pb-2">
+          <View className="bg-[#e2e8f0] dark:bg-slate-800/80 rounded-[14px] p-1 flex-row">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setActiveTab('CREATE')}
+              className={`flex-1 py-2.5 rounded-[11px] items-center justify-center transition-all ${
+                activeTab === 'CREATE'
+                  ? 'bg-white dark:bg-slate-900 shadow-sm'
+                  : 'bg-transparent'
+              }`}
+            >
+              <Text
+                className={`text-[13px] font-bold ${
+                  activeTab === 'CREATE'
+                    ? 'text-[#2a75d3]'
+                    : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                Buat Pengajuan
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setActiveTab('HISTORY')}
+              className={`flex-1 py-2.5 rounded-[11px] items-center justify-center flex-row gap-1.5 transition-all ${
+                activeTab === 'HISTORY'
+                  ? 'bg-white dark:bg-slate-900 shadow-sm'
+                  : 'bg-transparent'
+              }`}
+            >
+              <Text
+                className={`text-[13px] font-bold ${
+                  activeTab === 'HISTORY'
+                    ? 'text-[#2a75d3]'
+                    : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                Riwayat Saya
+              </Text>
+              {pendingCount > 0 && (
+                <View className="bg-[#2a75d3] px-2 py-0.5 rounded-full">
+                  <Text className="text-[10px] font-bold text-white">
+                    {pendingCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Scrollable Content Area */}
         <ScrollView
-          className="flex-1 px-5"
+          className="flex-1 px-6"
           style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 110, paddingTop: 10 }}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
           refreshControl={
@@ -320,348 +487,422 @@ export default function UserLeaveScreen() {
             />
           }
         >
-          {/* CTA: Ajukan Izin Baru */}
-          <TouchableOpacity
-            activeOpacity={0.88}
-            onPress={() => setShowModal(true)}
-            className="mt-4 mb-[25px]"
-          >
-            <LinearGradient
-              colors={['#2a75d3', '#5097f5']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                borderRadius: 16,
-                padding: 20,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                shadowColor: '#2a75d3',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.2,
-                shadowRadius: 20,
-                elevation: 4,
-              }}
-            >
-              <View className="flex-1 pr-3">
-                <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '700', marginBottom: 4 }}>
-                  Ajukan Izin Baru
-                </Text>
-                <Text style={{ color: '#ffffff', fontSize: 12, opacity: 0.9, fontWeight: '400' }}>
-                  Sakit, Cuti Tahunan, atau Izin Penting
+          {/* ======================================================== */}
+          {/* TAB 1: BUAT PENGAJUAN                                    */}
+          {/* ======================================================== */}
+          {activeTab === 'CREATE' && (
+            <View className="flex-col gap-4">
+              {/* Notice Card */}
+              <View className="bg-[#fff8e6] dark:bg-amber-950/40 border-l-4 border-[#f59e0b] p-3.5 rounded-[12px] flex-row gap-3 items-start border-y border-r border-[#fef3c7] dark:border-amber-900/40">
+                <Info size={18} color="#f59e0b" style={{ marginTop: 2 }} strokeWidth={2.2} />
+                <Text className="text-[12px] text-[#926b00] dark:text-amber-200 leading-[1.5] flex-1">
+                  Pengajuan <Text className="font-bold">Sakit</Text> wajib melampirkan foto Surat Keterangan Dokter. Pengajuan <Text className="font-bold">Cuti</Text> harap dilakukan minimal H-3.
                 </Text>
               </View>
 
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Plus size={20} color="#ffffff" strokeWidth={2.5} />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Tab Filter */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mb-5"
-            contentContainerStyle={{ gap: 10, paddingBottom: 5 }}
-          >
-            {filterTabs.map((tab) => {
-              const isActive = activeFilter === tab.key;
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  activeOpacity={0.7}
-                  onPress={() => setActiveFilter(tab.key)}
-                  className={`py-2 px-4 rounded-[20px] border ${
-                    isActive
-                      ? 'bg-[#2a75d3] border-[#2a75d3]'
-                      : 'bg-transparent border-[#eef1f6] dark:border-slate-800'
-                  }`}
-                >
-                  <Text
-                    className={`text-[13px] font-medium ${
-                      isActive
-                        ? 'text-white'
-                        : 'text-[#777777] dark:text-slate-400'
-                    }`}
-                  >
-                    {tab.label}
+              {/* Form Card */}
+              <View className="bg-white dark:bg-slate-900 rounded-[18px] p-5 shadow-sm border border-slate-200/80 dark:border-slate-800 flex-col gap-4">
+                {/* Form Group: Jenis Pengajuan */}
+                <View className="flex-col gap-1.5">
+                  <Text className="text-[13px] font-bold text-slate-800 dark:text-white">
+                    Jenis Pengajuan <Text className="text-rose-500">*</Text>
                   </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
 
-          {/* List Riwayat Izin */}
-          <View className="flex-col gap-[15px]">
-            {filteredLeaves.map((card) => {
-              const isWarning = card.status === 'PENDING';
-              const isSuccess = card.status === 'APPROVED';
-              const isDanger = card.status === 'REJECTED';
+                  {/* Jenis Selection Buttons */}
+                  <View className="flex-row gap-2">
+                    {[
+                      { id: 'SICK', label: 'Sakit (Sick Leave)', icon: HeartPulse, color: '#dc3545' },
+                      { id: 'LEAVE', label: 'Cuti Tahunan', icon: Umbrella, color: '#2a75d3' },
+                      { id: 'OTHER', label: 'Izin Lainnya', icon: FileText, color: '#f59e0b' },
+                    ].map((opt) => {
+                      const isSelected = leaveType === opt.id;
+                      const Icon = opt.icon;
+                      return (
+                        <TouchableOpacity
+                          key={opt.id}
+                          activeOpacity={0.8}
+                          onPress={() => setLeaveType(opt.id as any)}
+                          className={`flex-1 p-3 rounded-[12px] border transition-all flex-col items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-blue-50/60 dark:bg-blue-950/60 border-[#2a75d3]'
+                              : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/60'
+                          }`}
+                        >
+                          <Icon size={18} color={isSelected ? '#2a75d3' : opt.color} strokeWidth={2.2} />
+                          <Text
+                            className={`text-[11px] font-bold text-center leading-[1.2] ${
+                              isSelected
+                                ? 'text-[#2a75d3]'
+                                : 'text-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            {opt.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
 
-              return (
-                <View
-                  key={card.id}
-                  className="bg-white dark:bg-slate-900 rounded-[16px] p-4 border border-[#eef1f6] dark:border-slate-800 flex-col gap-3"
-                  style={{
-                    shadowColor: '#000000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.03,
-                    shadowRadius: 15,
-                    elevation: 2,
-                  }}
-                >
-                  {/* Leave Header */}
+                {/* Date Row: Tanggal Mulai & Tanggal Selesai */}
+                <View className="flex-col gap-1.5">
                   <View className="flex-row justify-between items-center">
-                    <View className="flex-row items-center gap-2">
-                      <View
-                        className={`w-7 h-7 rounded-[8px] items-center justify-center ${
-                          card.typeCategory === 'sakit'
-                            ? 'bg-[#fcebeb] dark:bg-rose-950/40'
-                            : card.typeCategory === 'cuti'
-                            ? 'bg-[#eaf3fc] dark:bg-blue-950/40'
-                            : 'bg-[#fff8e6] dark:bg-amber-950/40'
-                        }`}
-                      >
-                        {card.typeCategory === 'sakit' ? (
-                          <HeartPulse size={14} color="#dc3545" strokeWidth={2.2} />
-                        ) : card.typeCategory === 'cuti' ? (
-                          <Umbrella size={14} color="#2a75d3" strokeWidth={2.2} />
-                        ) : (
-                          <FileText size={14} color="#b08000" strokeWidth={2.2} />
-                        )}
-                      </View>
-
-                      <Text className="font-semibold text-[15px] text-[#222222] dark:text-white">
-                        {card.type}
+                    <Text className="text-[13px] font-bold text-slate-800 dark:text-white">
+                      Rentang Tanggal <Text className="text-rose-500">*</Text>
+                    </Text>
+                    <View className="bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/40">
+                      <Text className="text-[11px] font-bold text-[#2a75d3]">
+                        Durasi: {leaveDuration} Hari
                       </Text>
                     </View>
+                  </View>
 
-                    {/* Badge */}
-                    <View
-                      className={`px-2.5 py-1.5 rounded-[8px] ${
-                        isWarning
-                          ? 'bg-[#fff8e6] dark:bg-amber-950/40'
-                          : isSuccess
-                          ? 'bg-[#e6f6eb] dark:bg-emerald-950/40'
-                          : 'bg-[#fcebeb] dark:bg-rose-950/40'
+                  <View className="flex-row gap-3">
+                    {/* Tanggal Mulai */}
+                    <View className="flex-1 flex-col gap-1">
+                      <Text className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        Tanggal Mulai
+                      </Text>
+                      {Platform.OS === 'web' ? (
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e: any) => setStartDate(e.target.value)}
+                          className="w-full p-3 rounded-[10px] border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[13px] text-slate-900 dark:text-white font-medium outline-none focus:border-[#2a75d3]"
+                          style={{
+                            boxSizing: 'border-box',
+                            fontSize: '13px',
+                            color: isDark ? '#ffffff' : '#0f172a',
+                            backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+                            borderColor: isDark ? '#334155' : '#cbd5e1',
+                          }}
+                        />
+                      ) : (
+                        <View className="flex-row items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-[10px] border border-slate-200 dark:border-slate-700">
+                          <Calendar size={15} color="#64748b" style={{ marginRight: 6 }} />
+                          <TextInput
+                            value={startDate}
+                            onChangeText={setStartDate}
+                            placeholder="YYYY-MM-DD"
+                            className="flex-1 text-[13px] text-slate-900 dark:text-white font-medium"
+                          />
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Tanggal Selesai */}
+                    <View className="flex-1 flex-col gap-1">
+                      <Text className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        Tanggal Selesai
+                      </Text>
+                      {Platform.OS === 'web' ? (
+                        <input
+                          type="date"
+                          value={endDate}
+                          min={startDate}
+                          onChange={(e: any) => setEndDate(e.target.value)}
+                          className="w-full p-3 rounded-[10px] border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[13px] text-slate-900 dark:text-white font-medium outline-none focus:border-[#2a75d3]"
+                          style={{
+                            boxSizing: 'border-box',
+                            fontSize: '13px',
+                            color: isDark ? '#ffffff' : '#0f172a',
+                            backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+                            borderColor: isDark ? '#334155' : '#cbd5e1',
+                          }}
+                        />
+                      ) : (
+                        <View className="flex-row items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-[10px] border border-slate-200 dark:border-slate-700">
+                          <Calendar size={15} color="#64748b" style={{ marginRight: 6 }} />
+                          <TextInput
+                            value={endDate}
+                            onChangeText={setEndDate}
+                            placeholder="YYYY-MM-DD"
+                            className="flex-1 text-[13px] text-slate-900 dark:text-white font-medium"
+                          />
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Form Group: Keterangan / Alasan */}
+                <View className="flex-col gap-1.5">
+                  <View className="flex-row justify-between items-center">
+                    <Text className="text-[13px] font-bold text-slate-800 dark:text-white">
+                      Keterangan / Alasan <Text className="text-rose-500">*</Text>
+                    </Text>
+                    <Text className="text-[11px] text-slate-400">
+                      {description.length}/250
+                    </Text>
+                  </View>
+                  <TextInput
+                    multiline
+                    numberOfLines={3}
+                    maxLength={250}
+                    value={description}
+                    onChangeText={setDescription}
+                    placeholder="Tuliskan alasan lengkap (Maks 250 karakter)..."
+                    placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                    className="p-3.5 rounded-[12px] border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[13px] text-slate-900 dark:text-white min-h-[90px]"
+                    textAlignVertical="top"
+                    style={{ outlineStyle: 'none' } as any}
+                  />
+                </View>
+
+                {/* Form Group: Lampiran Pendukung */}
+                <View className="flex-col gap-1.5">
+                  <Text className="text-[13px] font-bold text-slate-800 dark:text-white">
+                    Lampiran Pendukung {leaveType === 'SICK' && <Text className="text-rose-500">*</Text>}
+                  </Text>
+
+                  {selectedFile ? (
+                    <View className="p-3.5 rounded-[12px] bg-blue-50/70 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-2.5 flex-1 pr-2">
+                        <View className="w-9 h-9 rounded-lg bg-[#2a75d3]/10 items-center justify-center">
+                          <Paperclip size={18} color="#2a75d3" />
+                        </View>
+                        <View className="flex-1">
+                          <Text
+                            className="text-[13px] font-bold text-slate-800 dark:text-white"
+                            numberOfLines={1}
+                          >
+                            {selectedFile.name}
+                          </Text>
+                          <Text className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Lampiran siap diunggah
+                          </Text>
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={removeSelectedFile}
+                        className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 items-center justify-center"
+                      >
+                        <X size={15} color={isDark ? '#cbd5e1' : '#475569'} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={handleUploadClick}
+                      className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-[14px] p-5 items-center justify-center bg-slate-50/70 dark:bg-slate-800/40 gap-1.5 hover:bg-slate-100 transition-all"
+                    >
+                      <UploadCloud size={30} color="#2a75d3" strokeWidth={2} />
+                      <Text className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">
+                        Ketuk untuk unggah foto/dokumen
+                      </Text>
+                      <Text className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Format: JPG, PNG, PDF (Maks 5MB)
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Submit Button */}
+                <TouchableOpacity
+                  disabled={isSubmitting}
+                  activeOpacity={0.85}
+                  onPress={handleSubmitLeave}
+                  className="w-full bg-[#2a75d3] rounded-[12px] py-3.5 px-4 items-center justify-center flex-row gap-2 shadow-md shadow-[#2a75d3]/25 mt-1"
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <>
+                      <Send size={16} color="#ffffff" strokeWidth={2.4} />
+                      <Text className="text-[15px] font-bold text-white">
+                        Kirim Pengajuan
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* ======================================================== */}
+          {/* TAB 2: RIWAYAT SAYA                                      */}
+          {/* ======================================================== */}
+          {activeTab === 'HISTORY' && (
+            <View className="flex-col gap-4">
+              {/* Filter Pills */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingBottom: 2 }}
+              >
+                {filterTabs.map((tab) => {
+                  const isActive = activeFilter === tab.key;
+                  return (
+                    <TouchableOpacity
+                      key={tab.key}
+                      activeOpacity={0.8}
+                      onPress={() => setActiveFilter(tab.key)}
+                      className={`py-2 px-4 rounded-full border transition-all ${
+                        isActive
+                          ? 'bg-[#2a75d3] border-[#2a75d3] shadow-sm'
+                          : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800'
                       }`}
                     >
                       <Text
-                        className={`text-[11px] font-semibold ${
-                          isWarning
-                            ? 'text-[#b08000] dark:text-amber-400'
-                            : isSuccess
-                            ? 'text-[#28a745] dark:text-emerald-400'
-                            : 'text-[#dc3545] dark:text-rose-400'
+                        className={`text-[12px] font-bold ${
+                          isActive
+                            ? 'text-white'
+                            : 'text-slate-600 dark:text-slate-400'
                         }`}
                       >
-                        {card.statusLabel}
+                        {tab.label}
                       </Text>
-                    </View>
-                  </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
 
-                  {/* Leave Date */}
-                  <View className="flex-row items-center gap-1.5">
-                    <Calendar size={13} color="#777777" />
-                    <Text className="text-[13px] text-[#777777] dark:text-slate-400">
-                      {card.dateText}
+              {/* History Cards List */}
+              {filteredLeaves.length === 0 ? (
+                <View className="py-14 items-center bg-white dark:bg-slate-900 rounded-[18px] p-6 border border-slate-200/80 dark:border-slate-800">
+                  <View className="w-14 h-14 rounded-full bg-blue-50 dark:bg-slate-800 items-center justify-center mb-3">
+                    <FileText size={26} color="#2a75d3" strokeWidth={1.8} />
+                  </View>
+                  <Text className="text-[16px] font-bold text-slate-800 dark:text-white">
+                    Belum Ada Riwayat Pengajuan
+                  </Text>
+                  <Text className="text-[13px] text-slate-500 dark:text-slate-400 mt-1 text-center max-w-sm">
+                    {activeFilter === 'ALL'
+                      ? 'Anda belum memiliki riwayat pengajuan izin atau cuti.'
+                      : `Tidak ditemukan pengajuan dengan status ${activeFilter.toLowerCase()}.`}
+                  </Text>
+
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => setActiveTab('CREATE')}
+                    className="mt-4 px-4 py-2.5 rounded-[10px] bg-[#2a75d3] flex-row items-center gap-2"
+                  >
+                    <PlusCircle size={15} color="#ffffff" />
+                    <Text className="text-[13px] font-bold text-white">
+                      Buat Pengajuan Baru
                     </Text>
-                  </View>
-
-                  {/* Leave Desc */}
-                  <View className="bg-[#fafbfe] dark:bg-slate-800/60 p-2.5 rounded-[8px] border border-[#eef1f6] dark:border-slate-700/60">
-                    <Text className="text-[13px] text-[#222222] dark:text-slate-200">
-                      {card.description}
-                    </Text>
-                  </View>
-
-                  {/* Leave Footer */}
-                  <View className="flex-row justify-between items-center pt-2 border-t border-dashed border-[#eef1f6] dark:border-slate-800">
-                    {isDanger && card.rejectionReason ? (
-                      <View className="flex-row items-center gap-1 flex-1 pr-2">
-                        <Info size={13} color="#dc3545" />
-                        <Text className="text-[12px] text-[#dc3545] font-medium" numberOfLines={1}>
-                          Alasan: {card.rejectionReason}
-                        </Text>
-                      </View>
-                    ) : card.attachment ? (
-                      <View className="flex-row items-center gap-1 flex-1 pr-2">
-                        <Paperclip size={13} color="#2a75d3" />
-                        <Text className="text-[12px] text-[#2a75d3]" numberOfLines={1}>
-                          {card.attachment}
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text className="text-[12px] text-[#777777] dark:text-slate-500">
-                        Tidak ada lampiran
-                      </Text>
-                    )}
-
-                    <Text className="text-[11px] text-[#777777] dark:text-slate-400">
-                      Diajukan: {card.submittedAt}
-                    </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
-              );
-            })}
-          </View>
-        </ScrollView>
+              ) : (
+                <View className="flex-col gap-3.5">
+                  {filteredLeaves.map((card) => {
+                    const isPending = card.status === 'PENDING';
+                    const isApproved = card.status === 'APPROVED';
+                    const isRejected = card.status === 'REJECTED';
 
-        {/* Modal: Form Pengajuan Izin Baru */}
-        <Modal
-          visible={showModal}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowModal(false)}
-        >
-          <View className="flex-1 bg-black/50 justify-end items-center">
-            <View className="w-full max-w-[414px] bg-white dark:bg-slate-900 rounded-t-[28px] p-6 max-h-[90%]">
-              
-              {/* Modal Header */}
-              <View className="flex-row justify-between items-center mb-5 pb-3 border-b border-[#eef1f6] dark:border-slate-800">
-                <Text className="text-[18px] font-bold text-[#222222] dark:text-white">
-                  Ajukan Izin Baru
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setShowModal(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
-                >
-                  <X size={18} color={isDark ? '#cbd5e1' : '#555555'} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                {/* Tipe Pengajuan */}
-                <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-2.5">
-                  Tipe Pengajuan
-                </Text>
-                <View className="flex-row gap-2 mb-4">
-                  {(['Sakit', 'Cuti Tahunan', 'Izin Penting'] as const).map((type) => {
-                    const isSelected = leaveType === type;
                     return (
-                      <TouchableOpacity
-                        key={type}
-                        activeOpacity={0.7}
-                        onPress={() => setLeaveType(type)}
-                        className={`flex-1 py-2.5 px-2 rounded-xl border items-center justify-center ${
-                          isSelected
-                            ? 'bg-[#2a75d3] border-[#2a75d3]'
-                            : 'bg-slate-50 dark:bg-slate-800 border-[#eef1f6] dark:border-slate-700'
-                        }`}
+                      <View
+                        key={card.id}
+                        className="bg-white dark:bg-slate-900 rounded-[16px] p-4.5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex-col gap-3"
                       >
-                        <Text
-                          className={`text-[12px] font-semibold ${
-                            isSelected ? 'text-white' : 'text-[#555555] dark:text-slate-300'
-                          }`}
-                        >
-                          {type}
-                        </Text>
-                      </TouchableOpacity>
+                        {/* Header: Type icon, title, and status badge */}
+                        <View className="flex-row justify-between items-center">
+                          <View className="flex-row items-center gap-2.5">
+                            <View
+                              className={`w-8 h-8 rounded-[9px] items-center justify-center ${
+                                card.typeCategory === 'sakit'
+                                  ? 'bg-rose-50 dark:bg-rose-950/60'
+                                  : card.typeCategory === 'cuti'
+                                  ? 'bg-blue-50 dark:bg-blue-950/60'
+                                  : 'bg-amber-50 dark:bg-amber-950/60'
+                              }`}
+                            >
+                              {card.typeCategory === 'sakit' ? (
+                                <HeartPulse size={16} color="#dc3545" strokeWidth={2.2} />
+                              ) : card.typeCategory === 'cuti' ? (
+                                <Umbrella size={16} color="#2a75d3" strokeWidth={2.2} />
+                              ) : (
+                                <FileText size={16} color="#f59e0b" strokeWidth={2.2} />
+                              )}
+                            </View>
+
+                            <Text className="font-bold text-[15px] text-slate-800 dark:text-white">
+                              {card.type}
+                            </Text>
+                          </View>
+
+                          {/* Status Badge */}
+                          <View
+                            className={`px-2.5 py-1 rounded-[8px] ${
+                              isPending
+                                ? 'bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60'
+                                : isApproved
+                                ? 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60'
+                                : 'bg-rose-50 dark:bg-rose-950/60 border border-rose-200/60'
+                            }`}
+                          >
+                            <Text
+                              className={`text-[11px] font-bold ${
+                                isPending
+                                  ? 'text-amber-700 dark:text-amber-300'
+                                  : isApproved
+                                  ? 'text-emerald-700 dark:text-emerald-300'
+                                  : 'text-rose-700 dark:text-rose-300'
+                              }`}
+                            >
+                              {card.statusLabel}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Date info */}
+                        <View className="flex-row items-center gap-1.5">
+                          <Calendar size={13} color="#64748b" />
+                          <Text className="text-[12px] font-medium text-slate-600 dark:text-slate-400">
+                            {card.dateText}
+                          </Text>
+                        </View>
+
+                        {/* Description Box */}
+                        <View className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-[10px] border border-slate-100 dark:border-slate-800">
+                          <Text className="text-[13px] text-slate-700 dark:text-slate-200 leading-[1.4]">
+                            {card.description}
+                          </Text>
+                        </View>
+
+                        {/* Footer info: attachment & date */}
+                        <View className="flex-row justify-between items-center pt-2 border-t border-dashed border-slate-100 dark:border-slate-800">
+                          {isRejected && card.rejectionReason ? (
+                            <View className="flex-row items-center gap-1 flex-1 pr-2">
+                              <Info size={13} color="#dc3545" />
+                              <Text
+                                className="text-[12px] text-rose-600 font-semibold"
+                                numberOfLines={1}
+                              >
+                                Alasan Ditolak: {card.rejectionReason}
+                              </Text>
+                            </View>
+                          ) : card.attachment ? (
+                            <View className="flex-row items-center gap-1 flex-1 pr-2">
+                              <Paperclip size={13} color="#2a75d3" />
+                              <Text
+                                className="text-[12px] text-[#2a75d3] font-medium"
+                                numberOfLines={1}
+                              >
+                                {card.attachment}
+                              </Text>
+                            </View>
+                          ) : (
+                            <Text className="text-[11px] text-slate-400">
+                              Tidak ada lampiran
+                            </Text>
+                          )}
+
+                          <Text className="text-[11px] text-slate-400 font-medium">
+                            Diajukan: {card.submittedAt}
+                          </Text>
+                        </View>
+                      </View>
                     );
                   })}
                 </View>
-
-                {/* Tanggal Izin */}
-                <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-2">
-                  Tanggal Pengajuan
-                </Text>
-                <TextInput
-                  value={leaveDate}
-                  onChangeText={setLeaveDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#94a3b8"
-                  className="bg-slate-50 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700 rounded-xl px-4 py-3 text-[14px] text-[#222222] dark:text-white mb-4"
-                />
-
-                {/* Keterangan */}
-                <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-2">
-                  Alasan / Keterangan
-                </Text>
-                <TextInput
-                  value={description}
-                  onChangeText={setDescription}
-                  placeholder="Jelaskan alasan pengajuan secara singkat..."
-                  placeholderTextColor="#94a3b8"
-                  multiline
-                  numberOfLines={4}
-                  style={{ textAlignVertical: 'top', height: 90 }}
-                  className="bg-slate-50 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700 rounded-xl p-3.5 text-[14px] text-[#222222] dark:text-white mb-4"
-                />
-
-                {/* Lampiran Bukti */}
-                <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-2">
-                  Lampiran Bukti {leaveType === 'Sakit' ? '(Wajib)' : '(Opsional)'}
-                </Text>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={pickImage}
-                  className="border-2 border-dashed border-[#cbd5e1] dark:border-slate-700 rounded-2xl py-6 items-center justify-center bg-slate-50 dark:bg-slate-800/40 mb-6"
-                >
-                  {photoUri ? (
-                    <View className="items-center px-4">
-                      <Check size={26} color="#28a745" className="mb-1" />
-                      <Text className="text-[#28a745] font-semibold text-[13px] text-center">
-                        Foto berhasil dilampirkan
-                      </Text>
-                      <Text className="text-[#777777] text-[11px] mt-1">
-                        Klik untuk mengganti foto
-                      </Text>
-                    </View>
-                  ) : (
-                    <View className="items-center px-4">
-                      <UploadCloud size={30} color="#2a75d3" className="mb-1.5" />
-                      <Text className="text-[#2a75d3] font-semibold text-[13px]">
-                        Upload Surat Dokter / Bukti
-                      </Text>
-                      <Text className="text-[#777777] dark:text-slate-400 text-[11px] mt-0.5">
-                        Format PNG atau JPG
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-
-                {/* Submit Action */}
-                <TouchableOpacity
-                  activeOpacity={0.88}
-                  onPress={handleSubmitLeave}
-                  disabled={isSubmitting}
-                  className="rounded-xl overflow-hidden"
-                >
-                  <LinearGradient
-                    colors={['#2a75d3', '#1f5ca8']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      paddingVertical: 14,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {isSubmitting ? (
-                      <ActivityIndicator color="#ffffff" size="small" />
-                    ) : (
-                      <Text className="text-white font-bold text-[14px] tracking-wide">
-                        KIRIM PENGAJUAN
-                      </Text>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
-              </ScrollView>
+              )}
             </View>
-          </View>
-        </Modal>
+          )}
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
 }
-
