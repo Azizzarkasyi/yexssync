@@ -16,6 +16,7 @@ export const ENV = {
   CORS_ALLOWED_ORIGINS: process.env.CORS_ALLOWED_ORIGINS
     ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
     : [
+        'https://yexssync.yexsx.my.id',
         'https://yexsx.my.id',
         'https://app-presensi.yexsx.my.id',
         'https://api-presensi.yexsx.my.id',

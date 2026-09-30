@@ -24,8 +24,8 @@ export const APP_ENV = {
       window.location?.hostname
     ) {
       const hostname = window.location.hostname;
-      if (hostname.includes('presensi.yexsx.my.id')) {
-        return `https://${hostname}/api`;
+      if (hostname.includes('yexsx.my.id') || window.location.protocol === 'https:') {
+        return `${window.location.origin}/api`;
       }
       return `http://${hostname}:3000/api`;
     }

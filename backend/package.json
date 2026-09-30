@@ -5,6 +5,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "start:prod": "tsx src/server.ts",
     "migrate:tenants:work-locations": "tsx migrate-tenants-work-locations.ts",
     "migrate:tenants:attendance": "tsx migrate-tenants-attendance.ts",
     "billing:generate": "tsx src/scripts/generate-billings.ts"
