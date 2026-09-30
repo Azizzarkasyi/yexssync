@@ -23,32 +23,7 @@ export default function AdminTopHeader({
   const { user } = useContext(AuthContext);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const notificationsList = [
-    {
-      id: 1,
-      title: 'Presensi Karyawan Hari Ini',
-      time: '10 menit lalu',
-      desc: '238 dari 250 pegawai telah melakukan presensi masuk.',
-      icon: CheckCircle,
-      color: theme.success,
-    },
-    {
-      id: 2,
-      title: 'Permohonan Cuti Baru',
-      time: '45 menit lalu',
-      desc: 'Budi Santoso mengajukan cuti tahunan (3 hari).',
-      icon: Clock,
-      color: theme.primaryBlue,
-    },
-    {
-      id: 3,
-      title: 'Pegawai Terlambat',
-      time: '1 jam lalu',
-      desc: '8 pegawai terdeteksi terlambat masuk kerja.',
-      icon: AlertCircle,
-      color: theme.warning,
-    },
-  ];
+  const notificationsList: any[] = [];
 
   return (
     <>
@@ -134,23 +109,25 @@ export default function AdminTopHeader({
             }}
           >
             <Bell size={18} color={theme.textDark} />
-            <View
-              style={{
-                position: 'absolute',
-                top: -3,
-                right: -3,
-                backgroundColor: theme.danger,
-                width: 17,
-                height: 17,
-                borderRadius: 9,
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderWidth: 2,
-                borderColor: theme.cardBg,
-              }}
-            >
-              <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>3</Text>
-            </View>
+            {notificationsList.length > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -3,
+                  right: -3,
+                  backgroundColor: theme.danger,
+                  width: 17,
+                  height: 17,
+                  borderRadius: 9,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 2,
+                  borderColor: theme.cardBg,
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>{notificationsList.length}</Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           {/* Profile Card */}
@@ -254,51 +231,63 @@ export default function AdminTopHeader({
               </View>
 
               <View style={{ padding: 10 }}>
-                {notificationsList.map((n) => {
-                  const Icon = n.icon;
-                  return (
-                    <View
-                      key={n.id}
-                      style={{
-                        padding: 12,
-                        borderRadius: 8,
-                        backgroundColor: theme.subtleBg,
-                        marginBottom: 8,
-                        flexDirection: 'row',
-                        gap: 12,
-                      }}
-                    >
-                      <View style={{ marginTop: 2 }}>
-                        <Icon size={18} color={n.color} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            marginBottom: 2,
-                          }}
-                        >
-                          <Text
+                {notificationsList.length === 0 ? (
+                  <View style={{ paddingVertical: 30, alignItems: 'center', justifyContent: 'center' }}>
+                    <Bell size={32} color={theme.textMuted} />
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark, marginTop: 8 }}>
+                      Tidak Ada Notifikasi Baru
+                    </Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>
+                      Semua aktivitas terkini sudah tersinkronisasi.
+                    </Text>
+                  </View>
+                ) : (
+                  notificationsList.map((n) => {
+                    const Icon = n.icon;
+                    return (
+                      <View
+                        key={n.id}
+                        style={{
+                          padding: 12,
+                          borderRadius: 8,
+                          backgroundColor: theme.subtleBg,
+                          marginBottom: 8,
+                          flexDirection: 'row',
+                          gap: 12,
+                        }}
+                      >
+                        <View style={{ marginTop: 2 }}>
+                          <Icon size={18} color={n.color} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <View
                             style={{
-                              fontSize: 13,
-                              fontWeight: '700',
-                              color: theme.textDark,
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              marginBottom: 2,
                             }}
                           >
-                            {n.title}
-                          </Text>
-                          <Text style={{ fontSize: 11, color: theme.textMuted }}>
-                            {n.time}
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: '700',
+                                color: theme.textDark,
+                              }}
+                            >
+                              {n.title}
+                            </Text>
+                            <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                              {n.time}
+                            </Text>
+                          </View>
+                          <Text style={{ fontSize: 12, color: theme.textMuted, lineHeight: 17 }}>
+                            {n.desc}
                           </Text>
                         </View>
-                        <Text style={{ fontSize: 12, color: theme.textMuted, lineHeight: 17 }}>
-                          {n.desc}
-                        </Text>
                       </View>
-                    </View>
-                  );
-                })}
+                    );
+                  })
+                )}
               </View>
 
               <View

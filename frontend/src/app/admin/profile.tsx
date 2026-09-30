@@ -138,31 +138,54 @@ export default function AdminSettingsProfileScreen() {
     }, 3500);
   };
 
+  useEffect(() => {
+    const fetchCompanyConfig = async () => {
+      try {
+        const res = await api.get('/config');
+        if (res.data?.success && res.data.data) {
+          const cfg = res.data.data;
+          if (cfg.companyName) setCompanyName(cfg.companyName);
+          if (cfg.companyEmail) setCompanyEmail(cfg.companyEmail);
+          if (cfg.companyPhone) setCompanyPhone(cfg.companyPhone);
+          if (cfg.companyAddress) setCompanyAddress(cfg.companyAddress);
+          if (cfg.companyWebsite) setCompanyWebsite(cfg.companyWebsite);
+          if (cfg.workStartTime) setWorkStartTime(cfg.workStartTime);
+          if (cfg.workEndTime) setWorkEndTime(cfg.workEndTime);
+          if (cfg.lateTolerance) setLateTolerance(String(cfg.lateTolerance));
+          if (cfg.latitude) setLatitude(String(cfg.latitude));
+          if (cfg.longitude) setLongitude(String(cfg.longitude));
+          if (cfg.radius) setRadius(String(cfg.radius));
+        }
+      } catch (err) {
+        // Keep current state
+      }
+    };
+    fetchCompanyConfig();
+  }, []);
+
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
-      // Send to backend if available
-      try {
-        await api.put('/tenants/settings', {
-          latitude,
-          longitude,
-          radius,
-          requireGps,
-          requireSelfie,
-          rejectOutsideShift,
-          workStartTime,
-          workEndTime,
-          lateTolerance,
-          workDays,
-          companyName,
-          companyEmail,
-          companyPhone,
-          companyAddress,
-        });
-      } catch {
-        // Fallback local persistence
-      }
+      await api.put('/config', {
+        latitude: parseFloat(latitude) || -6.2,
+        longitude: parseFloat(longitude) || 106.81,
+        radius: parseInt(radius, 10) || 100,
+        requireGps,
+        requireSelfie,
+        rejectOutsideShift,
+        workStartTime,
+        workEndTime,
+        lateTolerance: parseInt(lateTolerance, 10) || 15,
+        workDays: parseInt(workDays, 10) || 6,
+        companyName,
+        companyEmail,
+        companyPhone,
+        companyAddress,
+        companyWebsite,
+      });
       showToast('Pengaturan perusahaan berhasil disimpan!');
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Pengaturan berhasil diperbarui!');
     } finally {
       setIsSaving(false);
     }

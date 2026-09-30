@@ -310,7 +310,7 @@ export default function AdminDashboardScreen() {
                 {isDesktop && (
                   <View style={{ flexDirection: 'column' }}>
                     <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark }}>
-                      {user?.name || 'Andi Setiawan'}
+                      {user?.name || 'Admin'}
                     </Text>
                     <Text style={{ fontSize: 12, color: theme.textMuted }}>(Admin)</Text>
                   </View>
@@ -589,7 +589,18 @@ export default function AdminDashboardScreen() {
               </View>
 
               {/* Attendance Rows */}
-              {stats.recentAttendances.map((item: any, idx: number) => {
+              {stats.recentAttendances.length === 0 ? (
+                <View style={{ paddingVertical: 36, alignItems: 'center', justifyContent: 'center' }}>
+                  <Users size={32} color={theme.textMuted} />
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark, marginTop: 8 }}>
+                    Belum Ada Presensi Hari Ini
+                  </Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>
+                    Data presensi pegawai yang masuk hari ini akan tampil di sini.
+                  </Text>
+                </View>
+              ) : (
+                stats.recentAttendances.map((item: any, idx: number) => {
                 const badge = getStatusBadge(item.status);
                 return (
                   <View
@@ -648,7 +659,7 @@ export default function AdminDashboardScreen() {
                     </View>
                   </View>
                 );
-              })}
+              }))}
             </View>
 
             {/* Right Panel: Permohonan Izin / Cuti */}

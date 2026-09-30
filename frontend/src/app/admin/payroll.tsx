@@ -109,26 +109,28 @@ export default function PayrollScreen() {
           name: p.user?.name || 'Karyawan',
           role: p.user?.department || 'IT & Engineering',
           department: p.user?.department || 'IT & Engineering',
-          avatar: p.user?.avatar || `https://i.pravatar.cc/150?img=${10 + idx}`,
+          avatar: p.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.user?.name || 'Karyawan')}&background=2a75d3&color=fff`,
           salaryType: 'MONTHLY',
           salaryTypeDetail: 'MONTHLY',
-          baseSalary: p.basicSalary || 8000000,
+          baseSalary: p.basicSalary || 0,
           overtimeBonus: p.allowance || 0,
           overtimeDetail: '',
           lateDeduction: p.deduction || 0,
           lateDetail: p.deduction > 0 ? `(${p.deduction / 25000}x Telat)` : '',
-          netSalary: p.netSalary || 8000000,
+          netSalary: p.netSalary || 0,
           status: p.paymentStatus === 'PAID' ? 'PAID' : 'PENDING',
-          bankName: 'BCA',
-          bankAccount: '1234567890',
-          period: '09-2026',
-          attendanceDays: 22,
-          lateCount: p.deduction > 0 ? 1 : 0,
+          bankName: p.bankName || 'BCA',
+          bankAccount: p.bankAccount || '-',
+          period: p.period || '09-2026',
+          attendanceDays: p.attendanceDays || 0,
+          lateCount: p.lateCount || 0,
         }));
         setPayrolls(mapped);
+      } else {
+        setPayrolls([]);
       }
     } catch {
-      // Keep rich prototype fallback
+      setPayrolls([]);
     } finally {
       setIsRefreshing(false);
     }

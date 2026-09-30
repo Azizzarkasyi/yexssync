@@ -26,6 +26,8 @@ import {
   MapPin,
   Navigation,
   RotateCw,
+  ListChecks,
+  ArrowRight,
 } from 'lucide-react-native';
 import { AuthContext } from '@/context/AuthContext';
 import FaceRecognitionModal from '@/components/FaceRecognitionModal';
@@ -50,6 +52,7 @@ export default function UserHomeScreen() {
     totalMinutes: number;
     activeBreak: any;
   } | null>(null);
+  const [tasks, setTasks] = useState<any[]>([]);
 
   // Face Recognition Modal State
   const [faceModalVisible, setFaceModalVisible] = useState(false);
@@ -133,10 +136,11 @@ export default function UserHomeScreen() {
 
   const fetchData = async () => {
     try {
-      const [todayRes, historyRes, breakRes] = await Promise.all([
+      const [todayRes, historyRes, breakRes, tasksRes] = await Promise.all([
         api.get('/attendance/today').catch(() => ({ data: { success: false } })),
         api.get('/attendance/history?limit=3').catch(() => ({ data: { success: false } })),
         api.get('/breaks/today').catch(() => ({ data: { success: false } })),
+        api.get('/tasks/my').catch(() => ({ data: { success: false } })),
       ]);
 
       if (todayRes.data?.success) {
@@ -147,6 +151,9 @@ export default function UserHomeScreen() {
       }
       if (breakRes.data?.success && breakRes.data.data) {
         setBreakData(breakRes.data.data);
+      }
+      if (tasksRes.data?.success && Array.isArray(tasksRes.data.data)) {
+        setTasks(tasksRes.data.data);
       }
     } catch (error) {
       console.error('Failed to fetch home data:', error);
@@ -342,8 +349,8 @@ export default function UserHomeScreen() {
     ]);
   };
 
-  const userName = user?.name ? user.name.split(' ')[0] : 'Budi';
-  const avatarUri = user?.photo || user?.avatar || 'https://i.pravatar.cc/150?img=12';
+  const userName = user?.name ? user.name.split(' ')[0] : 'Karyawan';
+  const avatarUri = user?.photo || user?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userName) + '&background=2a75d3&color=fff';
 
   const statusBoxText = useMemo(() => {
     if (breakData?.activeBreak) return `Sedang Istirahat (${formatTime(breakData.activeBreak.startTime)} WIB)`;
@@ -359,7 +366,7 @@ export default function UserHomeScreen() {
       const last = breakData.breaks[breakData.breaks.length - 1];
       return `${formatTime(last.startTime)} WIB`;
     }
-    return '12:00 WIB';
+    return '--:-- WIB';
   }, [breakData]);
 
   const breakEndTimeText = useMemo(() => {
@@ -367,7 +374,7 @@ export default function UserHomeScreen() {
       const ended = breakData.breaks.filter((b: any) => b.endTime);
       if (ended.length > 0) return `${formatTime(ended[ended.length - 1].endTime)} WIB`;
     }
-    return '13:00 WIB';
+    return '--:-- WIB';
   }, [breakData]);
 
   const recentHistory = useMemo(() => {
@@ -380,20 +387,20 @@ export default function UserHomeScreen() {
         isSuccess: item.status !== 'LATE',
       }));
     }
-    return [{ id: '1', date: '06 Sep 2026', timeText: 'In: 07:50 | Out: 17:05', badge: 'Hadir', isSuccess: true }];
+    return [];
   }, [history]);
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-[#f4f7fb] dark:bg-slate-950 justify-center items-center">
+      <SafeAreaView className="flex-1 bg-[#f8fafc] dark:bg-slate-950 justify-center items-center">
         <ActivityIndicator size="large" color="#2a75d3" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#e0e5ec] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
-      <View className="w-full max-w-[414px] flex-1 bg-[#f4f7fb] dark:bg-slate-950 shadow-2xl" style={{ flex: 1, height: '100%', minHeight: 0 }}>
+    <SafeAreaView className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
+      <View className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm" style={{ flex: 1, height: '100%', minHeight: 0 }}>
         <View className="flex-row justify-between items-center px-5 pt-4 pb-3 bg-[#f4f7fb] dark:bg-slate-950 z-10">
           <View className="flex-row items-center gap-2">
             <CheckCircle2 size={22} color="#2a75d3" strokeWidth={2.5} />
@@ -465,14 +472,14 @@ export default function UserHomeScreen() {
               <LinearGradient colors={['#38c159', '#28a745']} style={{ borderRadius: 16, paddingVertical: 20, alignItems: 'center', gap: 6 }}>
                 <LogIn size={26} color="#ffffff" strokeWidth={2.4} />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '700' }}>MASUK</Text>
-                <Text style={{ color: '#ffffff', fontSize: 11, opacity: 0.9 }}>{attendanceToday?.clockIn ? `${formatTime(attendanceToday.clockIn)} WIB` : '08:00 WIB'}</Text>
+                <Text style={{ color: '#ffffff', fontSize: 11, opacity: 0.9 }}>{attendanceToday?.clockIn ? `${formatTime(attendanceToday.clockIn)} WIB` : '--:-- WIB'}</Text>
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity style={{ width: '48%' }} onPress={handleClockOut} disabled={isSubmitting}>
               <LinearGradient colors={['#ef5350', '#dc3545']} style={{ borderRadius: 16, paddingVertical: 20, alignItems: 'center', gap: 6 }}>
                 <LogOut size={26} color="#ffffff" strokeWidth={2.4} />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '700' }}>PULANG</Text>
-                <Text style={{ color: '#ffffff', fontSize: 11, opacity: 0.9 }}>{attendanceToday?.clockOut ? `${formatTime(attendanceToday.clockOut)} WIB` : '17:00 WIB'}</Text>
+                <Text style={{ color: '#ffffff', fontSize: 11, opacity: 0.9 }}>{attendanceToday?.clockOut ? `${formatTime(attendanceToday.clockOut)} WIB` : '--:-- WIB'}</Text>
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity style={{ width: '48%' }} onPress={handleStartBreak} disabled={isSubmitting}>
@@ -502,37 +509,115 @@ export default function UserHomeScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* ======================================================== */}
+          {/* TUGAS SAYA HARI INI (MY TASKS WIDGET)                     */}
+          {/* ======================================================== */}
+          <View className="mb-[25px]">
+            <View className="flex-row justify-between items-center mb-[14px]">
+              <View className="flex-row items-center gap-2">
+                <ListChecks size={18} color="#2a75d3" strokeWidth={2.4} />
+                <Text className="text-[16px] font-semibold text-[#222222] dark:text-white">Tugas Saya</Text>
+                {tasks.length > 0 && (
+                  <View className="bg-[#e0f2fe] dark:bg-sky-950/80 px-2 py-0.5 rounded-full">
+                    <Text className="text-[11px] font-bold text-[#0ea5e9]">{tasks.length}</Text>
+                  </View>
+                )}
+              </View>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/user/tasks')}>
+                <View className="flex-row items-center gap-1">
+                  <Text className="text-[12px] text-[#2a75d3] font-medium">Buka Tugas</Text>
+                  <ArrowRight size={13} color="#2a75d3" />
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {tasks.length === 0 ? (
+              <View className="bg-white dark:bg-slate-900 p-5 rounded-[16px] items-center justify-center border border-[#eef1f6] dark:border-slate-800">
+                <View className="w-10 h-10 rounded-full bg-blue-50 dark:bg-slate-800 items-center justify-center mb-2">
+                  <ListChecks size={20} color="#2a75d3" />
+                </View>
+                <Text className="text-[14px] font-semibold text-[#222222] dark:text-white">Belum Ada Tugas Aktif</Text>
+                <Text className="text-[12px] text-[#777777] dark:text-slate-400 text-center mt-1">
+                  Semua tugas Anda telah selesai atau belum ada tugas baru yang ditugaskan.
+                </Text>
+              </View>
+            ) : (
+              <View className="flex-col gap-3">
+                {tasks.slice(0, 3).map((t: any) => {
+                  const isDone = t.status === 'DONE' || t.status === 'COMPLETED';
+                  const isInProgress = t.status === 'IN_PROGRESS';
+                  return (
+                    <TouchableOpacity
+                      key={t.id}
+                      activeOpacity={0.8}
+                      onPress={() => router.push('/user/tasks')}
+                      className="bg-white dark:bg-slate-900 p-4 rounded-[14px] border border-[#eef1f6] dark:border-slate-800 flex-row justify-between items-center"
+                    >
+                      <View className="flex-1 pr-3">
+                        <View className="flex-row items-center gap-2 mb-1">
+                          <Text className="text-[11px] font-semibold text-[#2a75d3] uppercase">{t.project || 'Umum'}</Text>
+                          {t.priority === 'HIGH' && (
+                            <View className="bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded">
+                              <Text className="text-[9px] font-bold text-rose-600">Prioritas Tinggi</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text className="text-[14px] font-semibold text-[#222222] dark:text-white" numberOfLines={1}>{t.title}</Text>
+                      </View>
+                      <View className={`px-2.5 py-1 rounded-full ${isDone ? 'bg-[#e6f6eb] dark:bg-emerald-950/60' : isInProgress ? 'bg-sky-50 dark:bg-sky-950/60' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                        <Text className={`text-[10px] font-bold ${isDone ? 'text-[#28a745]' : isInProgress ? 'text-[#0ea5e9]' : 'text-slate-600 dark:text-slate-300'}`}>
+                          {isDone ? 'Selesai' : isInProgress ? 'Dikerjakan' : 'Belum Mulai'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
+          {/* ======================================================== */}
+          {/* RIWAYAT TERAKHIR                                         */}
+          {/* ======================================================== */}
           <View className="flex-row justify-between items-center mb-[15px]">
             <Text className="text-[16px] font-semibold text-[#222222] dark:text-white">Riwayat Terakhir</Text>
             <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/user/history')}>
               <Text className="text-[12px] text-[#2a75d3] font-medium">Lihat Semua</Text>
             </TouchableOpacity>
           </View>
-          <View className="flex-col gap-[12px]">
-            {recentHistory.map((item) => (
-              <View
-                key={item.id}
-                className="bg-white dark:bg-slate-900 p-[15px] rounded-[12px] flex-row justify-between items-center border-y border-r border-[#eef1f6] dark:border-slate-800"
-                style={{
-                  borderLeftWidth: 4,
-                  borderLeftColor: item.isSuccess ? '#28a745' : '#dc3545',
-                  shadowColor: '#000000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.02,
-                  shadowRadius: 10,
-                  elevation: 1,
-                }}
-              >
-                <View className="flex-1 pr-3">
-                  <Text className="text-[13px] font-semibold text-[#222222] dark:text-white mb-[5px]">{item.date}</Text>
-                  <Text className="text-[11px] text-[#777777] dark:text-slate-400">{item.timeText}</Text>
+          {recentHistory.length === 0 ? (
+            <View className="bg-white dark:bg-slate-900 p-6 rounded-[12px] items-center justify-center border border-[#eef1f6] dark:border-slate-800 mb-6">
+              <Calendar size={28} color="#94a3b8" />
+              <Text className="text-[13px] font-semibold text-[#222222] dark:text-white mt-2">Belum Ada Riwayat Presensi</Text>
+              <Text className="text-[11px] text-[#777777] dark:text-slate-400 mt-0.5 text-center">Catatan presensi Anda akan otomatis tercatat di sini.</Text>
+            </View>
+          ) : (
+            <View className="flex-col gap-[12px] mb-6">
+              {recentHistory.map((item) => (
+                <View
+                  key={item.id}
+                  className="bg-white dark:bg-slate-900 p-[15px] rounded-[12px] flex-row justify-between items-center border-y border-r border-[#eef1f6] dark:border-slate-800"
+                  style={{
+                    borderLeftWidth: 4,
+                    borderLeftColor: item.isSuccess ? '#28a745' : '#dc3545',
+                    shadowColor: '#000000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.02,
+                    shadowRadius: 10,
+                    elevation: 1,
+                  }}
+                >
+                  <View className="flex-1 pr-3">
+                    <Text className="text-[13px] font-semibold text-[#222222] dark:text-white mb-[5px]">{item.date}</Text>
+                    <Text className="text-[11px] text-[#777777] dark:text-slate-400">{item.timeText}</Text>
+                  </View>
+                  <View className={`px-[12px] py-[6px] rounded-[20px] ${item.isSuccess ? 'bg-[#e6f6eb] dark:bg-emerald-950/40' : 'bg-[#fcebeb] dark:bg-rose-950/40'}`}>
+                    <Text className={`text-[11px] font-semibold ${item.isSuccess ? 'text-[#28a745] dark:text-emerald-400' : 'text-[#dc3545] dark:text-rose-400'}`}>{item.badge}</Text>
+                  </View>
                 </View>
-                <View className={`px-[12px] py-[6px] rounded-[20px] ${item.isSuccess ? 'bg-[#e6f6eb] dark:bg-emerald-950/40' : 'bg-[#fcebeb] dark:bg-rose-950/40'}`}>
-                  <Text className={`text-[11px] font-semibold ${item.isSuccess ? 'text-[#28a745] dark:text-emerald-400' : 'text-[#dc3545] dark:text-rose-400'}`}>{item.badge}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
         </ScrollView>
       </View>
 

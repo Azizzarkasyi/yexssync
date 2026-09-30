@@ -52,95 +52,6 @@ export default function AttendanceScreen() {
   // Detail Modal
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  // Fallback data when API is waiting or unauthenticated
-  const fallbackAttendance = [
-    {
-      id: 1,
-      date: new Date().toISOString(),
-      clockIn: new Date(new Date().setHours(7, 52, 0, 0)).toISOString(),
-      clockOut: null,
-      status: 'PRESENT',
-      user: {
-        id: 1,
-        name: 'Budi Santoso',
-        email: 'budi.santoso@hadiryuk.id',
-        department: 'IT & Engineering',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
-      },
-      clockInLatitude: -6.2088,
-      clockInLongitude: 106.8456,
-      lateReason: null,
-    },
-    {
-      id: 2,
-      date: new Date().toISOString(),
-      clockIn: new Date(new Date().setHours(8, 18, 0, 0)).toISOString(),
-      clockOut: null,
-      status: 'LATE',
-      user: {
-        id: 2,
-        name: 'Siti Aminah',
-        email: 'siti.aminah@hadiryuk.id',
-        department: 'Human Resources',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
-      },
-      clockInLatitude: -6.2100,
-      clockInLongitude: 106.8480,
-      lateReason: 'Kendala macet di jalan tol tomang',
-    },
-    {
-      id: 3,
-      date: new Date().toISOString(),
-      clockIn: new Date(new Date().setHours(7, 45, 0, 0)).toISOString(),
-      clockOut: null,
-      status: 'PRESENT',
-      user: {
-        id: 3,
-        name: 'Dewi Lestari',
-        email: 'dewi.lestari@hadiryuk.id',
-        department: 'Finance',
-        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80',
-      },
-      clockInLatitude: -6.2088,
-      clockInLongitude: 106.8456,
-      lateReason: null,
-    },
-    {
-      id: 4,
-      date: new Date().toISOString(),
-      clockIn: null,
-      clockOut: null,
-      status: 'LEAVE',
-      user: {
-        id: 4,
-        name: 'Rian Pratama',
-        email: 'rian.pratama@hadiryuk.id',
-        department: 'Operations',
-        avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80',
-      },
-      clockInLatitude: null,
-      clockInLongitude: null,
-      lateReason: null,
-    },
-    {
-      id: 5,
-      date: new Date().toISOString(),
-      clockIn: new Date(new Date().setHours(8, 0, 0, 0)).toISOString(),
-      clockOut: null,
-      status: 'PRESENT',
-      user: {
-        id: 5,
-        name: 'Ahmad Fauzi',
-        email: 'ahmad.fauzi@hadiryuk.id',
-        department: 'IT & Engineering',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-      },
-      clockInLatitude: -6.2085,
-      clockInLongitude: 106.8452,
-      lateReason: null,
-    },
-  ];
-
   useEffect(() => {
     fetchAttendance();
   }, []);
@@ -149,14 +60,14 @@ export default function AttendanceScreen() {
     setLoading(true);
     try {
       const res = await api.get('/attendance/admin/today');
-      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      if (res.data?.success && Array.isArray(res.data.data)) {
         setAttendanceData(res.data.data);
       } else {
-        setAttendanceData(fallbackAttendance);
+        setAttendanceData([]);
       }
     } catch (err) {
-      console.warn('Failed to fetch admin attendance (using fallback):', err);
-      setAttendanceData(fallbackAttendance);
+      console.warn('Failed to fetch admin attendance:', err);
+      setAttendanceData([]);
     } finally {
       setLoading(false);
       setIsRefreshing(false);

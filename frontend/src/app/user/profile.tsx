@@ -240,23 +240,22 @@ export default function ProfileScreen() {
     );
   }
 
-  const employeeId = (user as any)?.employeeId || `HY-2025-${String(user?.id || '01').padStart(2, '0')}`;
+  const employeeId = (user as any)?.employeeId || `HY-${String(user?.id || '01').padStart(3, '0')}`;
   const positionTitle =
     (user as any)?.position ||
     (user?.role === 'ADMIN'
       ? 'System Administrator'
       : user?.role === 'LEADER'
-      ? 'Team Leader IT'
-      : 'Mobile App Developer');
-  const departmentName = (user as any)?.department || 'Engineering & Technology';
+      ? 'Team Leader'
+      : 'Karyawan');
+  const departmentName = (user as any)?.department || 'Umum';
 
   return (
-    <SafeAreaView className="flex-1 bg-[#e0e5ec] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
-      {/* Smartphone Container Simulation */}
-      <View className="w-full max-w-[414px] flex-1 bg-[#f4f7fb] dark:bg-slate-950 shadow-2xl" style={{ flex: 1, height: '100%', minHeight: 0 }}>
+    <SafeAreaView className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
+      <View className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm" style={{ flex: 1, height: '100%', minHeight: 0 }}>
         
         {/* Header disamakan persis dengan halaman lain */}
-        <View className="flex-row justify-between items-center p-5 bg-[#f4f7fb] dark:bg-slate-950 z-10">
+        <View className="flex-row justify-between items-center px-6 pt-5 pb-4 bg-[#f4f7fb] dark:bg-slate-950 z-10">
           <Text className="text-[18px] font-bold text-[#222222] dark:text-white">
             Profil Saya
           </Text>
@@ -328,7 +327,7 @@ export default function ProfileScreen() {
                 className="text-[18px] font-bold text-white mb-1 leading-[1.3]"
                 numberOfLines={1}
               >
-                {user?.name || 'Budi Santoso'}
+                {user?.name || 'Karyawan'}
               </Text>
               <Text className="text-[13px] text-white/80 mb-2" numberOfLines={1}>
                 {positionTitle}

@@ -253,8 +253,8 @@ export default function UserLeaveScreen() {
       });
     }
 
-    return defaultItems;
-  }, [leaves, defaultItems]);
+    return [];
+  }, [leaves]);
 
   const pendingCount = useMemo(
     () => displayLeaves.filter((i) => i.status === 'PENDING').length,
@@ -275,16 +275,15 @@ export default function UserLeaveScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-[#f4f7fb] dark:bg-slate-950 justify-center items-center">
+      <SafeAreaView className="flex-1 bg-[#f8fafc] dark:bg-slate-950 justify-center items-center">
         <ActivityIndicator size="large" color="#2a75d3" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#e0e5ec] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
-      {/* Smartphone Container Simulation */}
-      <View className="w-full max-w-[414px] flex-1 bg-[#f4f7fb] dark:bg-slate-950 shadow-2xl" style={{ flex: 1, height: '100%', minHeight: 0 }}>
+    <SafeAreaView className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
+      <View className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm" style={{ flex: 1, height: '100%', minHeight: 0 }}>
         
         {/* Top Header */}
         <View className="flex-row justify-between items-center px-5 pt-4 pb-3 bg-[#f4f7fb] dark:bg-slate-950 z-10">
