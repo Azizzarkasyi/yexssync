@@ -31,7 +31,7 @@ export const APP_ENV = {
     }
 
     // 3. Default fallback
-    return 'http://localhost:3000/api';
+    return 'https://yexssync.yexsx.my.id/api';
   },
 
   // Map & Geofencing configurations
