@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
+import { YexsLogo } from '@/components/YexsLogo';
 import {
   CheckCircle2,
   Bell,
@@ -403,7 +404,7 @@ export default function UserHomeScreen() {
       <View className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm" style={{ flex: 1, height: '100%', minHeight: 0 }}>
         <View className="flex-row justify-between items-center px-5 pt-4 pb-3 bg-[#f4f7fb] dark:bg-slate-950 z-10">
           <View className="flex-row items-center gap-2">
-            <CheckCircle2 size={22} color="#2a75d3" strokeWidth={2.5} />
+            <YexsLogo size={24} rounded />
             <Text className="text-[18px] font-bold text-[#2a75d3] tracking-tight">YEXSSYNC</Text>
           </View>
           <View className="flex-row items-center gap-4">

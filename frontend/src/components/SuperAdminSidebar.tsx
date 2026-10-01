@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import { AuthContext } from '@/context/AuthContext';
+import { YexsLogo } from '@/components/YexsLogo';
 
 export interface SuperAdminSidebarProps {
   currentPath: string;
@@ -100,18 +101,7 @@ export default function SuperAdminSidebar({
             onPress={() => handleNavigate('/superadmin')}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
           >
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                backgroundColor: theme.activeNavBg,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Layers size={22} color={theme.primaryBlue} />
-            </View>
+            <YexsLogo size={34} rounded />
             <View>
               <Text
                 style={{

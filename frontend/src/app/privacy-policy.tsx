@@ -64,7 +64,7 @@ export default function PrivacyPolicyScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Kontak Dukungan</Text>
           <Text style={styles.paragraph}>
-            Jika Anda memiliki pertanyaan mengenai kebijakan privasi ini, silakan hubungi tim kami melalui email: support@yexssync.com
+            Jika Anda memiliki pertanyaan mengenai kebijakan privasi ini, silakan hubungi tim kami melalui email: azizsework@gmail.com
           </Text>
         </View>
       </View>

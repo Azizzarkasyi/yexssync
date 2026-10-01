@@ -17,6 +17,7 @@ import {
 } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { AuthContext } from '@/context/AuthContext';
+import { YexsLogo } from '@/components/YexsLogo';
 
 export interface AdminSidebarProps {
   currentPath: string;
@@ -106,7 +107,7 @@ export default function AdminSidebar({
           onPress={() => handleNavigate('/admin')}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
         >
-          <CheckCircle size={26} color={theme.primaryBlue} />
+          <YexsLogo size={28} rounded />
           <Text
             style={{
               fontSize: 20,

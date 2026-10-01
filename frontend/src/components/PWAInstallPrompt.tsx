@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { Download, X, Laptop, CheckCircle2 } from 'lucide-react-native';
+import { YexsLogo } from '@/components/YexsLogo';
 
 export const PWAInstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -54,8 +55,8 @@ export const PWAInstallPrompt: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <View style={styles.iconContainer}>
-          <Laptop size={22} color="#2563eb" />
+        <View style={{ marginRight: 14 }}>
+          <YexsLogo size={36} rounded />
         </View>
 
         <View style={styles.textContainer}>

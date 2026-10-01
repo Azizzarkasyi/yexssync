@@ -31,6 +31,7 @@ import {
 import { AuthContext } from '@/context/AuthContext';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import api from '@/lib/api';
+import { YexsLogo } from '@/components/YexsLogo';
 
 export default function LoginScreen() {
   const theme = useAdminTheme();
@@ -231,16 +232,16 @@ export default function LoginScreen() {
                 }}
               />
 
-              {/* Logo HadirYuk */}
+              {/* Logo YexsSync */}
               <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 10,
+                  gap: 12,
                   zIndex: 2,
                 }}
               >
-                <CheckCircle size={26} color="#ffffff" strokeWidth={2.5} />
+                <YexsLogo size={36} rounded />
                 <Text
                   style={{
                     fontSize: 24,
@@ -299,11 +300,11 @@ export default function LoginScreen() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 10,
+                  gap: 12,
                   marginBottom: 30,
                 }}
               >
-                <CheckCircle size={26} color={theme.primaryBlue} strokeWidth={2.5} />
+                <YexsLogo size={34} rounded />
                 <Text
                   style={{
                     fontSize: 24,

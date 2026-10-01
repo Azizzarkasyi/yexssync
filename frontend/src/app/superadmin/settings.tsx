@@ -57,9 +57,9 @@ export default function SuperAdminSettingsScreen() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   // Form States - Tab 1: Identitas & Konfigurasi Umum
-  const [appName, setAppName] = useState('HadirYuk');
-  const [appDomain, setAppDomain] = useState('https://hadiryuk.com');
-  const [supportEmail, setSupportEmail] = useState('support@hadiryuk.com');
+  const [appName, setAppName] = useState('YexsSync');
+  const [appDomain, setAppDomain] = useState('https://yexssync.yexsx.my.id');
+  const [supportEmail, setSupportEmail] = useState('azizsework@gmail.com');
   const [hotlinePhone, setHotlinePhone] = useState('+62 811-2233-4455');
 
   // Maintenance Mode
@@ -829,9 +829,9 @@ export default function SuperAdminSettingsScreen() {
                   >
                     <TouchableOpacity
                       onPress={() => {
-                        setAppName('HadirYuk');
-                        setAppDomain('https://hadiryuk.com');
-                        setSupportEmail('support@hadiryuk.com');
+                        setAppName('YexsSync');
+                        setAppDomain('https://yexssync.yexsx.my.id');
+                        setSupportEmail('azizsework@gmail.com');
                         setHotlinePhone('+62 811-2233-4455');
                         setIsMaintenance(false);
                       }}
