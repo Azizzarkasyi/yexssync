@@ -23,7 +23,7 @@ function Resize-Image($sourcePath, $targetPath, [int]$width, [int]$height) {
     Write-Host "Generated: $targetPath ($width x $height)"
 }
 
-$iconSrc = "C:\Users\OMEN\.gemini\antigravity-ide\brain\c94f5aa3-2f53-42c8-9b2d-f069486bebec\yexs_new_icon_1790835833961.jpg"
+$iconSrc = "C:\Users\OMEN\.gemini\antigravity-ide\brain\c94f5aa3-2f53-42c8-9b2d-f069486bebec\yexs_fullbleed_icon_1790918432705.jpg"
 $featureSrc = "C:\Users\OMEN\.gemini\antigravity-ide\brain\c94f5aa3-2f53-42c8-9b2d-f069486bebec\yexs_new_feature_graphic_1790835866846.jpg"
 
 # 1. Play Store Assets
