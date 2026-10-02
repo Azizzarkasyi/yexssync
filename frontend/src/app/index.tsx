@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   View,
   Text,
@@ -37,7 +37,20 @@ export default function LoginScreen() {
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
-  const { login } = useContext(AuthContext);
+  const { user, isLoading: authLoading, login } = useContext(AuthContext);
+
+  // Auto-redirect jika token login sudah tersimpan di perangkat
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'SUPER_ADMIN') {
+        router.replace('/superadmin');
+      } else if (user.role === 'ADMIN') {
+        router.replace('/admin');
+      } else {
+        router.replace('/user');
+      }
+    }
+  }, [user, authLoading]);
 
   // Form states
   const [emailOrId, setEmailOrId] = useState('');
@@ -115,6 +128,22 @@ export default function LoginScreen() {
       setIsSubmitting(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          height: '100%',
+          backgroundColor: theme.bgColor,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <ActivityIndicator size="large" color={theme.primaryBlue} />
+      </View>
+    );
+  }
 
   return (
     <View
