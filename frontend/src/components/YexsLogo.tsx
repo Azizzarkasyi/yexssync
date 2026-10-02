@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconWrapper: {
-    backgroundColor: '#08142c',
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
