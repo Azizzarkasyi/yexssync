@@ -20,6 +20,7 @@ SplashScreen.preventAutoHideAsync();
 import { ErrorProvider } from '@/context/ErrorContext';
 import { VersionUpdateChecker } from '@/components/VersionUpdateChecker';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { RouteGuard } from '@/components/RouteGuard';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -45,8 +46,10 @@ export default function RootLayout() {
       <VersionUpdateChecker />
       <ErrorProvider>
         <AuthProvider>
-          <Stack screenOptions={{ headerShown: false }} />
-          <PWAInstallPrompt />
+          <RouteGuard>
+            <Stack screenOptions={{ headerShown: false }} />
+            <PWAInstallPrompt />
+          </RouteGuard>
         </AuthProvider>
       </ErrorProvider>
     </ThemeProvider>
