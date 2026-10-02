@@ -198,15 +198,29 @@ export default function ProfileScreen() {
 
   // Logout
   const handleLogout = async () => {
+    const doLogout = async () => {
+      try {
+        await logout();
+      } catch (err) {
+        console.error('Logout error:', err);
+      }
+      router.replace('/');
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmed = typeof window !== 'undefined' ? window.confirm('Apakah Anda yakin ingin keluar dari aplikasi?') : true;
+      if (confirmed) {
+        await doLogout();
+      }
+      return;
+    }
+
     Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin keluar dari aplikasi?', [
       { text: 'Batal', style: 'cancel' },
       {
         text: 'Keluar',
         style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/');
-        },
+        onPress: doLogout,
       },
     ]);
   };

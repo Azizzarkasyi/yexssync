@@ -10,6 +10,7 @@ import {
   RefreshControl,
   SafeAreaView,
   useColorScheme,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -44,7 +45,35 @@ export default function UserHomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { user } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
+
+  const handleLogout = async () => {
+    const doLogout = async () => {
+      try {
+        await logout();
+      } catch (err) {
+        console.error('Logout error:', err);
+      }
+      router.replace('/');
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmed = typeof window !== 'undefined' ? window.confirm('Apakah Anda yakin ingin keluar dari aplikasi?') : true;
+      if (confirmed) {
+        await doLogout();
+      }
+      return;
+    }
+
+    Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin keluar dari aplikasi?', [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Keluar',
+        style: 'destructive',
+        onPress: doLogout,
+      },
+    ]);
+  };
 
   const [attendanceToday, setAttendanceToday] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -407,12 +436,27 @@ export default function UserHomeScreen() {
             <YexsLogo size={24} rounded />
             <Text className="text-[18px] font-bold text-[#2a75d3] tracking-tight">YEXSSYNC</Text>
           </View>
-          <View className="flex-row items-center gap-4">
+          <View className="flex-row items-center gap-3">
             <TouchableOpacity activeOpacity={0.7} onPress={() => Alert.alert('Notifikasi', 'Tidak ada notifikasi baru.')}>
               <Bell size={20} color={isDark ? '#cbd5e1' : '#222222'} />
             </TouchableOpacity>
             <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/user/profile')} className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
               <Image source={{ uri: avatarUri }} className="w-full h-full" resizeMode="cover" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleLogout}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Keluar / Logout"
+            >
+              <LogOut size={16} color="#ef4444" strokeWidth={2.2} />
             </TouchableOpacity>
           </View>
         </View>
