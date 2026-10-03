@@ -969,8 +969,13 @@ export default function AdminUsersScreen() {
             </View>
 
             {/* Table Responsive with horizontal scroll */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ minWidth: 800, width: '100%' }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ width: '100%' }}
+              contentContainerStyle={{ minWidth: '100%', flexGrow: 1 }}
+            >
+              <View style={{ minWidth: 800, width: '100%', flexGrow: 1 }}>
                 {/* Table Head */}
                 <View
                   style={{
@@ -1238,6 +1243,7 @@ export default function AdminUsersScreen() {
 
               <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
                 <TouchableOpacity
+                  disabled={currentPage === 1}
                   onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   style={{
                     width: 32,
@@ -1248,19 +1254,19 @@ export default function AdminUsersScreen() {
                     borderRadius: 6,
                     alignItems: 'center',
                     justifyContent: 'center',
+                    opacity: currentPage === 1 ? 0.4 : 1,
                   }}
                 >
                   <ChevronLeft size={14} color={theme.textDark} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => setCurrentPage(1)}
                   style={{
                     width: 32,
                     height: 32,
                     borderWidth: 1,
-                    borderColor: currentPage === 1 ? theme.primaryBlue : theme.borderColor,
-                    backgroundColor: currentPage === 1 ? theme.primaryBlue : theme.cardBg,
+                    borderColor: theme.primaryBlue,
+                    backgroundColor: theme.primaryBlue,
                     borderRadius: 6,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1270,7 +1276,7 @@ export default function AdminUsersScreen() {
                     style={{
                       fontSize: 13,
                       fontWeight: '600',
-                      color: currentPage === 1 ? '#ffffff' : theme.textDark,
+                      color: '#ffffff',
                     }}
                   >
                     1
@@ -1278,81 +1284,7 @@ export default function AdminUsersScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => setCurrentPage(2)}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderWidth: 1,
-                    borderColor: currentPage === 2 ? theme.primaryBlue : theme.borderColor,
-                    backgroundColor: currentPage === 2 ? theme.primaryBlue : theme.cardBg,
-                    borderRadius: 6,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: currentPage === 2 ? '#ffffff' : theme.textDark,
-                    }}
-                  >
-                    2
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setCurrentPage(3)}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderWidth: 1,
-                    borderColor: currentPage === 3 ? theme.primaryBlue : theme.borderColor,
-                    backgroundColor: currentPage === 3 ? theme.primaryBlue : theme.cardBg,
-                    borderRadius: 6,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: currentPage === 3 ? '#ffffff' : theme.textDark,
-                    }}
-                  >
-                    3
-                  </Text>
-                </TouchableOpacity>
-
-                <Text style={{ color: theme.textMuted, paddingHorizontal: 4 }}>...</Text>
-
-                <TouchableOpacity
-                  onPress={() => setCurrentPage(50)}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderWidth: 1,
-                    borderColor: currentPage === 50 ? theme.primaryBlue : theme.borderColor,
-                    backgroundColor: currentPage === 50 ? theme.primaryBlue : theme.cardBg,
-                    borderRadius: 6,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: currentPage === 50 ? '#ffffff' : theme.textDark,
-                    }}
-                  >
-                    50
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setCurrentPage(Math.min(50, currentPage + 1))}
+                  disabled
                   style={{
                     width: 32,
                     height: 32,
@@ -1362,9 +1294,10 @@ export default function AdminUsersScreen() {
                     borderRadius: 6,
                     alignItems: 'center',
                     justifyContent: 'center',
+                    opacity: 0.4,
                   }}
                 >
-                  <ChevronRight size={14} color={theme.textDark} />
+                  <ChevronRight size={14} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>

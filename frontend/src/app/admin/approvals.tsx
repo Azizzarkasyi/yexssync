@@ -784,8 +784,13 @@ export default function AdminApprovalsScreen() {
             </View>
 
             {/* Scrollable Table */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ minWidth: 900, width: '100%' }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ width: '100%' }}
+              contentContainerStyle={{ minWidth: '100%', flexGrow: 1 }}
+            >
+              <View style={{ minWidth: 900, width: '100%', flexGrow: 1 }}>
                 {/* Table Header */}
                 <View
                   style={{
