@@ -17,6 +17,19 @@ const findSuperAdminByEmail = async (
 ) => {
   const normalizedEmail = normalizeEmail(email);
 
+  if (
+    normalizedEmail === "superadmin" ||
+    normalizedEmail === "super_admin" ||
+    normalizedEmail === "super"
+  ) {
+    const defaultSuperAdmin = await prisma.superAdmin.findFirst({
+      orderBy: { id: "asc" },
+    });
+    if (defaultSuperAdmin) {
+      return defaultSuperAdmin;
+    }
+  }
+
   const superAdmin = await prisma.superAdmin.findFirst({
     where: {
       email: {

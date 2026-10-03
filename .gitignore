@@ -44,3 +44,20 @@ frontend/android/
 Thumbs.db
 *.tsbuildinfo
 .metro-health-check*
+
+# Google Play Store Assets & Reviewer Metadata (Private local assets)
+playstore_assets/
+*.aab
+*.apk
+
+# Reviewer & Seeding scripts with credentials
+backend/create-reviewer-account.ts
+backend/test-*.ts
+
+# Sensitive Credentials, Certificates & Keys
+*.pem
+*.cert
+*.crt
+*.keystore
+credentials/
+secrets/

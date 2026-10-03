@@ -38,6 +38,19 @@ const findSuperAdminByEmail = async (
 ) => {
   const normalizedEmail = normalizeEmail(email);
 
+  if (
+    normalizedEmail === "superadmin" ||
+    normalizedEmail === "super_admin" ||
+    normalizedEmail === "super"
+  ) {
+    const defaultSuperAdmin = await publicPrisma.superAdmin.findFirst({
+      orderBy: { id: "asc" },
+    });
+    if (defaultSuperAdmin) {
+      return defaultSuperAdmin;
+    }
+  }
+
   const superAdmin = await publicPrisma.superAdmin.findFirst({
     where: {
       email: {
@@ -138,7 +151,9 @@ export async function autoLogin(req: Request, res: Response) {
         password,
         superAdmin.password,
       );
+
       if (isPasswordValid) {
+
         // Generate JWT for Super Admin
         const token = jwt.sign(
           {

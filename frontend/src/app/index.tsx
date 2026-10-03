@@ -581,90 +581,92 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Quick Login Role Demo Pills (Convenient helper) */}
-            <View
-              style={{
-                marginTop: 24,
-                paddingTop: 16,
-                borderTopWidth: 1,
-                borderTopColor: theme.borderColor,
-              }}
-            >
-              <Text
+            {/* Quick Login Role Demo Pills (Only in development) */}
+            {__DEV__ && (
+              <View
                 style={{
-                  fontSize: 11,
-                  fontWeight: '600',
-                  color: theme.textMuted,
-                  marginBottom: 8,
-                  textAlign: 'center',
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
+                  marginTop: 24,
+                  paddingTop: 16,
+                  borderTopWidth: 1,
+                  borderTopColor: theme.borderColor,
                 }}
               >
-                Pilihan Akun Demo (1-Klik Isi Form)
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <TouchableOpacity
-                  onPress={() => handleQuickFill('superadmin@hadiryuk.id', 'SuperAdmin123!')}
+                <Text
                   style={{
-                    paddingVertical: 6,
-                    paddingHorizontal: 10,
-                    borderRadius: 8,
-                    backgroundColor: theme.subtleBg,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
+                    fontSize: 11,
+                    fontWeight: '600',
+                    color: theme.textMuted,
+                    marginBottom: 8,
+                    textAlign: 'center',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
                   }}
                 >
-                  <Shield size={12} color={theme.primaryBlue} />
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textDark }}>
-                    Super Admin
-                  </Text>
-                </TouchableOpacity>
+                  Pilihan Akun Demo (1-Klik Isi Form)
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <TouchableOpacity
+                    onPress={() => handleQuickFill('azizsework@gmail.com', 'Aziz30112002')}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 10,
+                      borderRadius: 8,
+                      backgroundColor: theme.subtleBg,
+                      borderWidth: 1,
+                      borderColor: theme.borderColor,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <Shield size={12} color={theme.primaryBlue} />
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textDark }}>
+                      Super Admin
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() => handleQuickFill('andi.setiawan@hadiryuk.id', 'Password123!')}
-                  style={{
-                    paddingVertical: 6,
-                    paddingHorizontal: 10,
-                    borderRadius: 8,
-                    backgroundColor: theme.subtleBg,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                >
-                  <Building2 size={12} color={theme.success} />
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textDark }}>
-                    Admin Kantor
-                  </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleQuickFill('admin.reviewer@yexssync.com', 'Reviewer2026!')}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 10,
+                      borderRadius: 8,
+                      backgroundColor: theme.subtleBg,
+                      borderWidth: 1,
+                      borderColor: theme.borderColor,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <Building2 size={12} color={theme.success} />
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textDark }}>
+                      Admin Reviewer
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() => handleQuickFill('budi.santoso@hadiryuk.id', 'Password123!')}
-                  style={{
-                    paddingVertical: 6,
-                    paddingHorizontal: 10,
-                    borderRadius: 8,
-                    backgroundColor: theme.subtleBg,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                >
-                  <Users size={12} color={theme.warningText} />
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textDark }}>
-                    Pegawai
-                  </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleQuickFill('google.reviewer@yexssync.com', 'Reviewer2026!')}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 10,
+                      borderRadius: 8,
+                      backgroundColor: theme.subtleBg,
+                      borderWidth: 1,
+                      borderColor: theme.borderColor,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <Users size={12} color={theme.warningText} />
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textDark }}>
+                      User Reviewer
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            )}
 
             {/* Bottom Registration Notice */}
             <View
@@ -944,7 +946,7 @@ export default function LoginScreen() {
                     marginBottom: 20,
                   }}
                 >
-                  Tim Super Admin HadirYuk akan segera mengonfirmasi dan mengaktifkan workspace
+                  Tim Super Admin YexsSync akan segera mengonfirmasi dan mengaktifkan workspace
                   perusahaan Anda. Rincian akun telah dikirim ke email Anda.
                 </Text>
                 <TouchableOpacity

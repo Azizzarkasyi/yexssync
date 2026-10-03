@@ -130,7 +130,7 @@ export default function SuperAdminLogsScreen() {
       if (Platform.OS === 'web') {
         const link = document.createElement('a');
         link.setAttribute('href', csvContent);
-        link.setAttribute('download', `Log_Sistem_HadirYuk_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.setAttribute('download', `Log_Sistem_YexsSync_${new Date().toISOString().slice(0, 10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -328,7 +328,7 @@ export default function SuperAdminLogsScreen() {
                 />
                 <View style={{ display: 'flex', flexDirection: 'column' }}>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>
-                    {user?.name || 'Andi Setiawan'}
+                    {user?.name || 'Super Admin'}
                   </Text>
                   <Text style={{ fontSize: 12, color: theme.accent, fontWeight: '500' }}>
                     Super Admin
@@ -360,7 +360,7 @@ export default function SuperAdminLogsScreen() {
                 >
                   <View style={{ padding: 8, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 4 }}>
                     <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
-                      {user?.email || 'andi.setiawan@hadiryuk.id'}
+                      {user?.email || 'superadmin@yexssync.com'}
                     </Text>
                     <Text style={{ fontSize: 11, color: theme.textMuted }}>Hak Akses Penuh</Text>
                   </View>
@@ -1314,20 +1314,12 @@ export default function SuperAdminLogsScreen() {
               </View>
 
               <View style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <View style={{ padding: 12, borderRadius: 8, backgroundColor: theme.dangerBg }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: theme.dangerText }}>
-                    Alert Kritis: Database Replikator Terputus
+                <View style={{ padding: 12, borderRadius: 8, backgroundColor: theme.infoBg }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: theme.infoText }}>
+                    Audit & Log Sistem Berjalan Normal
                   </Text>
                   <Text style={{ fontSize: 11, color: theme.text, marginTop: 2 }}>
-                    Layanan pemantauan mendeteksi kegagalan koneksi TCP ke replika Postgres.
-                  </Text>
-                </View>
-                <View style={{ padding: 12, borderRadius: 8, backgroundColor: theme.warningBg }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#d97706' }}>
-                    Peringatan Keamanan: Percobaan Login Gagal
-                  </Text>
-                  <Text style={{ fontSize: 11, color: theme.text, marginTop: 2 }}>
-                    5 kali percobaan salah dari IP 114.122.55.12 untuk akun Maju Djaya.
+                    Seluruh aktivitas pengguna dan perubahan data tercatat dengan aman pada server.
                   </Text>
                 </View>
               </View>

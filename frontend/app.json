@@ -8,7 +8,7 @@
     "scheme": "yexssync",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "package": "com.yexssync.app",
@@ -25,10 +25,8 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#08142c",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#08142c"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -43,7 +41,7 @@
         {
           "backgroundColor": "#08142c",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 100
+          "imageWidth": 160
         }
       ],
       [

@@ -71,16 +71,7 @@ interface TicketItem {
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
 }
 
-const MONTHLY_GROWTH = [
-  { month: 'Jan', count: 12, height: '30%' },
-  { month: 'Feb', count: 18, height: '45%' },
-  { month: 'Mar', count: 10, height: '25%' },
-  { month: 'Apr', count: 24, height: '60%' },
-  { month: 'Mei', count: 20, height: '50%' },
-  { month: 'Jun', count: 32, height: '80%' },
-  { month: 'Jul', count: 38, height: '95%', isHighlight: true },
-  { month: 'Agu', count: 16, height: '40%' },
-];
+const DEFAULT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
 export default function SuperAdminDashboardScreen() {
   const { width } = useWindowDimensions();
@@ -100,7 +91,27 @@ export default function SuperAdminDashboardScreen() {
   // Data
   const [tenants, setTenants] = useState<TenantItem[]>([]);
   const [tickets, setTickets] = useState<TicketItem[]>([]);
-  const [selectedChartMonth, setSelectedChartMonth] = useState<string | null>('Jul');
+  const currentMonthName = DEFAULT_MONTHS[new Date().getMonth()];
+  const [selectedChartMonth, setSelectedChartMonth] = useState<string | null>(currentMonthName);
+
+  const monthlyGrowth = React.useMemo(() => {
+    const currentMonthIdx = new Date().getMonth();
+    const monthsToShow = DEFAULT_MONTHS.slice(0, Math.max(currentMonthIdx + 1, 6));
+    const counts = new Array(monthsToShow.length).fill(0);
+
+    tenants.forEach(() => {
+      counts[currentMonthIdx] += 1;
+    });
+
+    const max = Math.max(...counts, 1);
+
+    return monthsToShow.map((m, idx) => ({
+      month: m,
+      count: counts[idx],
+      height: counts[idx] > 0 ? `${Math.round((counts[idx] / max) * 75) + 20}%` : '8%',
+      isHighlight: idx === currentMonthIdx,
+    }));
+  }, [tenants]);
 
   // Modals
   const [showAddTenantModal, setShowAddTenantModal] = useState(false);
@@ -403,7 +414,7 @@ export default function SuperAdminDashboardScreen() {
                 />
                 <View style={{ display: 'flex', flexDirection: 'column' }}>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>
-                    {user?.name || 'Andi Setiawan'}
+                    {user?.name || 'Super Admin'}
                   </Text>
                   <Text style={{ fontSize: 12, color: theme.accent, fontWeight: '500' }}>Super Admin</Text>
                 </View>
@@ -433,7 +444,7 @@ export default function SuperAdminDashboardScreen() {
                 >
                   <View style={{ padding: 8, borderBottomWidth: 1, borderBottomColor: theme.borderLight, marginBottom: 4 }}>
                     <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
-                      {user?.email || 'andi.admin@hadiryuk.com'}
+                      {user?.email || 'superadmin@yexssync.com'}
                     </Text>
                     <Text style={{ fontSize: 11, color: theme.successText, fontWeight: '500', marginTop: 2 }}>
                       ● Online ({theme.isDark ? 'Mode Gelap' : 'Mode Terang'})
@@ -716,10 +727,10 @@ export default function SuperAdminDashboardScreen() {
                 gap: 12,
               }}
             >
-              {MONTHLY_GROWTH.map((item) => {
+              {monthlyGrowth.map((item) => {
                 const isSelected = selectedChartMonth === item.month;
-                const isJul = item.isHighlight;
-                const barColor = isJul
+                const isCurrent = item.isHighlight;
+                const barColor = isCurrent
                   ? theme.accent
                   : isSelected
                   ? theme.infoText
@@ -780,7 +791,7 @@ export default function SuperAdminDashboardScreen() {
                 paddingHorizontal: 10,
               }}
             >
-              {MONTHLY_GROWTH.map((item) => (
+              {monthlyGrowth.map((item) => (
                 <Text
                   key={item.month}
                   style={{
@@ -1157,7 +1168,7 @@ export default function SuperAdminDashboardScreen() {
               <View>
                 <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textSecondary, marginBottom: 6 }}>Nama Perusahaan</Text>
                 <TextInput
-                  placeholder="Contoh: PT Sinar Abadi"
+                  placeholder="Contoh: PT Nama Perusahaan"
                   placeholderTextColor={theme.placeholder}
                   value={newCompanyName}
                   onChangeText={setNewCompanyName}
@@ -1355,24 +1366,20 @@ export default function SuperAdminDashboardScreen() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{ backgroundColor: theme.cardBg, borderRadius: 16, width: '100%', maxWidth: 420, padding: 20, borderWidth: 1, borderColor: theme.border }}>
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>Notifikasi Sistem (3)</Text>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>Notifikasi Sistem (2)</Text>
               <TouchableOpacity onPress={() => setShowNotifModal(false)}>
                 <X size={18} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <View style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <View style={{ padding: 12, backgroundColor: theme.warningBg, borderRadius: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.warningText }}>Tagihan Tertunggak</Text>
-                <Text style={{ fontSize: 12, color: theme.isDark ? '#fbbf24' : '#b45309', marginTop: 2 }}>Maju Djaya Corp belum membayar invoice Agustus 2026.</Text>
-              </View>
               <View style={{ padding: 12, backgroundColor: theme.successBg, borderRadius: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.successText }}>Tenant Baru Terdaftar</Text>
-                <Text style={{ fontSize: 12, color: theme.isDark ? '#34d399' : '#047857', marginTop: 2 }}>CV Tech Indo berhasil mendaftar paket Pro.</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.successText }}>Status Sistem Siap</Text>
+                <Text style={{ fontSize: 12, color: theme.isDark ? '#34d399' : '#047857', marginTop: 2 }}>Layanan multi-tenant YexsSync berjalan normal dan optimal.</Text>
               </View>
               <View style={{ padding: 12, backgroundColor: theme.infoBg, borderRadius: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.infoText }}>Backup Database Otomatis</Text>
-                <Text style={{ fontSize: 12, color: theme.isDark ? '#60a5fa' : '#1d4ed8', marginTop: 2 }}>Backup multi-tenant harian berhasil disimpan pada 03:00 WIB.</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.infoText }}>Tenant Pengujian Play Store</Text>
+                <Text style={{ fontSize: 12, color: theme.isDark ? '#60a5fa' : '#1d4ed8', marginTop: 2 }}>PT YexsSync Solusi Digital aktif untuk peninjauan aplikasi.</Text>
               </View>
             </View>
 

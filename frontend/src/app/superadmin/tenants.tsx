@@ -134,8 +134,8 @@ export default function TenantManagementScreen() {
             .slice(0, 2)
             .toUpperCase();
 
-          const shortCode = (t.code || t.name.slice(0, 2)).toUpperCase().replace(/[^A-Z]/g, '') || 'TN';
-          const codeId = `HY-${shortCode}-${String(idx + 1).padStart(3, '0')}`;
+          const shortCode = (t.code || t.name.slice(0, 2)).toUpperCase().replace(/[^A-Z]/g, '') || 'YS';
+          const codeId = `YS-${shortCode}-${String(idx + 1).padStart(3, '0')}`;
 
           let planName: 'Enterprise' | 'Pro' | 'Basic' = 'Pro';
           if (t.plan === 'ENTERPRISE' || t.plan === 'Enterprise') planName = 'Enterprise';
@@ -176,7 +176,7 @@ export default function TenantManagementScreen() {
             contactPerson: {
               name: t.adminName || 'Admin Utama',
               email: t.adminEmail || 'admin@' + (t.code || 'tenant') + '.com',
-              phone: t.adminPhone || '0812-3456-7890',
+              phone: t.adminPhone || '-',
             },
             plan: planName,
             quota: {
@@ -507,7 +507,7 @@ export default function TenantManagementScreen() {
                 />
                 <View className="mr-2">
                   <Text className="text-xs font-semibold text-[#111827] dark:text-white">
-                    {user?.name || 'Andi Setiawan'}
+                    {user?.name || 'Super Admin'}
                   </Text>
                   <Text className="text-[10px] text-[#2a75d3] font-medium">Super Admin</Text>
                 </View>
@@ -518,7 +518,7 @@ export default function TenantManagementScreen() {
                 <View className="absolute right-0 top-12 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-[#e5e7eb] dark:border-slate-700 p-2 z-50">
                   <View className="p-2 border-b border-slate-100 dark:border-slate-800 mb-1">
                     <Text className="text-xs font-bold text-[#111827] dark:text-white">
-                      {user?.email || 'admin@hadiryuk.id'}
+                      {user?.email || 'superadmin@yexssync.com'}
                     </Text>
                     <Text className="text-[10px] text-[#10b981] font-semibold mt-0.5">● Super Admin</Text>
                   </View>
@@ -966,7 +966,7 @@ export default function TenantManagementScreen() {
                     Nama Perusahaan *
                   </Text>
                   <TextInput
-                    placeholder="Contoh: PT Surya Kencana"
+                    placeholder="Contoh: PT Nama Perusahaan"
                     placeholderTextColor="#9ca3af"
                     value={formName}
                     onChangeText={setFormName}
@@ -1368,28 +1368,20 @@ export default function TenantManagementScreen() {
             </View>
 
             <View className="gap-3">
-              <View className="p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100">
-                <Text className="text-xs font-bold text-red-800 dark:text-red-300">
-                  Tagihan Belum Dibayar
+              <View className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100">
+                <Text className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                  Status Sistem Siap
                 </Text>
-                <Text className="text-[11px] text-red-700 dark:text-red-400 mt-0.5">
-                  Maju Djaya Corp memiliki tunggakan paket langganan 14 hari.
+                <Text className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                  Layanan multi-tenant YexsSync berjalan normal dan optimal.
                 </Text>
               </View>
               <View className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100">
                 <Text className="text-xs font-bold text-blue-800 dark:text-blue-300">
-                  Tenant Baru Terdaftar
+                  Tenant Pengujian Play Store
                 </Text>
                 <Text className="text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">
-                  PT Sinar Jaya berhasil didaftarkan dan schema database aktif.
-                </Text>
-              </View>
-              <View className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100">
-                <Text className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                  Backup Database Otomatis
-                </Text>
-                <Text className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                  Backup multi-tenant berhasil diselesaikan pada pukul 03:00 WIB.
+                  PT YexsSync Solusi Digital aktif untuk peninjauan aplikasi.
                 </Text>
               </View>
             </View>

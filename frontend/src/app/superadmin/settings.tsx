@@ -88,8 +88,8 @@ export default function SuperAdminSettingsScreen() {
   const [smtpUser, setSmtpUser] = useState('apikey');
   const [smtpPass, setSmtpPass] = useState('SG.xxxxxxxxxxxxxxxxxxxxxx');
   const [showSmtpPass, setShowSmtpPass] = useState(false);
-  const [senderName, setSenderName] = useState('HadirYuk HQ');
-  const [senderEmail, setSenderEmail] = useState('noreply@hadiryuk.com');
+  const [senderName, setSenderName] = useState('YexsSync System');
+  const [senderEmail, setSenderEmail] = useState('noreply@yexssync.yexsx.my.id');
 
   // Tab 4: Security
   const [enforce2FA, setEnforce2FA] = useState(true);
@@ -100,7 +100,7 @@ export default function SuperAdminSettingsScreen() {
   // Tab 5: Backup
   const [backupSchedule, setBackupSchedule] = useState('daily');
   const [backupRetentionDays, setBackupRetentionDays] = useState('30');
-  const [lastBackupStatus] = useState('08 Sep 2026, 03:00 WIB (Sukses - 428 MB)');
+  const [lastBackupStatus] = useState('Cloud Backup Otomatis Terhubung (Aktif)');
 
   // Save feedback modal / state
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
@@ -250,7 +250,7 @@ export default function SuperAdminSettingsScreen() {
                 />
                 <View style={{ display: 'flex', flexDirection: 'column' }}>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>
-                    {user?.name || 'Andi Setiawan'}
+                    {user?.name || 'Super Admin'}
                   </Text>
                   <Text style={{ fontSize: 12, color: theme.accent, fontWeight: '500' }}>
                     Super Admin
@@ -282,7 +282,7 @@ export default function SuperAdminSettingsScreen() {
                 >
                   <View style={{ padding: 8, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 4 }}>
                     <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
-                      {user?.email || 'andi.setiawan@hadiryuk.id'}
+                      {user?.email || 'azizsework@gmail.com'}
                     </Text>
                     <Text style={{ fontSize: 11, color: theme.textMuted }}>Hak Akses Penuh</Text>
                   </View>
@@ -1263,7 +1263,7 @@ export default function SuperAdminSettingsScreen() {
                   }}
                 >
                   <TouchableOpacity
-                    onPress={() => alert('Email uji coba berhasil dikirim ke ' + (user?.email || 'admin@hadiryuk.id'))}
+                    onPress={() => alert('Email uji coba berhasil dikirim ke ' + (user?.email || 'azizsework@gmail.com'))}
                     style={{
                       paddingVertical: 10,
                       paddingHorizontal: 16,

@@ -196,7 +196,7 @@ export default function SuperAdminBillingScreen() {
       if (Platform.OS === 'web') {
         const link = document.createElement('a');
         link.setAttribute('href', csvContent);
-        link.setAttribute('download', `Invoice_HadirYuk_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.setAttribute('download', `Invoice_YexsSync_${new Date().toISOString().slice(0, 10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -390,7 +390,7 @@ export default function SuperAdminBillingScreen() {
                 />
                 <View style={{ display: 'flex', flexDirection: 'column' }}>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>
-                    {user?.name || 'Andi Setiawan'}
+                    {user?.name || 'Super Admin'}
                   </Text>
                   <Text style={{ fontSize: 12, color: theme.accent, fontWeight: '500' }}>Super Admin</Text>
                 </View>
@@ -419,7 +419,7 @@ export default function SuperAdminBillingScreen() {
                 >
                   <View style={{ padding: 8, borderBottomWidth: 1, borderBottomColor: theme.borderLight, marginBottom: 4 }}>
                     <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
-                      {user?.email || 'andi.admin@hadiryuk.com'}
+                      {user?.email || 'superadmin@yexssync.com'}
                     </Text>
                     <Text style={{ fontSize: 11, color: theme.successText, fontWeight: '500', marginTop: 2 }}>
                       ● Online ({theme.isDark ? 'Mode Gelap' : 'Mode Terang'})
@@ -1212,24 +1212,16 @@ export default function SuperAdminBillingScreen() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{ backgroundColor: theme.cardBg, borderRadius: 16, width: '100%', maxWidth: 420, padding: 20, borderWidth: 1, borderColor: theme.border }}>
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>Notifikasi Sistem (3)</Text>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>Notifikasi Billing (1)</Text>
               <TouchableOpacity onPress={() => setShowNotifModal(false)}>
                 <X size={18} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <View style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <View style={{ padding: 12, backgroundColor: theme.warningBg, borderRadius: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.warningText }}>Tagihan Tertunggak</Text>
-                <Text style={{ fontSize: 12, color: theme.isDark ? '#fbbf24' : '#b45309', marginTop: 2 }}>Maju Djaya Corp belum membayar invoice Agustus 2026.</Text>
-              </View>
               <View style={{ padding: 12, backgroundColor: theme.successBg, borderRadius: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.successText }}>Pembayaran Diterima</Text>
-                <Text style={{ fontSize: 12, color: theme.isDark ? '#34d399' : '#047857', marginTop: 2 }}>PT Sejahtera Abadi telah melunasi INV-2609-001.</Text>
-              </View>
-              <View style={{ padding: 12, backgroundColor: theme.infoBg, borderRadius: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.infoText }}>Invoice Otomatis Dibuat</Text>
-                <Text style={{ fontSize: 12, color: theme.isDark ? '#60a5fa' : '#1d4ed8', marginTop: 2 }}>5 invoice baru bulan September telah diterbitkan sistem.</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.successText }}>Status Billing Normal</Text>
+                <Text style={{ fontSize: 12, color: theme.isDark ? '#34d399' : '#047857', marginTop: 2 }}>Tidak ada tagihan tertunggak. Sistem langganan aktif.</Text>
               </View>
             </View>
 

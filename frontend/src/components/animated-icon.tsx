@@ -36,7 +36,8 @@ export function AnimatedSplashOverlay() {
   const image = (
     <Image
       style={styles.image}
-      source={require("@/assets/images/expo-logo.png")}
+      source={require("@/assets/images/splash-icon.png")}
+      contentFit="contain"
     />
   );
 
@@ -125,7 +126,8 @@ export function AnimatedIcon() {
       >
         <Image
           style={styles.image}
-          source={require("@/assets/images/expo-logo.png")}
+          source={require("@/assets/images/splash-icon.png")}
+          contentFit="contain"
         />
       </Animated.View>
     </View>
@@ -145,24 +147,25 @@ const styles = StyleSheet.create({
   iconContainer: {
     justifyContent: "center",
     alignItems: "center",
-    width: 128,
-    height: 128,
+    width: 140,
+    height: 140,
     zIndex: 100,
   },
   image: {
-    width: 76,
-    height: 71,
+    width: 140,
+    height: 140,
+    borderRadius: 28,
   },
   background: {
-    borderRadius: 40,
-    experimental_backgroundImage: `linear-gradient(180deg, #3C9FFE, #0274DF)`,
-    width: 128,
-    height: 128,
+    borderRadius: 28,
+    experimental_backgroundImage: `linear-gradient(180deg, #0a1b3b, #08142c)`,
+    width: 140,
+    height: 140,
     position: "absolute",
   },
   splashOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "#208AEF",
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#08142c",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1000,

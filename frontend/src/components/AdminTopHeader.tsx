@@ -162,7 +162,7 @@ export default function AdminTopHeader({
                   }}
                   numberOfLines={1}
                 >
-                  {user?.name || 'Andi Setiawan'}
+                  {user?.name || 'Administrator'}
                 </Text>
                 <Text style={{ fontSize: 11, color: theme.textMuted }}>
                   {(user as any)?.companyName || 'Admin Perusahaan'}

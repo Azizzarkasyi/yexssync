@@ -135,7 +135,7 @@ export default function SuperAdminTicketsScreen() {
 
     const newReply: TicketReply = {
       id: `r_${Date.now()}`,
-      sender: user?.name ? `Tim Support (${user.name})` : 'Tim Support HadirYuk',
+      sender: user?.name ? `Tim Support (${user.name})` : 'Tim Support YexsSync',
       role: 'admin',
       message: replyMessage.trim(),
       time: 'Hari ini, ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
@@ -170,7 +170,7 @@ export default function SuperAdminTicketsScreen() {
       id: String(Date.now()),
       ticketId: `#TKT-${nextIdNumber}`,
       clientName: newClientName.trim(),
-      clientCompany: newClientCompany.trim() || 'Internal HadirYuk HQ',
+      clientCompany: newClientCompany.trim() || 'Internal YexsSync',
       subject: newSubject.trim(),
       description: newDescription.trim(),
       priority: newPriority,
@@ -204,7 +204,7 @@ export default function SuperAdminTicketsScreen() {
       if (Platform.OS === 'web') {
         const link = document.createElement('a');
         link.setAttribute('href', csvContent);
-        link.setAttribute('download', `Tiket_Bantuan_HadirYuk_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.setAttribute('download', `Tiket_Bantuan_YexsSync_${new Date().toISOString().slice(0, 10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -413,7 +413,7 @@ export default function SuperAdminTicketsScreen() {
                 />
                 <View style={{ display: 'flex', flexDirection: 'column' }}>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>
-                    {user?.name || 'Andi Setiawan'}
+                    {user?.name || 'Super Admin'}
                   </Text>
                   <Text style={{ fontSize: 12, color: theme.accent, fontWeight: '500' }}>
                     Super Admin
@@ -445,7 +445,7 @@ export default function SuperAdminTicketsScreen() {
                 >
                   <View style={{ padding: 8, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 4 }}>
                     <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
-                      {user?.email || 'andi.setiawan@hadiryuk.id'}
+                      {user?.email || 'superadmin@yexssync.com'}
                     </Text>
                     <Text style={{ fontSize: 11, color: theme.textMuted }}>Hak Akses Penuh</Text>
                   </View>
@@ -1691,7 +1691,7 @@ export default function SuperAdminTicketsScreen() {
                     Nama Klien / Pelapor *
                   </Text>
                   <TextInput
-                    placeholder="Contoh: Budi Raharjo"
+                    placeholder="Contoh: Nama Pelapor"
                     placeholderTextColor={theme.placeholder}
                     value={newClientName}
                     onChangeText={setNewClientName}
@@ -1714,7 +1714,7 @@ export default function SuperAdminTicketsScreen() {
                     Nama Perusahaan (Tenant)
                   </Text>
                   <TextInput
-                    placeholder="Contoh: PT Sejahtera Abadi"
+                    placeholder="Contoh: PT Nama Perusahaan"
                     placeholderTextColor={theme.placeholder}
                     value={newClientCompany}
                     onChangeText={setNewClientCompany}
@@ -2129,28 +2129,12 @@ export default function SuperAdminTicketsScreen() {
               </View>
 
               <View style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <View style={{ padding: 12, borderRadius: 8, backgroundColor: theme.dangerBg }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: theme.dangerText }}>
-                    Tiket Baru Mendesak: #TKT-1042
-                  </Text>
-                  <Text style={{ fontSize: 11, color: theme.text, marginTop: 2 }}>
-                    PT Sejahtera Abadi melaporkan kegagalan export laporan kehadiran Agustus.
-                  </Text>
-                </View>
-                <View style={{ padding: 12, borderRadius: 8, backgroundColor: theme.warningBg }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#d97706' }}>
-                    Permintaan Buka Suspend: #TKT-1039
-                  </Text>
-                  <Text style={{ fontSize: 11, color: theme.text, marginTop: 2 }}>
-                    Maju Djaya Corp telah mengirimkan konfirmasi pembayaran.
-                  </Text>
-                </View>
                 <View style={{ padding: 12, borderRadius: 8, backgroundColor: theme.infoBg }}>
                   <Text style={{ fontSize: 12, fontWeight: '700', color: theme.infoText }}>
-                    Pertanyaan Upgrade Kuota: #TKT-1041
+                    Pusat Bantuan Siap
                   </Text>
                   <Text style={{ fontSize: 11, color: theme.text, marginTop: 2 }}>
-                    CV Tech Indo menanyakan perhitungan kuota 100 user.
+                    Tiket aduan dan bantuan teknis dari tenant akan langsung terhubung ke dashboard ini.
                   </Text>
                 </View>
               </View>
