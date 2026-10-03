@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,10 @@ import {
   MapPinned,
   IdCard,
   ScanFace,
+  Lock,
+  Eye,
+  EyeOff,
+  Plus,
 } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
@@ -48,18 +52,106 @@ export default function AddEmployeeScreen() {
   // Foto Profil State
   const [photoUri, setPhotoUri] = useState<string | null>(null);
 
-  // Form States - Informasi Pribadi
+  // Form States - Informasi Pribadi & Akun
   const [name, setName] = useState('');
   const [nik, setNik] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
 
   // Form States - Data Pekerjaan
-  const [employeeId] = useState('HY-2026-128');
-  const [department, setDepartment] = useState('it');
+  const [employeeId, setEmployeeId] = useState('');
+  const DEFAULT_DEPARTMENTS = [
+    'IT & Engineering',
+    'Human Resources',
+    'Finance',
+    'Operations',
+    'Marketing',
+    'Sales',
+  ];
+  const [departmentList, setDepartmentList] = useState<string[]>(DEFAULT_DEPARTMENTS);
+  const [department, setDepartment] = useState('IT & Engineering');
+  const [showAddCustomDept, setShowAddCustomDept] = useState(false);
+  const [customDeptInput, setCustomDeptInput] = useState('');
   const [position, setPosition] = useState('Staff IT');
   const [jobType, setJobType] = useState('fulltime');
+
+  // Load custom departments & calculate employee ID on mount
+  useEffect(() => {
+    let savedDepts: string[] = [];
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('yexs_custom_departments');
+        if (stored) savedDepts = JSON.parse(stored);
+      } catch {}
+    }
+
+    api.get('/users')
+      .then((res) => {
+        if (res.data?.data && Array.isArray(res.data.data)) {
+          const userDepts = res.data.data
+            .map((u: any) => u.department)
+            .filter((d: any) => typeof d === 'string' && d.trim().length > 0);
+          const merged = Array.from(new Set([...DEFAULT_DEPARTMENTS, ...savedDepts, ...userDepts]));
+          setDepartmentList(merged);
+          setEmployeeId(`EMP-${new Date().getFullYear()}-${String(res.data.data.length + 1).padStart(3, '0')}`);
+        } else {
+          setDepartmentList(Array.from(new Set([...DEFAULT_DEPARTMENTS, ...savedDepts])));
+          setEmployeeId(`EMP-${new Date().getFullYear()}-001`);
+        }
+      })
+      .catch(() => {
+        setDepartmentList(Array.from(new Set([...DEFAULT_DEPARTMENTS, ...savedDepts])));
+        setEmployeeId(`EMP-${new Date().getFullYear()}-001`);
+      });
+  }, []);
+
+  const handleAddCustomDepartment = () => {
+    const trimmed = customDeptInput.trim();
+    if (!trimmed) return;
+    const updated = Array.from(new Set([...departmentList, trimmed]));
+    setDepartmentList(updated);
+    setDepartment(trimmed);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('yexs_custom_departments', JSON.stringify(updated));
+      } catch {}
+    }
+    setCustomDeptInput('');
+    setShowAddCustomDept(false);
+    setDeptDropdownOpen(false);
+  };
+
+  // Mutually exclusive dropdown toggles
+  const toggleDeptDropdown = () => {
+    setDeptDropdownOpen((prev) => !prev);
+    setJobTypeDropdownOpen(false);
+    setSalaryTypeDropdownOpen(false);
+    setBankDropdownOpen(false);
+  };
+
+  const toggleJobTypeDropdown = () => {
+    setJobTypeDropdownOpen((prev) => !prev);
+    setDeptDropdownOpen(false);
+    setSalaryTypeDropdownOpen(false);
+    setBankDropdownOpen(false);
+  };
+
+  const toggleSalaryTypeDropdown = () => {
+    setSalaryTypeDropdownOpen((prev) => !prev);
+    setDeptDropdownOpen(false);
+    setJobTypeDropdownOpen(false);
+    setBankDropdownOpen(false);
+  };
+
+  const toggleBankDropdown = () => {
+    setBankDropdownOpen((prev) => !prev);
+    setDeptDropdownOpen(false);
+    setJobTypeDropdownOpen(false);
+    setSalaryTypeDropdownOpen(false);
+  };
 
   // Form States - Geofencing Lokasi Kerja
   const [overrideLocation, setOverrideLocation] = useState(true);
@@ -92,13 +184,7 @@ export default function AddEmployeeScreen() {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   // Options
-  const departmentOptions = [
-    { label: 'Pilih Departemen...', value: '' },
-    { label: 'IT & Engineering', value: 'it' },
-    { label: 'Human Resources', value: 'hr' },
-    { label: 'Finance', value: 'finance' },
-    { label: 'Operations', value: 'operations' },
-  ];
+  const departmentOptions = departmentList.map((d) => ({ label: d, value: d }));
 
   const jobTypeOptions = [
     { label: 'Full Time (Tetap)', value: 'fulltime' },
@@ -186,19 +272,36 @@ export default function AddEmployeeScreen() {
       else Alert.alert('Peringatan', 'Nomor telepon/HP pegawai wajib diisi.');
       return;
     }
+    if (!password || password.trim().length < 6) {
+      if (Platform.OS === 'web') window.alert('Password akun pegawai wajib diisi minimal 6 karakter.');
+      else Alert.alert('Peringatan', 'Password akun pegawai wajib diisi minimal 6 karakter.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const deptLabel = departmentOptions.find((d) => d.value === department)?.label || department;
+      const deptLabel = department.trim() || 'IT & Engineering';
+      // Persist department if newly typed
+      if (deptLabel && !departmentList.includes(deptLabel)) {
+        const updated = [...departmentList, deptLabel];
+        setDepartmentList(updated);
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('yexs_custom_departments', JSON.stringify(updated));
+          } catch {}
+        }
+      }
+
       const jobLabel = jobTypeOptions.find((j) => j.value === jobType)?.label || jobType;
 
       const payload = {
         name: name.trim(),
         nik: nik.trim(),
         email: email.trim(),
+        password: password.trim(),
         phone: phone.trim(),
         address: address.trim(),
-        employeeId,
+        employeeId: employeeId || `EMP-${Date.now().toString().slice(-4)}`,
         department: deptLabel,
         position: position.trim(),
         jobType: jobLabel,
@@ -215,7 +318,6 @@ export default function AddEmployeeScreen() {
         faceDescriptor,
         faceRegistered: faceRegistered || !!faceDescriptor,
         role: 'USER',
-        password: 'Password123!',
       };
 
       try {
@@ -527,6 +629,50 @@ export default function AddEmployeeScreen() {
               </View>
             </View>
 
+            {/* Password Akun Pegawai */}
+            <View style={{ marginBottom: 15, gap: 8 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
+                Password Akun Pegawai <Text style={{ color: theme.danger }}>*</Text>
+              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: theme.borderColor,
+                  borderRadius: 8,
+                  backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
+                  paddingHorizontal: 15,
+                }}
+              >
+                <Lock size={16} color={theme.textMuted} style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="Masukkan password akun pegawai (min. 6 karakter)"
+                  placeholderTextColor={theme.placeholder}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    fontSize: 14,
+                    color: theme.textDark,
+                    outlineStyle: 'none',
+                  } as any}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+                  {showPassword ? (
+                    <EyeOff size={18} color={theme.textMuted} />
+                  ) : (
+                    <Eye size={18} color={theme.textMuted} />
+                  )}
+                </TouchableOpacity>
+              </View>
+              <Text style={{ fontSize: 12, color: theme.textMuted }}>
+                Password ini akan digunakan pegawai saat login ke aplikasi mobile HadirYuk.
+              </Text>
+            </View>
+
             {/* Alamat Lengkap */}
             <View style={{ gap: 8, marginBottom: 25 }}>
               <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
@@ -574,7 +720,7 @@ export default function AddEmployeeScreen() {
               </Text>
             </View>
 
-            <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 15 }}>
+            <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 15, zIndex: deptDropdownOpen ? 9999 : 40, position: 'relative' }}>
               {/* ID Pegawai (Readonly) */}
               <View style={{ flex: 1, gap: 8 }}>
                 <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
@@ -597,16 +743,25 @@ export default function AddEmployeeScreen() {
                 />
               </View>
 
-              {/* Departemen Dropdown */}
-              <View style={{ flex: 1, gap: 8, position: 'relative', zIndex: 40 }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
-                  Departemen <Text style={{ color: theme.danger }}>*</Text>
-                </Text>
+              {/* Departemen Dropdown & Custom Input */}
+              <View style={{ flex: 1, gap: 8, position: 'relative', zIndex: deptDropdownOpen ? 9999 : 40 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
+                    Departemen / Divisi <Text style={{ color: theme.danger }}>*</Text>
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setShowAddCustomDept((prev) => !prev)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                  >
+                    <Plus size={12} color={theme.primaryBlue} />
+                    <Text style={{ fontSize: 12, color: theme.primaryBlue, fontWeight: '600' }}>
+                      {showAddCustomDept ? 'Tutup Input' : '+ Divisi Baru'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
                 <TouchableOpacity
-                  onPress={() => {
-                    setDeptDropdownOpen(!deptDropdownOpen);
-                    setJobTypeDropdownOpen(false);
-                  }}
+                  onPress={toggleDeptDropdown}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -619,11 +774,77 @@ export default function AddEmployeeScreen() {
                     backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
                   }}
                 >
-                  <Text style={{ fontSize: 14, color: theme.textDark }}>
-                    {departmentOptions.find((d) => d.value === department)?.label || 'Pilih Departemen...'}
+                  <Text style={{ fontSize: 14, color: department ? theme.textDark : theme.placeholder }}>
+                    {department || 'Pilih Departemen / Divisi...'}
                   </Text>
                   <ChevronDown size={14} color={theme.textMuted} />
                 </TouchableOpacity>
+
+                {showAddCustomDept && (
+                  <View
+                    style={{
+                      padding: 12,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: theme.primaryBlue,
+                      backgroundColor: theme.isDark ? '#1e293b' : '#f0f9ff',
+                      gap: 8,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.primaryBlue }}>
+                      Ketik Nama Divisi / Departemen Baru:
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TextInput
+                        placeholder="Contoh: Digital Marketing, RnD..."
+                        placeholderTextColor={theme.placeholder}
+                        value={customDeptInput}
+                        onChangeText={setCustomDeptInput}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          borderRadius: 6,
+                          borderWidth: 1,
+                          borderColor: theme.borderColor,
+                          backgroundColor: theme.cardBg,
+                          fontSize: 13,
+                          color: theme.textDark,
+                          outlineStyle: 'none',
+                        } as any}
+                      />
+                      <TouchableOpacity
+                        onPress={handleAddCustomDepartment}
+                        style={{
+                          backgroundColor: theme.primaryBlue,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          borderRadius: 6,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Simpan</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setShowAddCustomDept(false);
+                          setCustomDeptInput('');
+                        }}
+                        style={{
+                          backgroundColor: theme.isDark ? '#475569' : '#e2e8f0',
+                          paddingHorizontal: 10,
+                          paddingVertical: 8,
+                          borderRadius: 6,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ color: theme.textDark, fontSize: 12, fontWeight: '600' }}>Batal</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
 
                 {deptDropdownOpen && (
                   <View
@@ -637,46 +858,80 @@ export default function AddEmployeeScreen() {
                       borderColor: theme.borderColor,
                       borderRadius: 8,
                       shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 12,
+                      zIndex: 10000,
+                      elevation: 10,
+                      maxHeight: 260,
+                      overflow: 'hidden',
                     }}
                   >
-                    {departmentOptions.map((opt) => (
-                      <TouchableOpacity
-                        key={opt.value}
-                        onPress={() => {
-                          setDepartment(opt.value);
-                          setDeptDropdownOpen(false);
-                        }}
-                        style={{
-                          paddingVertical: 10,
-                          paddingHorizontal: 15,
-                          borderBottomWidth: 1,
-                          borderBottomColor: theme.borderColor,
-                          backgroundColor:
-                            department === opt.value ? theme.activeNavBg : 'transparent',
-                        }}
-                      >
-                        <Text
+                    <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                      {departmentList.map((deptName) => (
+                        <TouchableOpacity
+                          key={deptName}
+                          onPress={() => {
+                            setDepartment(deptName);
+                            setDeptDropdownOpen(false);
+                            setShowAddCustomDept(false);
+                          }}
                           style={{
-                            fontSize: 13,
-                            color: department === opt.value ? theme.primaryBlue : theme.textDark,
-                            fontWeight: department === opt.value ? '700' : '400',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            paddingVertical: 10,
+                            paddingHorizontal: 15,
+                            borderBottomWidth: 1,
+                            borderBottomColor: theme.borderColor,
+                            backgroundColor:
+                              department === deptName ? theme.activeNavBg : 'transparent',
                           }}
                         >
-                          {opt.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              color: department === deptName ? theme.primaryBlue : theme.textDark,
+                              fontWeight: department === deptName ? '700' : '400',
+                            }}
+                          >
+                            {deptName}
+                          </Text>
+                          {department === deptName && (
+                            <Check size={14} color={theme.primaryBlue} />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+
+                    {/* Button inside dropdown to trigger custom input */}
+                    <TouchableOpacity
+                      onPress={() => {
+                        setDeptDropdownOpen(false);
+                        setShowAddCustomDept(true);
+                      }}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                        paddingVertical: 10,
+                        paddingHorizontal: 15,
+                        backgroundColor: theme.isDark ? '#334155' : '#f0f9ff',
+                        borderTopWidth: 1,
+                        borderTopColor: theme.borderColor,
+                      }}
+                    >
+                      <Plus size={15} color={theme.primaryBlue} />
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: theme.primaryBlue }}>
+                        + Tambah Divisi / Departemen Baru
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
             </View>
 
-            <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 25 }}>
+            <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 25, zIndex: jobTypeDropdownOpen ? 9998 : 30, position: 'relative' }}>
               {/* Jabatan */}
               <View style={{ flex: 1, gap: 8 }}>
                 <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
@@ -702,15 +957,12 @@ export default function AddEmployeeScreen() {
               </View>
 
               {/* Tipe Pekerjaan Dropdown */}
-              <View style={{ flex: 1, gap: 8, position: 'relative', zIndex: 30 }}>
+              <View style={{ flex: 1, gap: 8, position: 'relative', zIndex: jobTypeDropdownOpen ? 9998 : 30 }}>
                 <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
                   Tipe Pekerjaan <Text style={{ color: theme.danger }}>*</Text>
                 </Text>
                 <TouchableOpacity
-                  onPress={() => {
-                    setJobTypeDropdownOpen(!jobTypeDropdownOpen);
-                    setDeptDropdownOpen(false);
-                  }}
+                  onPress={toggleJobTypeDropdown}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -741,11 +993,11 @@ export default function AddEmployeeScreen() {
                       borderColor: theme.borderColor,
                       borderRadius: 8,
                       shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 12,
+                      zIndex: 10000,
+                      elevation: 10,
                     }}
                   >
                     {jobTypeOptions.map((opt) => (
@@ -985,17 +1237,14 @@ export default function AddEmployeeScreen() {
               </Text>
             </View>
 
-            <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 15 }}>
+            <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 15, zIndex: salaryTypeDropdownOpen ? 9997 : 20, position: 'relative' }}>
               {/* Tipe Gaji Dropdown */}
-              <View style={{ flex: 1, gap: 8, position: 'relative', zIndex: 20 }}>
+              <View style={{ flex: 1, gap: 8, position: 'relative', zIndex: salaryTypeDropdownOpen ? 9997 : 20 }}>
                 <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
                   Tipe Gaji (Periode Pembayaran) <Text style={{ color: theme.danger }}>*</Text>
                 </Text>
                 <TouchableOpacity
-                  onPress={() => {
-                    setSalaryTypeDropdownOpen(!salaryTypeDropdownOpen);
-                    setBankDropdownOpen(false);
-                  }}
+                  onPress={toggleSalaryTypeDropdown}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -1026,11 +1275,11 @@ export default function AddEmployeeScreen() {
                       borderColor: theme.borderColor,
                       borderRadius: 8,
                       shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 12,
+                      zIndex: 10000,
+                      elevation: 10,
                     }}
                   >
                     {salaryTypeOptions.map((opt) => (
@@ -1112,17 +1361,14 @@ export default function AddEmployeeScreen() {
               </View>
             </View>
 
-            <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 20 }}>
+            <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 20, zIndex: bankDropdownOpen ? 9996 : 10, position: 'relative' }}>
               {/* Nama Bank Dropdown */}
-              <View style={{ flex: 1, gap: 8, position: 'relative', zIndex: 10 }}>
+              <View style={{ flex: 1, gap: 8, position: 'relative', zIndex: bankDropdownOpen ? 9996 : 10 }}>
                 <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
                   Nama Bank
                 </Text>
                 <TouchableOpacity
-                  onPress={() => {
-                    setBankDropdownOpen(!bankDropdownOpen);
-                    setSalaryTypeDropdownOpen(false);
-                  }}
+                  onPress={toggleBankDropdown}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -1153,11 +1399,11 @@ export default function AddEmployeeScreen() {
                       borderColor: theme.borderColor,
                       borderRadius: 8,
                       shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 12,
+                      zIndex: 10000,
+                      elevation: 10,
                     }}
                   >
                     {bankOptions.map((opt) => (

@@ -917,7 +917,7 @@ export default function AdminUsersScreen() {
 
             {/* Tambah Pegawai Baru Button */}
             <TouchableOpacity
-              onPress={handleOpenAddModal}
+              onPress={() => router.push('/admin/add-employee')}
               style={{
                 backgroundColor: theme.primaryBlue,
                 flexDirection: 'row',
