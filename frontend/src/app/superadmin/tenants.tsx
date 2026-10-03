@@ -909,7 +909,7 @@ export default function TenantManagementScreen() {
                   <ChevronLeft size={14} color="#9ca3af" />
                 </TouchableOpacity>
 
-                {Array.from({ length: Math.max(1, Math.ceil(filteredTenants.length / 10)) }, (_, i) => i + 1).map((p) => {
+                {Array.from({ length: Math.max(1, Math.ceil(filteredCompanies.length / 10)) }, (_, i) => i + 1).map((p) => {
                   const isActive = currentPage === p;
                   return (
                     <TouchableOpacity
@@ -923,9 +923,9 @@ export default function TenantManagementScreen() {
                 })}
 
                 <TouchableOpacity
-                  disabled={currentPage >= Math.max(1, Math.ceil(filteredTenants.length / 10))}
-                  onPress={() => setCurrentPage(Math.min(Math.max(1, Math.ceil(filteredTenants.length / 10)), currentPage + 1))}
-                  className={`w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800 ${currentPage >= Math.max(1, Math.ceil(filteredTenants.length / 10)) ? 'opacity-40' : 'opacity-100'}`}
+                  disabled={currentPage >= Math.max(1, Math.ceil(filteredCompanies.length / 10))}
+                  onPress={() => setCurrentPage(Math.min(Math.max(1, Math.ceil(filteredCompanies.length / 10)), currentPage + 1))}
+                  className={`w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800 ${currentPage >= Math.max(1, Math.ceil(filteredCompanies.length / 10)) ? 'opacity-40' : 'opacity-100'}`}
                 >
                   <ChevronRight size={14} color="#111827" />
                 </TouchableOpacity>
