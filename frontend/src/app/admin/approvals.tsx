@@ -183,6 +183,19 @@ export default function AdminApprovalsScreen() {
     });
   }, [leaves, statusFilter, typeFilter, searchQuery]);
 
+  // Dynamic summary metrics
+  const pendingCount = useMemo(() => leaves.filter((l) => l.status === 'PENDING').length, [leaves]);
+  const sickDaysCount = useMemo(() => {
+    return leaves
+      .filter((l) => l.type === 'sick')
+      .reduce((sum, curr) => sum + (Number(curr.durationDays) || 1), 0);
+  }, [leaves]);
+  const approvedLeaveDays = useMemo(() => {
+    return leaves
+      .filter((l) => l.type === 'leave' && l.status === 'APPROVED')
+      .reduce((sum, curr) => sum + (Number(curr.durationDays) || 1), 0);
+  }, [leaves]);
+
   // Pagination Slice
   const totalPages = Math.max(1, Math.ceil(filteredLeaves.length / ITEMS_PER_PAGE));
   const paginatedLeaves = useMemo(() => {
@@ -381,7 +394,7 @@ export default function AdminApprovalsScreen() {
                   Menunggu Persetujuan
                 </Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: theme.textDark }}>
-                  8 Pengajuan
+                  {pendingCount} Pengajuan
                 </Text>
               </View>
             </View>
@@ -423,7 +436,7 @@ export default function AdminApprovalsScreen() {
                   Izin Sakit (Bulan Ini)
                 </Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: theme.textDark }}>
-                  14 Hari
+                  {sickDaysCount} Hari
                 </Text>
               </View>
             </View>
@@ -465,7 +478,7 @@ export default function AdminApprovalsScreen() {
                   Cuti Disetujui (Bulan Ini)
                 </Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: theme.textDark }}>
-                  22 Hari
+                  {approvedLeaveDays} Hari
                 </Text>
               </View>
             </View>

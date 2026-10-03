@@ -128,9 +128,10 @@ export default function AdminUsersScreen() {
             avatar: u.photo ? u.photo : `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=2a75d3&color=fff`,
             email: safeEmail,
             phone: u.phone || '+62 812-0000-0000',
-            joinDate: u.joinDate
-              ? new Date(u.joinDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-              : '01 Jan 2024',
+            rawJoinDate: u.joinDate || u.createdAt || null,
+            joinDate: (u.joinDate || u.createdAt)
+              ? new Date(u.joinDate || u.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+              : '-',
             faceRegistered: !!u.faceRegistered,
             nik: u.nik || '-',
             address: u.address || '-',
@@ -160,10 +161,22 @@ export default function AdminUsersScreen() {
   const departmentOptions = ['Semua Departemen', 'IT & Engineering', 'Human Resources', 'Finance', 'Operations'];
   const statusOptions = ['Semua Status', 'Aktif', 'Sedang Cuti', 'Non-Aktif'];
 
-  // Summary counts
-  const totalEmployeesCount = employees.length >= 5 ? 250 : employees.length;
-  const activeEmployeesCount = 238;
-  const newEmployeesCount = 12;
+  // Summary counts (calculated dynamically from real data)
+  const totalEmployeesCount = employees.length;
+  const activeEmployeesCount = useMemo(() => {
+    return employees.filter((e) => e.status === 'Aktif').length;
+  }, [employees]);
+  const newEmployeesCount = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    return employees.filter((e) => {
+      const dStr = e.rawJoinDate;
+      if (!dStr) return false;
+      const d = new Date(dStr);
+      return !isNaN(d.getTime()) && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).length;
+  }, [employees]);
 
   // Filtered employees
   const filteredEmployees = useMemo(() => {
@@ -510,58 +523,38 @@ export default function AdminUsersScreen() {
                 </TouchableOpacity>
               </View>
               <View style={{ gap: 10 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'flex-start',
-                    gap: 10,
-                    padding: 8,
-                    borderRadius: 8,
-                    backgroundColor: theme.subtleBg,
-                  }}
-                >
+                {newEmployeesCount > 0 ? (
                   <View
                     style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: theme.warning,
-                      marginTop: 5,
+                      flexDirection: 'row',
+                      alignItems: 'flex-start',
+                      gap: 10,
+                      padding: 8,
+                      borderRadius: 8,
+                      backgroundColor: theme.subtleBg,
                     }}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textDark }}>
-                      Citra Lestari mengajukan cuti
-                    </Text>
-                    <Text style={{ fontSize: 11, color: theme.textMuted }}>Hari ini, 09:30 WIB</Text>
+                  >
+                    <View
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: theme.success,
+                        marginTop: 5,
+                      }}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textDark }}>
+                        {newEmployeesCount} Pegawai baru bergabung bulan ini
+                      </Text>
+                      <Text style={{ fontSize: 11, color: theme.textMuted }}>Periode saat ini</Text>
+                    </View>
                   </View>
-                </View>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'flex-start',
-                    gap: 10,
-                    padding: 8,
-                    borderRadius: 8,
-                    backgroundColor: theme.subtleBg,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: theme.success,
-                      marginTop: 5,
-                    }}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textDark }}>
-                      12 Pegawai baru bergabung bulan ini
-                    </Text>
-                    <Text style={{ fontSize: 11, color: theme.textMuted }}>1 September 2023</Text>
+                ) : (
+                  <View style={{ paddingVertical: 14, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted }}>Tidak ada notifikasi baru</Text>
                   </View>
-                </View>
+                )}
               </View>
             </View>
           )}

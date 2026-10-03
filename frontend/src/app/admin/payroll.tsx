@@ -159,6 +159,22 @@ export default function PayrollScreen() {
     });
   }, [payrolls, selectedPeriod, selectedDept, selectedStatus]);
 
+  // Dynamic summary metrics
+  const totalEstimatedSalary = useMemo(() => {
+    return filteredPayrolls.reduce(
+      (sum, p) => sum + (Number(p.netSalary) || Number(p.baseSalary) || 0),
+      0
+    );
+  }, [filteredPayrolls]);
+
+  const pendingPaymentCount = useMemo(() => {
+    return filteredPayrolls.filter((p) => p.status === 'PENDING').length;
+  }, [filteredPayrolls]);
+
+  const paidPaymentCount = useMemo(() => {
+    return filteredPayrolls.filter((p) => p.status === 'PAID').length;
+  }, [filteredPayrolls]);
+
   // Export Excel
   const handleExportExcel = async () => {
     if (Platform.OS === 'web') {
@@ -319,7 +335,7 @@ export default function PayrollScreen() {
                     color: theme.textDark,
                   }}
                 >
-                  Rp 124.500.000
+                  {formatRupiah(totalEstimatedSalary)}
                 </Text>
               </View>
             </View>
@@ -367,7 +383,7 @@ export default function PayrollScreen() {
                     color: theme.textDark,
                   }}
                 >
-                  42 Pegawai
+                  {pendingPaymentCount} Pegawai
                 </Text>
               </View>
             </View>
@@ -415,7 +431,7 @@ export default function PayrollScreen() {
                     color: theme.textDark,
                   }}
                 >
-                  196 Pegawai
+                  {paidPaymentCount} Pegawai
                 </Text>
               </View>
             </View>
@@ -1131,12 +1147,14 @@ export default function PayrollScreen() {
               }}
             >
               <Text style={{ fontSize: 13, color: theme.textMuted }}>
-                Menampilkan 1 - {filteredPayrolls.length} dari 238 Pegawai
+                {filteredPayrolls.length > 0
+                  ? `Menampilkan 1 - ${filteredPayrolls.length} dari ${filteredPayrolls.length} Pegawai`
+                  : 'Menampilkan 0 Pegawai'}
               </Text>
 
               <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
                 <TouchableOpacity
-                  disabled={currentPage === 1}
+                  disabled
                   style={{
                     width: 30,
                     height: 30,
@@ -1146,7 +1164,7 @@ export default function PayrollScreen() {
                     borderRadius: 6,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    opacity: currentPage === 1 ? 0.4 : 1,
+                    opacity: 0.4,
                   }}
                 >
                   <ChevronLeft size={14} color={theme.textMuted} />
@@ -1170,6 +1188,7 @@ export default function PayrollScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  disabled
                   style={{
                     width: 30,
                     height: 30,
@@ -1179,56 +1198,10 @@ export default function PayrollScreen() {
                     borderRadius: 6,
                     justifyContent: 'center',
                     alignItems: 'center',
+                    opacity: 0.4,
                   }}
                 >
-                  <Text style={{ color: theme.textDark, fontSize: 13 }}>2</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                    backgroundColor: theme.cardBg,
-                    borderRadius: 6,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ color: theme.textDark, fontSize: 13 }}>3</Text>
-                </TouchableOpacity>
-
-                <Text style={{ color: theme.textMuted, paddingHorizontal: 4 }}>...</Text>
-
-                <TouchableOpacity
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                    backgroundColor: theme.cardBg,
-                    borderRadius: 6,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ color: theme.textDark, fontSize: 13 }}>60</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                    backgroundColor: theme.cardBg,
-                    borderRadius: 6,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <ChevronRight size={14} color={theme.textDark} />
+                  <ChevronRight size={14} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>

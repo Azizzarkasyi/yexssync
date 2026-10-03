@@ -179,6 +179,29 @@ export default function AdminTasksScreen() {
     });
   }, [tasks, searchQuery, statusFilter, priorityFilter]);
 
+  // Dynamic summary metrics
+  const totalActiveTasks = useMemo(() => {
+    return tasks.filter((t) => t.status === 'PENDING' || t.status === 'IN_PROGRESS').length;
+  }, [tasks]);
+
+  const inProgressTasks = useMemo(() => {
+    return tasks.filter((t) => t.status === 'IN_PROGRESS').length;
+  }, [tasks]);
+
+  const completedTasks = useMemo(() => {
+    return tasks.filter((t) => t.status === 'COMPLETED').length;
+  }, [tasks]);
+
+  const overdueTasks = useMemo(() => {
+    const now = new Date();
+    return tasks.filter((t) => {
+      if (t.status === 'COMPLETED' || t.status === 'CANCELLED') return false;
+      if (!t.dueDate) return false;
+      const d = new Date(t.dueDate);
+      return !isNaN(d.getTime()) && d < now;
+    }).length;
+  }, [tasks]);
+
   // Modal Open Handlers
   const openCreateModal = () => {
     setEditingTaskId(null);
@@ -436,7 +459,7 @@ export default function AdminTasksScreen() {
                   Total Tugas Aktif
                 </Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: theme.textDark }}>
-                  42
+                  {totalActiveTasks}
                 </Text>
               </View>
             </View>
@@ -478,7 +501,7 @@ export default function AdminTasksScreen() {
                   Sedang Dikerjakan (In Progress)
                 </Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: theme.textDark }}>
-                  15
+                  {inProgressTasks}
                 </Text>
               </View>
             </View>
@@ -520,7 +543,7 @@ export default function AdminTasksScreen() {
                   Tugas Selesai (Bulan Ini)
                 </Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: theme.textDark }}>
-                  84
+                  {completedTasks}
                 </Text>
               </View>
             </View>
@@ -562,7 +585,7 @@ export default function AdminTasksScreen() {
                   Tugas Terlambat (Overdue)
                 </Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: theme.textDark }}>
-                  3
+                  {overdueTasks}
                 </Text>
               </View>
             </View>
@@ -1157,12 +1180,14 @@ export default function AdminTasksScreen() {
               }}
             >
               <Text style={{ fontSize: 13, color: theme.textMuted }}>
-                Menampilkan 1 - {filteredTasks.length} dari 42 Tugas
+                {filteredTasks.length > 0
+                  ? `Menampilkan 1 - ${filteredTasks.length} dari ${filteredTasks.length} Tugas`
+                  : 'Menampilkan 0 Tugas'}
               </Text>
 
               <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
                 <TouchableOpacity
-                  disabled={currentPage === 1}
+                  disabled
                   style={{
                     width: 30,
                     height: 30,
@@ -1172,7 +1197,7 @@ export default function AdminTasksScreen() {
                     borderRadius: 6,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    opacity: currentPage === 1 ? 0.4 : 1,
+                    opacity: 0.4,
                   }}
                 >
                   <ChevronLeft size={14} color={theme.textMuted} />
@@ -1194,6 +1219,7 @@ export default function AdminTasksScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  disabled
                   style={{
                     width: 30,
                     height: 30,
@@ -1203,39 +1229,10 @@ export default function AdminTasksScreen() {
                     borderRadius: 6,
                     justifyContent: 'center',
                     alignItems: 'center',
+                    opacity: 0.4,
                   }}
                 >
-                  <Text style={{ color: theme.textDark, fontSize: 13 }}>2</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                    backgroundColor: theme.cardBg,
-                    borderRadius: 6,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ color: theme.textDark, fontSize: 13 }}>3</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                    backgroundColor: theme.cardBg,
-                    borderRadius: 6,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <ChevronRight size={14} color={theme.textDark} />
+                  <ChevronRight size={14} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>

@@ -163,6 +163,29 @@ export default function AdminReportsScreen() {
     });
   }, [corrections, statusFilter, searchQuery]);
 
+  // Dynamic summary metrics
+  const pendingCorrectionsCount = useMemo(() => {
+    return corrections.filter((c) => c.status === 'PENDING').length;
+  }, [corrections]);
+
+  const approvedCorrectionsCount = useMemo(() => {
+    return corrections.filter((c) => c.status === 'APPROVED').length;
+  }, [corrections]);
+
+  const [todayLateCount, setTodayLateCount] = useState(0);
+
+  useEffect(() => {
+    const fetchLateCount = async () => {
+      try {
+        const res = await api.get('/attendance/stats/today');
+        if (res.data?.data?.late !== undefined) {
+          setTodayLateCount(res.data.data.late);
+        }
+      } catch {}
+    };
+    fetchLateCount();
+  }, []);
+
   // Pagination Slice
   const totalPages = Math.max(1, Math.ceil(filteredCorrections.length / ITEMS_PER_PAGE));
   const paginatedCorrections = useMemo(() => {
@@ -360,7 +383,7 @@ export default function AdminReportsScreen() {
                   Menunggu Koreksi
                 </Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: theme.textDark }}>
-                  12 Pengajuan
+                  {pendingCorrectionsCount} Pengajuan
                 </Text>
               </View>
             </View>
@@ -399,10 +422,10 @@ export default function AdminReportsScreen() {
               </View>
               <View>
                 <Text style={{ fontSize: 13, color: theme.textMuted, marginBottom: 5 }}>
-                  Total Terlambat (Bulan Ini)
+                  Total Terlambat (Hari Ini)
                 </Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: theme.textDark }}>
-                  45 Record
+                  {todayLateCount} Record
                 </Text>
               </View>
             </View>
@@ -444,7 +467,7 @@ export default function AdminReportsScreen() {
                   Koreksi Disetujui
                 </Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: theme.textDark }}>
-                  28 Record
+                  {approvedCorrectionsCount} Record
                 </Text>
               </View>
             </View>
