@@ -947,76 +947,30 @@ export default function SuperAdminLogsScreen() {
                 <ChevronLeft size={14} color={theme.textMuted} />
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => setCurrentPage(1)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderWidth: 1,
-                  borderColor: theme.accent,
-                  backgroundColor: theme.accent,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#ffffff' }}>1</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setCurrentPage(2)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.cardBg,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: theme.text }}>2</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setCurrentPage(3)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.cardBg,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: theme.text }}>3</Text>
-              </TouchableOpacity>
-
-              <View style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 13, color: theme.textMuted }}>...</Text>
-              </View>
-
-              <TouchableOpacity
-                style={{
-                  width: 44,
-                  height: 32,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.cardBg,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: theme.text }}>2097</Text>
-              </TouchableOpacity>
+              {Array.from({ length: Math.max(1, Math.ceil(filteredLogs.length / 15)) }, (_, i) => i + 1).map((p) => {
+                const isActive = currentPage === p;
+                return (
+                  <TouchableOpacity
+                    key={p}
+                    onPress={() => setCurrentPage(p)}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderWidth: 1,
+                      borderColor: isActive ? theme.accent : theme.border,
+                      backgroundColor: isActive ? theme.accent : theme.cardBg,
+                      borderRadius: 6,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    } as any}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: isActive ? '600' : '500', color: isActive ? '#ffffff' : theme.text }}>
+                      {p}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
 
               <TouchableOpacity
                 style={{

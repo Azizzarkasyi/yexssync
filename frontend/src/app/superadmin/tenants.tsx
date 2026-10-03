@@ -484,15 +484,11 @@ export default function TenantManagementScreen() {
               )}
             </TouchableOpacity>
 
-            {/* Notification bell */}
             <TouchableOpacity
               onPress={() => setShowNotifModal(true)}
               className="relative p-2 bg-white dark:bg-slate-900 border border-[#e5e7eb] dark:border-slate-700 rounded-full"
             >
               <Bell size={19} color="#6b7280" />
-              <View className="absolute -top-1 -right-1 bg-[#ef4444] rounded-full px-1.5 py-0.5 min-w-[18px] items-center justify-center">
-                <Text className="text-white text-[10px] font-bold">3</Text>
-              </View>
             </TouchableOpacity>
 
             {/* Profile pill */}
@@ -906,33 +902,31 @@ export default function TenantManagementScreen() {
 
               <View className="flex-row items-center gap-1.5">
                 <TouchableOpacity
-                  disabled
-                  className="w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800 opacity-50"
+                  disabled={currentPage === 1}
+                  onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  className={`w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800 ${currentPage === 1 ? 'opacity-40' : 'opacity-100'}`}
                 >
                   <ChevronLeft size={14} color="#9ca3af" />
                 </TouchableOpacity>
 
-                <TouchableOpacity className="w-8 h-8 rounded-md bg-[#2a75d3] border border-[#2a75d3] items-center justify-center">
-                  <Text className="text-xs font-bold text-white">1</Text>
-                </TouchableOpacity>
+                {Array.from({ length: Math.max(1, Math.ceil(filteredTenants.length / 10)) }, (_, i) => i + 1).map((p) => {
+                  const isActive = currentPage === p;
+                  return (
+                    <TouchableOpacity
+                      key={p}
+                      onPress={() => setCurrentPage(p)}
+                      className={`w-8 h-8 rounded-md items-center justify-center ${isActive ? 'bg-[#2a75d3] border border-[#2a75d3]' : 'border border-[#e5e7eb] dark:border-slate-700 bg-white dark:bg-slate-800'}`}
+                    >
+                      <Text className={`text-xs ${isActive ? 'font-bold text-white' : 'font-medium text-[#111827] dark:text-white'}`}>{p}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
 
-                <TouchableOpacity className="w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800">
-                  <Text className="text-xs font-medium text-[#111827] dark:text-white">2</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity className="w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800">
-                  <Text className="text-xs font-medium text-[#111827] dark:text-white">3</Text>
-                </TouchableOpacity>
-
-                <View className="w-6 items-center justify-center">
-                  <Text className="text-xs text-slate-400">...</Text>
-                </View>
-
-                <TouchableOpacity className="w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800">
-                  <Text className="text-xs font-medium text-[#111827] dark:text-white">12</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity className="w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800">
+                <TouchableOpacity
+                  disabled={currentPage >= Math.max(1, Math.ceil(filteredTenants.length / 10))}
+                  onPress={() => setCurrentPage(Math.min(Math.max(1, Math.ceil(filteredTenants.length / 10)), currentPage + 1))}
+                  className={`w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800 ${currentPage >= Math.max(1, Math.ceil(filteredTenants.length / 10)) ? 'opacity-40' : 'opacity-100'}`}
+                >
                   <ChevronRight size={14} color="#111827" />
                 </TouchableOpacity>
               </View>

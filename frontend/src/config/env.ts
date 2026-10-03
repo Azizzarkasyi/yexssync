@@ -12,22 +12,21 @@ export const APP_ENV = {
 
   // API Base URL resolution
   getApiBaseUrl: (): string => {
-    // 1. Explicit variable in .env (recommended)
-    if (process.env.EXPO_PUBLIC_API_URL) {
-      return process.env.EXPO_PUBLIC_API_URL.replace(/\/+$/, '');
-    }
-
-    // 2. Web browser dynamic origin resolution
+    // 1. Web browser dynamic origin resolution (prevents pointing to localhost when deployed)
     if (
       Platform.OS === 'web' &&
       typeof window !== 'undefined' &&
       window.location?.hostname
     ) {
       const hostname = window.location.hostname;
-      if (hostname.includes('yexsx.my.id') || window.location.protocol === 'https:') {
+      if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
         return `${window.location.origin}/api`;
       }
-      return `http://${hostname}:3000/api`;
+    }
+
+    // 2. Explicit variable in .env (recommended for mobile apps)
+    if (process.env.EXPO_PUBLIC_API_URL) {
+      return process.env.EXPO_PUBLIC_API_URL.replace(/\/+$/, '');
     }
 
     // 3. Default fallback

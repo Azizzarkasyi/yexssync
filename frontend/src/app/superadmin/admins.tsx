@@ -406,15 +406,11 @@ export default function CentralAdminManagementScreen() {
               )}
             </TouchableOpacity>
 
-            {/* Notification */}
             <TouchableOpacity
               onPress={() => setShowNotifModal(true)}
               className="relative p-2 bg-white dark:bg-slate-900 border border-[#e5e7eb] dark:border-slate-700 rounded-full"
             >
               <Bell size={19} color="#6b7280" />
-              <View className="absolute -top-1 -right-1 bg-[#ef4444] rounded-full px-1.5 py-0.5 min-w-[18px] items-center justify-center">
-                <Text className="text-white text-[10px] font-bold">3</Text>
-              </View>
             </TouchableOpacity>
 
             {/* Profile pill */}

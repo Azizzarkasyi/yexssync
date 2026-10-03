@@ -371,22 +371,24 @@ export default function SuperAdminDashboardScreen() {
               >
                 <Bell size={18} color={theme.textMuted} />
               </View>
-              <View
-                style={{
-                  position: 'absolute',
-                  top: -3,
-                  right: -3,
-                  backgroundColor: '#ef4444',
-                  borderRadius: 10,
-                  paddingHorizontal: 5,
-                  paddingVertical: 1.5,
-                  minWidth: 16,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '700' }}>3</Text>
-              </View>
+              {openTicketsCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -3,
+                    right: -3,
+                    backgroundColor: '#ef4444',
+                    borderRadius: 10,
+                    paddingHorizontal: 5,
+                    paddingVertical: 1.5,
+                    minWidth: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '700' }}>{openTicketsCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
 
             {/* User Profile */}

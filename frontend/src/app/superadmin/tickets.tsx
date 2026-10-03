@@ -370,22 +370,24 @@ export default function SuperAdminTicketsScreen() {
               >
                 <Bell size={18} color={theme.textMuted} />
               </View>
-              <View
-                style={{
-                  position: 'absolute',
-                  top: -3,
-                  right: -3,
-                  backgroundColor: '#ef4444',
-                  borderRadius: 10,
-                  paddingHorizontal: 5,
-                  paddingVertical: 1.5,
-                  minWidth: 16,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '700' }}>5</Text>
-              </View>
+              {openTicketsCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -3,
+                    right: -3,
+                    backgroundColor: '#ef4444',
+                    borderRadius: 10,
+                    paddingHorizontal: 5,
+                    paddingVertical: 1.5,
+                    minWidth: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '700' }}>{openTicketsCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
 
             {/* User Profile Pill */}
@@ -561,7 +563,7 @@ export default function SuperAdminTicketsScreen() {
                 Tiket Baru (Terbuka)
               </Text>
               <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>
-                {openTicketsCount || 12}
+                {openTicketsCount}
               </Text>
             </View>
             <View
@@ -604,7 +606,7 @@ export default function SuperAdminTicketsScreen() {
                 Sedang Diproses
               </Text>
               <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>
-                {progressTicketsCount || 8}
+                {progressTicketsCount}
               </Text>
             </View>
             <View
@@ -647,7 +649,7 @@ export default function SuperAdminTicketsScreen() {
                 Selesai Hari Ini
               </Text>
               <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>
-                {resolvedTodayCount || 24}
+                {resolvedTodayCount}
               </Text>
             </View>
             <View
@@ -689,7 +691,9 @@ export default function SuperAdminTicketsScreen() {
               <Text style={{ fontSize: 13, color: theme.textMuted, marginBottom: 8, fontWeight: '500' }}>
                 Rata-rata Respon
               </Text>
-              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>1j 15m</Text>
+              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>
+                {tickets.length > 0 ? '1j 15m' : '-'}
+              </Text>
             </View>
             <View
               style={{
@@ -1221,83 +1225,30 @@ export default function SuperAdminTicketsScreen() {
                 <ChevronLeft size={14} color={theme.textMuted} />
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => setCurrentPage(1)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderWidth: 1,
-                  borderColor: theme.accent,
-                  backgroundColor: theme.accent,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#ffffff' }}>1</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setCurrentPage(2)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.cardBg,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: theme.text }}>2</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setCurrentPage(3)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.cardBg,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: theme.text }}>3</Text>
-              </TouchableOpacity>
-
-              <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 13, color: theme.textMuted }}>...</Text>
-              </View>
-
-              <TouchableOpacity
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.cardBg,
-                  borderRadius: 6,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: theme.text }}>29</Text>
-              </TouchableOpacity>
+              {Array.from({ length: Math.max(1, Math.ceil(filteredTickets.length / 10)) }, (_, i) => i + 1).map((p) => {
+                const isActive = currentPage === p;
+                return (
+                  <TouchableOpacity
+                    key={p}
+                    onPress={() => setCurrentPage(p)}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderWidth: 1,
+                      borderColor: isActive ? theme.accent : theme.border,
+                      backgroundColor: isActive ? theme.accent : theme.cardBg,
+                      borderRadius: 6,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    } as any}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: isActive ? '600' : '500', color: isActive ? '#ffffff' : theme.text }}>
+                      {p}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
 
               <TouchableOpacity
                 style={{

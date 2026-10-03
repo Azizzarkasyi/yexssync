@@ -148,6 +148,20 @@ export default function SuperAdminBillingScreen() {
     fetchTenantPlans();
   }, []);
 
+  // Dynamic metrics based on actual data
+  const totalActiveTenants = plans.reduce((acc, p) => acc + (p.activeTenants || 0), 0);
+  const totalMRR = plans.reduce((acc, p) => acc + ((p.priceNum || 0) * (p.activeTenants || 0)), 0);
+  const pendingInvoices = invoices.filter((inv) => inv.status === 'Pending');
+  const pendingInvoicesTotal = pendingInvoices.reduce((acc, inv) => {
+    const num = parseInt(inv.total.replace(/[^0-9]/g, ''), 10) || 0;
+    return acc + num;
+  }, 0);
+  const overdueInvoicesCount = invoices.filter((inv) => inv.status === 'Overdue').length;
+
+  const formatRupiah = (amount: number) => {
+    return 'Rp ' + amount.toLocaleString('id-ID');
+  };
+
   // Modals
   const [showEditPlanModal, setShowEditPlanModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null);
@@ -347,22 +361,26 @@ export default function SuperAdminBillingScreen() {
               >
                 <Bell size={18} color={theme.textMuted} />
               </View>
-              <View
-                style={{
-                  position: 'absolute',
-                  top: -3,
-                  right: -3,
-                  backgroundColor: '#ef4444',
-                  borderRadius: 10,
-                  paddingHorizontal: 5,
-                  paddingVertical: 1.5,
-                  minWidth: 16,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '700' }}>3</Text>
-              </View>
+              {(pendingInvoices.length + overdueInvoicesCount) > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -3,
+                    right: -3,
+                    backgroundColor: '#ef4444',
+                    borderRadius: 10,
+                    paddingHorizontal: 5,
+                    paddingVertical: 1.5,
+                    minWidth: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '700' }}>
+                    {pendingInvoices.length + overdueInvoicesCount}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
 
             {/* User Profile */}
@@ -483,7 +501,7 @@ export default function SuperAdminBillingScreen() {
               <Text style={{ fontSize: 13, color: theme.textMuted, marginBottom: 8, fontWeight: '500' }}>
                 MRR (Pendapatan Bulanan)
               </Text>
-              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>Rp 145.500.000</Text>
+              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>{formatRupiah(totalMRR)}</Text>
             </View>
             <View
               style={{
@@ -525,7 +543,7 @@ export default function SuperAdminBillingScreen() {
               <Text style={{ fontSize: 13, color: theme.textMuted, marginBottom: 8, fontWeight: '500' }}>
                 Total Langganan Aktif
               </Text>
-              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>120</Text>
+              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>{totalActiveTenants}</Text>
             </View>
             <View
               style={{
@@ -567,7 +585,7 @@ export default function SuperAdminBillingScreen() {
               <Text style={{ fontSize: 13, color: theme.textMuted, marginBottom: 8, fontWeight: '500' }}>
                 Tagihan Menunggu (Pending)
               </Text>
-              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>Rp 12.000.000</Text>
+              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>{formatRupiah(pendingInvoicesTotal)}</Text>
             </View>
             <View
               style={{
@@ -609,7 +627,7 @@ export default function SuperAdminBillingScreen() {
               <Text style={{ fontSize: 13, color: theme.textMuted, marginBottom: 8, fontWeight: '500' }}>
                 Tunggakan Lewat Jatuh Tempo
               </Text>
-              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>2</Text>
+              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>{overdueInvoicesCount}</Text>
             </View>
             <View
               style={{
@@ -1039,7 +1057,7 @@ export default function SuperAdminBillingScreen() {
                 <ChevronLeft size={14} color={theme.textMuted} />
               </TouchableOpacity>
 
-              {[1, 2, 3].map((p) => {
+              {Array.from({ length: Math.max(1, Math.ceil(filteredInvoices.length / 10)) }, (_, i) => i + 1).map((p) => {
                 const isActive = currentPage === p;
                 return (
                   <TouchableOpacity
@@ -1070,7 +1088,8 @@ export default function SuperAdminBillingScreen() {
               })}
 
               <TouchableOpacity
-                onPress={() => setCurrentPage(Math.min(3, currentPage + 1))}
+                disabled={currentPage >= Math.max(1, Math.ceil(filteredInvoices.length / 10))}
+                onPress={() => setCurrentPage(Math.min(Math.max(1, Math.ceil(filteredInvoices.length / 10)), currentPage + 1))}
                 style={{
                   width: 32,
                   height: 32,
@@ -1080,6 +1099,7 @@ export default function SuperAdminBillingScreen() {
                   borderRadius: 6,
                   alignItems: 'center',
                   justifyContent: 'center',
+                  opacity: currentPage >= Math.max(1, Math.ceil(filteredInvoices.length / 10)) ? 0.4 : 1,
                 }}
               >
                 <ChevronRight size={14} color={theme.text} />
