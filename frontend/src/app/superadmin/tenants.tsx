@@ -28,6 +28,7 @@ import {
   Download,
   Plus,
   Eye,
+  EyeOff,
   Edit2,
   Ban,
   RotateCcw,
@@ -114,6 +115,7 @@ export default function TenantManagementScreen() {
   const [formContactEmail, setFormContactEmail] = useState('');
   const [formContactPhone, setFormContactPhone] = useState('');
   const [formPassword, setFormPassword] = useState('');
+  const [showFormPassword, setShowFormPassword] = useState(false);
   const [formPlan, setFormPlan] = useState<'Enterprise' | 'Pro' | 'Basic'>('Pro');
   const [formMaxUsers, setFormMaxUsers] = useState('50');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -414,6 +416,7 @@ export default function TenantManagementScreen() {
     setFormContactEmail('');
     setFormContactPhone('');
     setFormPassword('');
+    setShowFormPassword(false);
     setFormPlan('Pro');
     setFormMaxUsers('50');
     setActiveCompany(null);
@@ -1029,14 +1032,26 @@ export default function TenantManagementScreen() {
                   <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Password Awal Admin *
                   </Text>
-                  <TextInput
-                    placeholder="Minimal 6 karakter"
-                    placeholderTextColor="#9ca3af"
-                    secureTextEntry
-                    value={formPassword}
-                    onChangeText={setFormPassword}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
-                  />
+                  <View className="relative justify-center">
+                    <TextInput
+                      placeholder="Minimal 6 karakter"
+                      placeholderTextColor="#9ca3af"
+                      secureTextEntry={!showFormPassword}
+                      value={formPassword}
+                      onChangeText={setFormPassword}
+                      className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 pr-10 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowFormPassword(!showFormPassword)}
+                      style={{ position: 'absolute', right: 10, padding: 4 }}
+                    >
+                      {showFormPassword ? (
+                        <EyeOff size={16} color="#6b7280" />
+                      ) : (
+                        <Eye size={16} color="#6b7280" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* Pilih Paket */}

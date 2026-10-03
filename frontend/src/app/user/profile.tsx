@@ -30,6 +30,7 @@ import {
   ChevronRight,
   LogOut,
   Eye,
+  EyeOff,
   Download,
   Pencil,
   X,
@@ -67,6 +68,9 @@ export default function ProfileScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [showBankModal, setShowBankModal] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
@@ -804,38 +808,74 @@ export default function ProfileScreen() {
               <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
                 Password Saat Ini
               </Text>
-              <TextInput
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                secureTextEntry
-                placeholder="Masukkan password saat ini"
-                placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-                className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white mb-3 text-[14px]"
-              />
+              <View className="relative justify-center mb-3">
+                <TextInput
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  secureTextEntry={!showCurrentPassword}
+                  placeholder="Masukkan password saat ini"
+                  placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                  className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                  style={{ position: 'absolute', right: 12, padding: 4 }}
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                  ) : (
+                    <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                  )}
+                </TouchableOpacity>
+              </View>
 
               <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
                 Password Baru
               </Text>
-              <TextInput
-                value={newPassword}
-                onChangeText={setNewPassword}
-                secureTextEntry
-                placeholder="Minimal 6 karakter"
-                placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-                className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white mb-3 text-[14px]"
-              />
+              <View className="relative justify-center mb-3">
+                <TextInput
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry={!showNewPassword}
+                  placeholder="Minimal 6 karakter"
+                  placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                  className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowNewPassword(!showNewPassword)}
+                  style={{ position: 'absolute', right: 12, padding: 4 }}
+                >
+                  {showNewPassword ? (
+                    <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                  ) : (
+                    <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                  )}
+                </TouchableOpacity>
+              </View>
 
               <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
                 Konfirmasi Password Baru
               </Text>
-              <TextInput
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                placeholder="Ulangi password baru"
-                placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-                className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white mb-4 text-[14px]"
-              />
+              <View className="relative justify-center mb-4">
+                <TextInput
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  placeholder="Ulangi password baru"
+                  placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                  className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={{ position: 'absolute', right: 12, padding: 4 }}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                  ) : (
+                    <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                  )}
+                </TouchableOpacity>
+              </View>
 
               <View className="flex-row gap-2.5">
                 <TouchableOpacity

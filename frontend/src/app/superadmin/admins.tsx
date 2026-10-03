@@ -42,6 +42,8 @@ import {
   Check,
   Sun,
   Moon,
+  Eye,
+  EyeOff,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { AuthContext } from '@/context/AuthContext';
@@ -104,7 +106,9 @@ export default function CentralAdminManagementScreen() {
   const [formRole, setFormRole] = useState<'SUPER_ADMIN' | 'SUPPORT' | 'FINANCE'>('SUPPORT');
   const [formDepartment, setFormDepartment] = useState('Customer Success');
   const [formPassword, setFormPassword] = useState('');
+  const [showFormPassword, setShowFormPassword] = useState(false);
   const [newResetPassword, setNewResetPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -900,14 +904,26 @@ export default function CentralAdminManagementScreen() {
                   <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Password Awal *
                   </Text>
-                  <TextInput
-                    placeholder="Minimal 6 karakter"
-                    placeholderTextColor="#9ca3af"
-                    secureTextEntry
-                    value={formPassword}
-                    onChangeText={setFormPassword}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
-                  />
+                  <View className="relative justify-center">
+                    <TextInput
+                      placeholder="Minimal 6 karakter"
+                      placeholderTextColor="#9ca3af"
+                      secureTextEntry={!showFormPassword}
+                      value={formPassword}
+                      onChangeText={setFormPassword}
+                      className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 pr-10 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowFormPassword(!showFormPassword)}
+                      style={{ position: 'absolute', right: 10, padding: 4 }}
+                    >
+                      {showFormPassword ? (
+                        <EyeOff size={16} color="#6b7280" />
+                      ) : (
+                        <Eye size={16} color="#6b7280" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             </ScrollView>
@@ -1064,14 +1080,26 @@ export default function CentralAdminManagementScreen() {
                 <Text className="text-xs text-slate-500">
                   Masukkan password baru untuk admin <Text className="font-bold text-slate-800 dark:text-white">{selectedAdmin.name}</Text>:
                 </Text>
-                <TextInput
-                  placeholder="Password baru (min 6 karakter)"
-                  placeholderTextColor="#9ca3af"
-                  secureTextEntry
-                  value={newResetPassword}
-                  onChangeText={setNewResetPassword}
-                  className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
-                />
+                <View className="relative justify-center">
+                  <TextInput
+                    placeholder="Password baru (min 6 karakter)"
+                    placeholderTextColor="#9ca3af"
+                    secureTextEntry={!showResetPassword}
+                    value={newResetPassword}
+                    onChangeText={setNewResetPassword}
+                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 pr-10 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowResetPassword(!showResetPassword)}
+                    style={{ position: 'absolute', right: 10, padding: 4 }}
+                  >
+                    {showResetPassword ? (
+                      <EyeOff size={16} color="#6b7280" />
+                    ) : (
+                      <Eye size={16} color="#6b7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
 
                 <View className="flex-row justify-end gap-2 pt-3">
                   <TouchableOpacity

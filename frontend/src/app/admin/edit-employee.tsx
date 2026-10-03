@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Alert, TouchableOpacity, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Alert, TouchableOpacity, useWindowDimensions, ActivityIndicator, TextInput } from 'react-native';
 import { Header } from '@/components/Header';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { Card } from '@/components/ui/Card';
@@ -10,7 +10,7 @@ import api from '@/lib/api';
 import { 
   User, Mail, Lock, Shield, Banknote, Clock, MapPin, Save, X, 
   Info, Plus, Trash2, Building2, Phone, Calendar, CreditCard, 
-  Compass, Map 
+  Compass, Map, Eye, EyeOff 
 } from 'lucide-react-native';
 import { LocationMapPicker, LocationPickerResult } from '@/components/LocationMapPicker';
 
@@ -64,6 +64,8 @@ export default function EditEmployeeScreen() {
     workLongitude: '',
     workRadius: '50'
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   // Map Picker State
   const [mapPickerVisible, setMapPickerVisible] = useState(false);
@@ -309,12 +311,26 @@ export default function EditEmployeeScreen() {
 
             <View className="mb-4">
               <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Ganti Kata Sandi (Opsional)</Text>
-              <Input 
-                placeholder="Biarkan kosong jika tidak ingin mengubah password"
-                value={formData.password}
-                secureTextEntry
-                onChangeText={(val) => setFormData({ ...formData, password: val })}
-              />
+              <View className="relative justify-center">
+                <TextInput 
+                  placeholder="Biarkan kosong jika tidak ingin mengubah password"
+                  placeholderTextColor="#94a3b8"
+                  value={formData.password}
+                  secureTextEntry={!showPassword}
+                  onChangeText={(val) => setFormData({ ...formData, password: val })}
+                  className="px-5 py-4 pr-12 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/80 text-slate-900 dark:text-slate-100"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: 16, padding: 4 }}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color="#64748b" />
+                  ) : (
+                    <Eye size={18} color="#64748b" />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View className="mb-2">
