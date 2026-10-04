@@ -21,9 +21,6 @@ export function Header({ title, subtitle, showBack, rightElement }: HeaderProps)
           </TouchableOpacity>
         )}
         <View className="flex-1">
-          {subtitle && (
-            <Text className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">{subtitle}</Text>
-          )}
           <Text className="text-2xl font-bold text-slate-900 dark:text-white" numberOfLines={1}>
             {title}
           </Text>

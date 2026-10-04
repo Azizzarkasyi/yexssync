@@ -368,7 +368,6 @@ export default function AdminUsersScreen() {
           {/* Standardized Global Admin Header */}
           <AdminTopHeader
             title="Manajemen Pegawai"
-            subtitle="Kelola seluruh akun pegawai, hak akses, dan data kepegawaian"
             isDesktop={isDesktop}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
           />

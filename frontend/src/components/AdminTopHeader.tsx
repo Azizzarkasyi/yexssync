@@ -16,7 +16,6 @@ export interface AdminTopHeaderProps {
 
 export default function AdminTopHeader({
   title,
-  subtitle,
   isDesktop,
   onOpenMobileMenu,
   rightAction,
@@ -69,11 +68,6 @@ export default function AdminTopHeader({
             >
               {title}
             </Text>
-            {subtitle && (
-              <Text style={{ fontSize: 13, color: theme.textMuted, marginTop: 2 }}>
-                {subtitle}
-              </Text>
-            )}
           </View>
         </View>
 

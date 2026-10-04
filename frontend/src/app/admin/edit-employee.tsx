@@ -274,7 +274,6 @@ export default function EditEmployeeScreen() {
               </TouchableOpacity>
               <View>
                 <Text className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Edit Karyawan</Text>
-                <Text className="text-slate-500 dark:text-slate-400 mt-1 text-base">Perbarui profil, organisasi, kompensasi, dan geofence lokasi kerja.</Text>
               </View>
             </View>
           </View>

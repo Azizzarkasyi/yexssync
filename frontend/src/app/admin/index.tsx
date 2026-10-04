@@ -176,7 +176,6 @@ export default function AdminDashboardScreen() {
           {/* Standardized Global Admin Header */}
           <AdminTopHeader
             title="Dashboard Admin"
-            subtitle="Ringkasan absensi dan operasional perusahaan hari ini"
             isDesktop={isDesktop}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
             rightAction={

@@ -230,7 +230,6 @@ export default function AttendanceScreen() {
           {/* Header */}
           <AdminTopHeader
             title="Presensi Harian Pegawai"
-            subtitle="Pantau kehadiran, jam masuk/pulang, dan validasi lokasi pegawai real-time"
             isDesktop={isDesktop}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
           />

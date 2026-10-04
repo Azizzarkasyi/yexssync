@@ -217,7 +217,6 @@ export default function AdminSettingsProfileScreen() {
           {/* Header / Topbar */}
           <AdminTopHeader
             title="Pengaturan Perusahaan"
-            subtitle="Kelola profil perusahaan, data HRD, dan pengaturan sistem"
             isDesktop={isDesktop}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
           />

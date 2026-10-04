@@ -398,14 +398,9 @@ export default function UserLeaveScreen() {
       >
         {/* Header */}
         <View className="flex-row justify-between items-center px-6 pt-5 pb-4 bg-[#f4f7fb] dark:bg-slate-950 z-10 border-b border-[#eef1f6] dark:border-slate-800">
-          <View>
-            <Text className="text-[20px] font-bold text-[#1e293b] dark:text-white tracking-tight">
-              Izin & Cuti
-            </Text>
-            <Text className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Kelola pengajuan izin, sakit, dan cuti tahunan Anda
-            </Text>
-          </View>
+          <Text className="text-[20px] font-bold text-[#1e293b] dark:text-white tracking-tight">
+            Izin & Cuti
+          </Text>
 
           <TouchableOpacity
             activeOpacity={0.7}
