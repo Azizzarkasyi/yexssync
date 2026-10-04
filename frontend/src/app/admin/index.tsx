@@ -37,6 +37,8 @@ import {
 } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
+import AdminTopHeader from '@/components/AdminTopHeader';
+import UserAvatar from '@/components/UserAvatar';
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
 
@@ -171,61 +173,19 @@ export default function AdminDashboardScreen() {
           showsHorizontalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
         >
-          {/* Header / Topbar */}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: 18,
-              marginBottom: 20,
-              borderBottomWidth: 1,
-              borderBottomColor: isDesktop ? 'transparent' : theme.borderColor,
-            }}
-          >
-            {/* Title & Burger */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              {!isDesktop && (
-                <TouchableOpacity
-                  onPress={() => setMobileMenuOpen(true)}
-                  style={{
-                    padding: 8,
-                    borderRadius: 8,
-                    backgroundColor: theme.cardBg,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                  }}
-                >
-                  <Menu size={20} color={theme.textDark} />
-                </TouchableOpacity>
-              )}
-              <View>
-                <Text
-                  style={{
-                    fontSize: 22,
-                    fontWeight: '700',
-                    color: theme.primaryBlue,
-                    letterSpacing: -0.3,
-                  }}
-                >
-                  Dashboard Admin
-                </Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
-                  Ringkasan absensi dan operasional perusahaan hari ini
-                </Text>
-              </View>
-            </View>
-
-            {/* Right Controls */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              {/* Refresh Button */}
+          {/* Standardized Global Admin Header */}
+          <AdminTopHeader
+            title="Dashboard Admin"
+            subtitle="Ringkasan absensi dan operasional perusahaan hari ini"
+            isDesktop={isDesktop}
+            onOpenMobileMenu={() => setMobileMenuOpen(true)}
+            rightAction={
               <TouchableOpacity
                 onPress={handleRefresh}
                 title="Muat Ulang Data"
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
+                  padding: 9,
+                  borderRadius: 8,
                   backgroundColor: theme.cardBg,
                   borderWidth: 1,
                   borderColor: theme.borderColor,
@@ -239,86 +199,8 @@ export default function AdminDashboardScreen() {
                   className={isRefreshing ? 'animate-spin' : ''}
                 />
               </TouchableOpacity>
-
-              {/* Theme Toggle Sun / Moon */}
-              <TouchableOpacity
-                onPress={theme.toggleTheme}
-                title={`Tema: ${theme.isDark ? 'Gelap' : 'Terang'}`}
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: theme.cardBg,
-                  borderWidth: 1,
-                  borderColor: theme.borderColor,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {theme.isDark ? (
-                  <Sun size={18} color="#f59e0b" strokeWidth={2.2} />
-                ) : (
-                  <Moon size={18} color="#64748b" strokeWidth={2.2} />
-                )}
-              </TouchableOpacity>
-
-              {/* Notifications */}
-              <TouchableOpacity
-                onPress={() => setShowNotifications(!showNotifications)}
-                style={{
-                  position: 'relative',
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: theme.cardBg,
-                  borderWidth: 1,
-                  borderColor: theme.borderColor,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Bell size={18} color={theme.textMuted} />
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    width: 7,
-                    height: 7,
-                    borderRadius: 4,
-                    backgroundColor: theme.danger,
-                  }}
-                />
-              </TouchableOpacity>
-
-              {/* Profile Pill */}
-              <TouchableOpacity
-                onPress={() => router.push('/admin/profile')}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                  paddingVertical: 4,
-                  paddingHorizontal: 8,
-                  borderRadius: 24,
-                }}
-              >
-                <Image
-                  source={{ uri: 'https://i.pravatar.cc/150?img=11' }}
-                  style={{ width: 40, height: 40, borderRadius: 20 }}
-                />
-                {isDesktop && (
-                  <View style={{ flexDirection: 'column' }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark }}>
-                      {user?.name || 'Admin'}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: theme.textMuted }}>(Admin)</Text>
-                  </View>
-                )}
-                <ChevronDown size={14} color={theme.textMuted} />
-              </TouchableOpacity>
-            </View>
-          </View>
+            }
+          />
 
           {/* ======================================================== */}
           {/* SUMMARY CARDS (4 METRICS)                                */}
@@ -615,13 +497,10 @@ export default function AdminDashboardScreen() {
                     }}
                   >
                     <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                      <Image
-                        source={{
-                          uri:
-                            item.user?.photo ||
-                            `https://i.pravatar.cc/150?img=${(idx % 30) + 10}`,
-                        }}
-                        style={{ width: 34, height: 34, borderRadius: 17 }}
+                      <UserAvatar
+                        name={item.user?.name}
+                        photo={item.user?.photo}
+                        size={34}
                       />
                       <View style={{ flex: 1 }}>
                         <Text

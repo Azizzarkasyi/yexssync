@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 export const APP_ENV = {
   // App info
   APP_NAME: process.env.EXPO_PUBLIC_APP_NAME || 'YexsSync',
-  APP_VERSION: process.env.EXPO_PUBLIC_APP_VERSION || '2.1.0',
+  APP_VERSION: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0',
   DEFAULT_TENANT_ID: parseInt(process.env.EXPO_PUBLIC_DEFAULT_TENANT_ID || '1', 10),
 
   // API Base URL resolution

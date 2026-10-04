@@ -48,13 +48,14 @@ import {
 } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
+import AdminTopHeader from '@/components/AdminTopHeader';
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
 
 export default function AdminSettingsProfileScreen() {
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 992;
+  const isDesktop = width >= 768;
   const { logout, user } = useContext(AuthContext);
 
   // Mobile Drawer
@@ -214,114 +215,12 @@ export default function AdminSettingsProfileScreen() {
           showsHorizontalScrollIndicator={false}
         >
           {/* Header / Topbar */}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: 18,
-              marginBottom: 20,
-              borderBottomWidth: 1,
-              borderBottomColor: isDesktop ? 'transparent' : theme.borderColor,
-            }}
-          >
-            {/* Title & Burger */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              {!isDesktop && (
-                <TouchableOpacity
-                  onPress={() => setMobileMenuOpen(true)}
-                  style={{
-                    padding: 8,
-                    borderRadius: 8,
-                    backgroundColor: theme.cardBg,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                  }}
-                >
-                  <Menu size={20} color={theme.textDark} />
-                </TouchableOpacity>
-              )}
-              <Text
-                style={{
-                  fontSize: 22,
-                  fontWeight: '700',
-                  color: theme.primaryBlue,
-                  letterSpacing: -0.3,
-                }}
-              >
-                Pengaturan Perusahaan
-              </Text>
-            </View>
-
-            {/* Right: Theme Toggle, Notifications, Profile */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              {/* Theme Toggle Sun / Moon */}
-              <TouchableOpacity
-                onPress={theme.toggleTheme}
-                title={`Tema: ${theme.isDark ? 'Gelap' : 'Terang'}`}
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: theme.cardBg,
-                  borderWidth: 1,
-                  borderColor: theme.borderColor,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {theme.isDark ? (
-                  <Sun size={18} color="#f59e0b" strokeWidth={2.2} />
-                ) : (
-                  <Moon size={18} color="#64748b" strokeWidth={2.2} />
-                )}
-              </TouchableOpacity>
-
-              {/* Notifications */}
-              <TouchableOpacity
-                onPress={() => setShowNotifications(!showNotifications)}
-                style={{
-                  position: 'relative',
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: theme.cardBg,
-                  borderWidth: 1,
-                  borderColor: theme.borderColor,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Bell size={18} color={theme.textMuted} />
-              </TouchableOpacity>
-
-              {/* Profile Pill */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                  paddingVertical: 4,
-                  paddingHorizontal: 8,
-                  borderRadius: 24,
-                }}
-              >
-                <Image
-                  source={{ uri: 'https://i.pravatar.cc/150?img=11' }}
-                  style={{ width: 40, height: 40, borderRadius: 20 }}
-                />
-                {isDesktop && (
-                  <View style={{ flexDirection: 'column' }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark }}>
-                      {user?.name || 'Andi Setiawan'}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: theme.textMuted }}>(Admin)</Text>
-                  </View>
-                )}
-                <ChevronDown size={14} color={theme.textMuted} />
-              </View>
-            </View>
-          </View>
+          <AdminTopHeader
+            title="Pengaturan Perusahaan"
+            subtitle="Kelola profil perusahaan, data HRD, dan pengaturan sistem"
+            isDesktop={isDesktop}
+            onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          />
 
           {/* Toast Notification Banner */}
           {toastMessage ? (

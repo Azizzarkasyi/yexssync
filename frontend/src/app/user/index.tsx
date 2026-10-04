@@ -40,6 +40,7 @@ import {
   notifyClockInSuccess,
   notifyClockOutSuccess,
 } from '@/lib/notifications';
+import UserAvatar from '@/components/UserAvatar';
 
 export default function UserHomeScreen() {
   const router = useRouter();
@@ -440,8 +441,8 @@ export default function UserHomeScreen() {
             <TouchableOpacity activeOpacity={0.7} onPress={() => Alert.alert('Notifikasi', 'Tidak ada notifikasi baru.')}>
               <Bell size={20} color={isDark ? '#cbd5e1' : '#222222'} />
             </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/user/profile')} className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
-              <Image source={{ uri: avatarUri }} className="w-full h-full" resizeMode="cover" />
+            <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/user/profile')}>
+              <UserAvatar name={user?.name || userName} photo={user?.photo || user?.avatar} size={32} />
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -463,7 +464,7 @@ export default function UserHomeScreen() {
 
         <ScrollView className="flex-1 px-5" style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} colors={['#2a75d3']} tintColor="#2a75d3" />}>
           <View className="flex-row items-center gap-[15px] my-5">
-            <Image source={{ uri: avatarUri }} className="w-[50px] h-[50px] rounded-full border-2 border-white dark:border-slate-800" resizeMode="cover" />
+            <UserAvatar name={user?.name || userName} photo={user?.photo || user?.avatar} size={50} borderWidth={2} borderColor={isDark ? '#1e293b' : '#ffffff'} />
             <View className="flex-1">
               <Text className="text-[18px] font-bold text-[#222222] dark:text-white mb-1">Halo, {userName}!</Text>
               <Text className="text-[13px] text-[#777777] dark:text-slate-400">{getTodayFormatted()}</Text>

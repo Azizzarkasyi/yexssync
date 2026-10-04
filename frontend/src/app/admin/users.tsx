@@ -49,6 +49,8 @@ import {
 } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
+import AdminTopHeader from '@/components/AdminTopHeader';
+import UserAvatar from '@/components/UserAvatar';
 import FaceRecognitionModal from '@/components/FaceRecognitionModal';
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
@@ -363,130 +365,13 @@ export default function AdminUsersScreen() {
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
         >
-          {/* Header / Topbar */}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: 18,
-              marginBottom: 20,
-              borderBottomWidth: 1,
-              borderBottomColor: isDesktop ? 'transparent' : theme.borderColor,
-            }}
-          >
-            {/* Left Page Title + Mobile Burger */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              {!isDesktop && (
-                <TouchableOpacity
-                  onPress={() => setMobileMenuOpen(true)}
-                  style={{
-                    padding: 8,
-                    borderRadius: 8,
-                    backgroundColor: theme.cardBg,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                  }}
-                >
-                  <Menu size={20} color={theme.textDark} />
-                </TouchableOpacity>
-              )}
-              <View>
-                <Text
-                  style={{
-                    fontSize: 22,
-                    fontWeight: '700',
-                    color: theme.primaryBlue,
-                    letterSpacing: -0.3,
-                  }}
-                >
-                  Manajemen Pegawai
-                </Text>
-              </View>
-            </View>
-
-            {/* Right: Theme Toggle, Notifications, Profile */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              {/* Theme Toggle Sun / Moon */}
-              <TouchableOpacity
-                onPress={theme.toggleTheme}
-                title={`Tema: ${theme.isDark ? 'Gelap' : 'Terang'} (Klik untuk ganti)`}
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: theme.cardBg,
-                  borderWidth: 1,
-                  borderColor: theme.borderColor,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {theme.isDark ? (
-                  <Sun size={18} color="#f59e0b" strokeWidth={2.2} />
-                ) : (
-                  <Moon size={18} color="#64748b" strokeWidth={2.2} />
-                )}
-              </TouchableOpacity>
-
-              {/* Notifications Bell */}
-              <TouchableOpacity
-                onPress={() => setShowNotifications(!showNotifications)}
-                style={{
-                  position: 'relative',
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: theme.cardBg,
-                  borderWidth: 1,
-                  borderColor: theme.borderColor,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Bell size={18} color={theme.textMuted} />
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    width: 7,
-                    height: 7,
-                    borderRadius: 4,
-                    backgroundColor: theme.danger,
-                  }}
-                />
-              </TouchableOpacity>
-
-              {/* User Profile Pill */}
-              <TouchableOpacity
-                onPress={() => router.push('/admin/profile')}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                  paddingVertical: 4,
-                  paddingHorizontal: 8,
-                  borderRadius: 24,
-                  backgroundColor: isDesktop ? 'transparent' : theme.cardBg,
-                }}
-              >
-                <Image
-                  source={{ uri: 'https://i.pravatar.cc/150?img=11' }}
-                  style={{ width: 40, height: 40, borderRadius: 20 }}
-                />
-                {isDesktop && (
-                  <View style={{ flexDirection: 'column' }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark }}>
-                      {user?.name || 'Andi Setiawan'}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: theme.textMuted }}>(Admin)</Text>
-                  </View>
-                )}
-                <ChevronDown size={14} color={theme.textMuted} />
-              </TouchableOpacity>
-            </View>
-          </View>
+          {/* Standardized Global Admin Header */}
+          <AdminTopHeader
+            title="Manajemen Pegawai"
+            subtitle="Kelola seluruh akun pegawai, hak akses, dan data kepegawaian"
+            isDesktop={isDesktop}
+            onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          />
 
           {/* Notifications Dropdown Modal / Popover */}
           {showNotifications && (
@@ -1076,14 +961,10 @@ export default function AdminUsersScreen() {
                             gap: 10,
                           }}
                         >
-                          <Image
-                            source={{ uri: emp.avatar }}
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: 18,
-                              backgroundColor: theme.subtleBg,
-                            }}
+                          <UserAvatar
+                            name={emp.name}
+                            photo={emp.photo || emp.avatar}
+                            size={36}
                           />
                           <Text
                             style={{
@@ -1197,8 +1078,8 @@ export default function AdminUsersScreen() {
 
                           {/* Edit */}
                           <TouchableOpacity
-                            onPress={() => handleOpenEditModal(emp)}
-                            title="Edit Data"
+                            onPress={() => router.push(`/admin/edit-employee?id=${emp.id}`)}
+                            title="Edit Data & Lokasi Map"
                             style={{ padding: 4 }}
                           >
                             <Edit2 size={16} color={theme.textMuted} />
@@ -1360,9 +1241,11 @@ export default function AdminUsersScreen() {
               <View>
                 {/* Avatar and basic info */}
                 <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                  <Image
-                    source={{ uri: viewModalUser.avatar }}
-                    style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 12 }}
+                  <UserAvatar
+                    name={viewModalUser.name}
+                    photo={viewModalUser.photo || viewModalUser.avatar}
+                    size={80}
+                    style={{ marginBottom: 12 }}
                   />
                   <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textDark }}>
                     {viewModalUser.name}
@@ -1486,7 +1369,7 @@ export default function AdminUsersScreen() {
                     onPress={() => {
                       const u = viewModalUser;
                       setViewModalUser(null);
-                      handleOpenEditModal(u);
+                      router.push(`/admin/edit-employee?id=${u.id}`);
                     }}
                     style={{
                       backgroundColor: theme.primaryBlue,
@@ -1499,7 +1382,7 @@ export default function AdminUsersScreen() {
                     }}
                   >
                     <Edit2 size={14} color="#fff" />
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>Edit Data</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>Edit Data & Lokasi Map</Text>
                   </TouchableOpacity>
                 </View>
               </View>

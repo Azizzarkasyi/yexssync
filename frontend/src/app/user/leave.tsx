@@ -34,6 +34,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
+import UserAvatar from '@/components/UserAvatar';
 
 export interface LeaveItem {
   id: string;
@@ -409,13 +410,8 @@ export default function UserLeaveScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => router.push('/user/profile')}
-            className="w-10 h-10 rounded-full overflow-hidden border-2 border-white dark:border-slate-800 shadow-sm"
           >
-            <Image
-              source={{ uri: avatarUri }}
-              className="w-full h-full"
-              resizeMode="cover"
-            />
+            <UserAvatar name={user?.name} photo={user?.photo || user?.avatar} size={36} />
           </TouchableOpacity>
         </View>
 

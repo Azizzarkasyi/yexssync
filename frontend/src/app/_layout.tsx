@@ -17,6 +17,8 @@ import { AuthProvider } from '@/context/AuthContext';
 
 SplashScreen.preventAutoHideAsync();
 
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorProvider } from '@/context/ErrorContext';
 import { VersionUpdateChecker } from '@/components/VersionUpdateChecker';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
@@ -41,17 +43,20 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <VersionUpdateChecker />
-      <ErrorProvider>
-        <AuthProvider>
-          <RouteGuard>
-            <Stack screenOptions={{ headerShown: false }} />
-            <PWAInstallPrompt />
-          </RouteGuard>
-        </AuthProvider>
-      </ErrorProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} translucent backgroundColor="transparent" />
+        <AnimatedSplashOverlay />
+        <VersionUpdateChecker />
+        <ErrorProvider>
+          <AuthProvider>
+            <RouteGuard>
+              <Stack screenOptions={{ headerShown: false }} />
+              <PWAInstallPrompt />
+            </RouteGuard>
+          </AuthProvider>
+        </ErrorProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

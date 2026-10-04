@@ -87,7 +87,17 @@ function normalizeWorkLocation(
 function getAllowedWorkLocations(user: any, config: any): WorkLocation[] {
   const defaultRadius = config?.allowedRadiusMeters ?? 50;
 
-  // 1. Check per-user single custom work location
+  // 1. Check per-user custom work locations array (multi-location support)
+  if (user?.workLocations && Array.isArray(user.workLocations) && user.workLocations.length > 0) {
+    const userLocations = user.workLocations
+      .map((loc: any) => normalizeWorkLocation(loc, defaultRadius))
+      .filter((loc: WorkLocation | null): loc is WorkLocation => loc !== null);
+    if (userLocations.length > 0) {
+      return userLocations;
+    }
+  }
+
+  // 2. Check per-user single custom work location
   if (
     user?.workLatitude !== null &&
     user?.workLatitude !== undefined &&
@@ -105,16 +115,6 @@ function getAllowedWorkLocations(user: any, config: any): WorkLocation[] {
     );
     if (singleLoc) {
       return [singleLoc];
-    }
-  }
-
-  // 2. Check per-user custom work locations array
-  if (user?.workLocations && Array.isArray(user.workLocations) && user.workLocations.length > 0) {
-    const userLocations = user.workLocations
-      .map((loc: any) => normalizeWorkLocation(loc, defaultRadius))
-      .filter((loc: WorkLocation | null): loc is WorkLocation => loc !== null);
-    if (userLocations.length > 0) {
-      return userLocations;
     }
   }
 

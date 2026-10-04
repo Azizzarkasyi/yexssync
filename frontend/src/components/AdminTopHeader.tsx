@@ -1,8 +1,10 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { router } from 'expo-router';
 import { Menu, Sun, Moon, Bell, ChevronDown, CheckCircle, Clock, AlertCircle, X, Shield } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { AuthContext } from '@/context/AuthContext';
+import UserAvatar from '@/components/UserAvatar';
 
 export interface AdminTopHeaderProps {
   title: string;
@@ -32,8 +34,9 @@ export default function AdminTopHeader({
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          paddingVertical: 18,
-          marginBottom: 16,
+          minHeight: 68,
+          paddingVertical: 14,
+          marginBottom: 18,
           borderBottomWidth: 1,
           borderBottomColor: theme.borderColor,
         }}
@@ -130,30 +133,29 @@ export default function AdminTopHeader({
             )}
           </TouchableOpacity>
 
-          {/* Profile Card */}
-          <View
+          {/* Profile Card with Initials / Photo */}
+          <TouchableOpacity
+            onPress={() => router.push('/admin/profile')}
+            activeOpacity={0.8}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               gap: 10,
               paddingVertical: 5,
-              paddingHorizontal: 10,
+              paddingHorizontal: 8,
               borderRadius: 24,
               backgroundColor: theme.cardBg,
               borderWidth: 1,
               borderColor: theme.borderColor,
             }}
           >
-            <Image
-              source={{
-                uri:
-                  user?.avatar ||
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-              }}
-              style={{ width: 32, height: 32, borderRadius: 16 }}
+            <UserAvatar
+              name={user?.name || 'Admin'}
+              photo={(user as any)?.photo || (user as any)?.avatar}
+              size={34}
             />
             {isDesktop && (
-              <View>
+              <View style={{ maxWidth: 140 }}>
                 <Text
                   style={{
                     fontSize: 13,
@@ -164,12 +166,13 @@ export default function AdminTopHeader({
                 >
                   {user?.name || 'Administrator'}
                 </Text>
-                <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                <Text style={{ fontSize: 11, color: theme.textMuted }} numberOfLines={1}>
                   {(user as any)?.companyName || 'Admin Perusahaan'}
                 </Text>
               </View>
             )}
-          </View>
+            <ChevronDown size={14} color={theme.textMuted} />
+          </TouchableOpacity>
         </View>
       </View>
 

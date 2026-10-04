@@ -44,6 +44,8 @@ import {
 import { AuthContext } from '@/context/AuthContext';
 import { FaceCamera } from '@/components/FaceCamera';
 import api from '@/lib/api';
+import UserAvatar from '@/components/UserAvatar';
+import { APP_ENV } from '@/config/env';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -318,10 +320,12 @@ export default function ProfileScreen() {
           >
             {/* Profile Avatar */}
             <View className="relative">
-              <Image
-                source={{ uri: avatarUri }}
-                className="w-[70px] h-[70px] rounded-full border-[3px] border-white/30"
-                resizeMode="cover"
+              <UserAvatar
+                name={user?.name || 'Karyawan'}
+                photo={(user as any)?.photo || (user as any)?.avatar || (user as any)?.profilePicture}
+                size={70}
+                borderWidth={3}
+                borderColor="rgba(255,255,255,0.4)"
               />
               <TouchableOpacity
                 activeOpacity={0.85}
@@ -1070,7 +1074,7 @@ export default function ProfileScreen() {
                 </View>
                 <View className="flex-row justify-between items-center">
                   <Text className="text-[13px] text-[#222222] dark:text-white font-medium">Versi Aplikasi</Text>
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">v2.1.0</Text>
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">v{APP_ENV.APP_VERSION}</Text>
                 </View>
               </View>
 

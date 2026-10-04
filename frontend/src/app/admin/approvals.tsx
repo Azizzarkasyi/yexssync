@@ -332,7 +332,7 @@ export default function AdminApprovalsScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={{
             flexGrow: 1,
-            paddingHorizontal: isDesktop ? 20 : 16,
+            paddingHorizontal: isDesktop ? 24 : 16,
             paddingBottom: 60,
           }}
           showsVerticalScrollIndicator={false}

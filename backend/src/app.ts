@@ -123,7 +123,7 @@ app.get("/", (req: Request, res: Response) => {
   res.json({
     success: true,
     message: "Multi-Tenant Attendance API is running",
-    version: "2.1.0",
+    version: "1.0.0",
   });
 });
 

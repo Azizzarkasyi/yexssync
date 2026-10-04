@@ -33,6 +33,7 @@ import {
   Eye,
   EyeOff,
   Plus,
+  Trash2,
 } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
@@ -41,6 +42,14 @@ import InlineLeafletMap from '@/components/InlineLeafletMap';
 import { LocationMapPicker } from '@/components/LocationMapPicker';
 import FaceRecognitionModal from '@/components/FaceRecognitionModal';
 import api from '@/lib/api';
+
+export interface ExtraWorkLocation {
+  id: string;
+  name: string;
+  latitude: string;
+  longitude: string;
+  radius: string;
+}
 
 export default function AddEmployeeScreen() {
   const theme = useAdminTheme();
@@ -158,7 +167,40 @@ export default function AddEmployeeScreen() {
   const [latitude, setLatitude] = useState('-6.200000');
   const [longitude, setLongitude] = useState('106.816666');
   const [radius, setRadius] = useState('50');
-  const [locationName, setLocationName] = useState('');
+  const [locationName, setLocationName] = useState('Kantor Utama');
+
+  // Multi-Location Branches State
+  const [extraLocations, setExtraLocations] = useState<ExtraWorkLocation[]>([]);
+  const [activePickerTarget, setActivePickerTarget] = useState<'PRIMARY' | number>('PRIMARY');
+
+  const handleAddExtraLocation = () => {
+    setExtraLocations((prev) => [
+      ...prev,
+      {
+        id: `branch-${Date.now()}`,
+        name: `Cabang ${prev.length + 1}`,
+        latitude: '-6.208800',
+        longitude: '106.845600',
+        radius: '50',
+      },
+    ]);
+  };
+
+  const handleRemoveExtraLocation = (index: number) => {
+    setExtraLocations((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateExtraLocation = (
+    index: number,
+    field: keyof ExtraWorkLocation,
+    value: string
+  ) => {
+    setExtraLocations((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
 
   // Form States - Informasi Gaji (Payroll)
   const [salaryType, setSalaryType] = useState('MONTHLY');
@@ -313,8 +355,25 @@ export default function AddEmployeeScreen() {
         latitude: overrideLocation ? parseFloat(latitude) : null,
         longitude: overrideLocation ? parseFloat(longitude) : null,
         radius: overrideLocation ? parseFloat(radius) : 50,
-        locationName: locationName.trim(),
-        avatar: photoUri || `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 50) + 10}`,
+        locationName: locationName.trim() || 'Kantor Utama',
+        workLocations: overrideLocation
+          ? [
+              {
+                name: locationName.trim() || 'Kantor Utama',
+                latitude: parseFloat(latitude) || -6.2088,
+                longitude: parseFloat(longitude) || 106.8456,
+                radius: parseFloat(radius) || 50,
+              },
+              ...extraLocations.map((loc, i) => ({
+                name: loc.name.trim() || `Cabang ${i + 1}`,
+                latitude: parseFloat(loc.latitude) || -6.2088,
+                longitude: parseFloat(loc.longitude) || 106.8456,
+                radius: parseFloat(loc.radius) || 50,
+              })),
+            ]
+          : null,
+        avatar: photoUri || null,
+        photo: photoUri || null,
         faceDescriptor,
         faceRegistered: faceRegistered || !!faceDescriptor,
         role: 'USER',
@@ -1093,7 +1152,10 @@ export default function AddEmployeeScreen() {
                     setLatitude(newLat.toFixed(6));
                     setLongitude(newLng.toFixed(6));
                   }}
-                  onOpenFullscreenPicker={() => setShowLocationPicker(true)}
+                  onOpenFullscreenPicker={() => {
+                    setActivePickerTarget('PRIMARY');
+                    setShowLocationPicker(true);
+                  }}
                 />
 
                 {/* Location Coordinates Grid */}
@@ -1197,7 +1259,7 @@ export default function AddEmployeeScreen() {
                       Nama Lokasi (Opsional)
                     </Text>
                     <TextInput
-                      placeholder="Contoh: WFH / Site Proyek B"
+                      placeholder="Contoh: Kantor Pusat Jakarta"
                       placeholderTextColor={theme.placeholder}
                       value={locationName}
                       onChangeText={setLocationName}
@@ -1214,6 +1276,293 @@ export default function AddEmployeeScreen() {
                       } as any}
                     />
                   </View>
+                </View>
+
+                {/* Multi-Location Branches Section */}
+                <View
+                  style={{
+                    marginTop: 25,
+                    paddingTop: 20,
+                    borderTopWidth: 1,
+                    borderTopColor: theme.borderColor,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: isDesktop ? 'row' : 'column',
+                      justifyContent: 'space-between',
+                      alignItems: isDesktop ? 'center' : 'flex-start',
+                      gap: 10,
+                      marginBottom: 16,
+                    }}
+                  >
+                    <View>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: theme.textDark }}>
+                        Lokasi Tambahan (Multi-Lokasi / Cabang)
+                      </Text>
+                      <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                        Pegawai dapat absen di lokasi utama maupun lokasi cabang tambahan berikut.
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={handleAddExtraLocation}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        backgroundColor: theme.primaryBlue,
+                        paddingVertical: 8,
+                        paddingHorizontal: 14,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Plus size={14} color="#ffffff" />
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#ffffff' }}>
+                        + Tambah Cabang
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {extraLocations.length === 0 ? (
+                    <View
+                      style={{
+                        padding: 16,
+                        borderRadius: 10,
+                        backgroundColor: theme.isDark ? '#1e293b' : '#f8fafc',
+                        borderWidth: 1,
+                        borderColor: theme.borderColor,
+                        borderStyle: 'dashed',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, color: theme.textMuted }}>
+                        Belum ada lokasi cabang tambahan. Klik "+ Tambah Cabang" untuk menambahkan lebih dari 1 map lokasi.
+                      </Text>
+                    </View>
+                  ) : (
+                    extraLocations.map((loc, idx) => (
+                      <View
+                        key={loc.id || idx}
+                        style={{
+                          backgroundColor: theme.isDark ? '#1e293b' : '#f8fafc',
+                          borderWidth: 1,
+                          borderColor: theme.borderColor,
+                          borderRadius: 12,
+                          padding: 16,
+                          marginBottom: 16,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 12,
+                          }}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: theme.primaryBlue }}>
+                            📍 Lokasi #{idx + 2} : {loc.name || `Cabang ${idx + 1}`}
+                          </Text>
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setActivePickerTarget(idx);
+                                setShowLocationPicker(true);
+                              }}
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                                backgroundColor: theme.isDark ? '#334155' : '#e0f2fe',
+                                paddingHorizontal: 10,
+                                paddingVertical: 6,
+                                borderRadius: 6,
+                              }}
+                            >
+                              <MapPin size={13} color={theme.primaryBlue} />
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: '600',
+                                  color: theme.primaryBlue,
+                                }}
+                              >
+                                Pilih di Peta
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => handleRemoveExtraLocation(idx)}
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                                backgroundColor: '#fee2e2',
+                                paddingHorizontal: 10,
+                                paddingVertical: 6,
+                                borderRadius: 6,
+                              }}
+                            >
+                              <Trash2 size={13} color="#ef4444" />
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: '600',
+                                  color: '#ef4444',
+                                }}
+                              >
+                                Hapus
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        {/* Inline Leaflet Map for this branch */}
+                        <View style={{ marginBottom: 12 }}>
+                          <InlineLeafletMap
+                            latitude={parseFloat(loc.latitude) || -6.2088}
+                            longitude={parseFloat(loc.longitude) || 106.8456}
+                            radius={parseFloat(loc.radius) || 50}
+                            height={200}
+                            onLocationChange={(newLat, newLng) => {
+                              handleUpdateExtraLocation(idx, 'latitude', newLat.toFixed(6));
+                              handleUpdateExtraLocation(idx, 'longitude', newLng.toFixed(6));
+                            }}
+                            onOpenFullscreenPicker={() => {
+                              setActivePickerTarget(idx);
+                              setShowLocationPicker(true);
+                            }}
+                          />
+                        </View>
+
+                        {/* Nama Lokasi Cabang */}
+                        <View style={{ marginBottom: 12 }}>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: '600',
+                              color: theme.textDark,
+                              marginBottom: 4,
+                            }}
+                          >
+                            Nama Lokasi Cabang
+                          </Text>
+                          <TextInput
+                            placeholder="Contoh: Cabang Surabaya / Site Proyek B"
+                            placeholderTextColor={theme.placeholder}
+                            value={loc.name}
+                            onChangeText={(val) => handleUpdateExtraLocation(idx, 'name', val)}
+                            style={{
+                              paddingVertical: 10,
+                              paddingHorizontal: 12,
+                              borderWidth: 1,
+                              borderColor: theme.borderColor,
+                              borderRadius: 8,
+                              fontSize: 13,
+                              color: theme.textDark,
+                              backgroundColor: theme.cardBg,
+                              outlineStyle: 'none',
+                            } as any}
+                          />
+                        </View>
+
+                        {/* Coordinates Grid */}
+                        <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 12 }}>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: '600',
+                                color: theme.textDark,
+                                marginBottom: 4,
+                              }}
+                            >
+                              Latitude
+                            </Text>
+                            <TextInput
+                              placeholder="-6.200000"
+                              placeholderTextColor={theme.placeholder}
+                              value={loc.latitude}
+                              onChangeText={(val) =>
+                                handleUpdateExtraLocation(idx, 'latitude', val)
+                              }
+                              style={{
+                                paddingVertical: 10,
+                                paddingHorizontal: 12,
+                                borderWidth: 1,
+                                borderColor: theme.borderColor,
+                                borderRadius: 8,
+                                fontSize: 13,
+                                color: theme.textDark,
+                                backgroundColor: theme.cardBg,
+                                outlineStyle: 'none',
+                              } as any}
+                            />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: '600',
+                                color: theme.textDark,
+                                marginBottom: 4,
+                              }}
+                            >
+                              Longitude
+                            </Text>
+                            <TextInput
+                              placeholder="106.816666"
+                              placeholderTextColor={theme.placeholder}
+                              value={loc.longitude}
+                              onChangeText={(val) =>
+                                handleUpdateExtraLocation(idx, 'longitude', val)
+                              }
+                              style={{
+                                paddingVertical: 10,
+                                paddingHorizontal: 12,
+                                borderWidth: 1,
+                                borderColor: theme.borderColor,
+                                borderRadius: 8,
+                                fontSize: 13,
+                                color: theme.textDark,
+                                backgroundColor: theme.cardBg,
+                                outlineStyle: 'none',
+                              } as any}
+                            />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: '600',
+                                color: theme.textDark,
+                                marginBottom: 4,
+                              }}
+                            >
+                              Radius (Meter)
+                            </Text>
+                            <TextInput
+                              placeholder="50"
+                              placeholderTextColor={theme.placeholder}
+                              value={loc.radius}
+                              onChangeText={(val) => handleUpdateExtraLocation(idx, 'radius', val)}
+                              keyboardType="numeric"
+                              style={{
+                                paddingVertical: 10,
+                                paddingHorizontal: 12,
+                                borderWidth: 1,
+                                borderColor: theme.borderColor,
+                                borderRadius: 8,
+                                fontSize: 13,
+                                color: theme.textDark,
+                                backgroundColor: theme.cardBg,
+                                outlineStyle: 'none',
+                              } as any}
+                            />
+                          </View>
+                        </View>
+                      </View>
+                    ))
+                  )}
                 </View>
               </View>
             )}
@@ -1537,14 +1886,35 @@ export default function AddEmployeeScreen() {
       <LocationMapPicker
         visible={showLocationPicker}
         onClose={() => setShowLocationPicker(false)}
-        initialLatitude={parseFloat(latitude) || -6.208800}
-        initialLongitude={parseFloat(longitude) || 106.845600}
-        initialRadius={parseFloat(radius) || 50}
+        initialLatitude={
+          activePickerTarget === 'PRIMARY'
+            ? (parseFloat(latitude) || -6.2088)
+            : (parseFloat(extraLocations[activePickerTarget]?.latitude) || -6.2088)
+        }
+        initialLongitude={
+          activePickerTarget === 'PRIMARY'
+            ? (parseFloat(longitude) || 106.8456)
+            : (parseFloat(extraLocations[activePickerTarget]?.longitude) || 106.8456)
+        }
+        initialRadius={
+          activePickerTarget === 'PRIMARY'
+            ? (parseFloat(radius) || 50)
+            : (parseFloat(extraLocations[activePickerTarget]?.radius) || 50)
+        }
         onSelectLocation={(res) => {
-          setLatitude(res.latitude.toFixed(6));
-          setLongitude(res.longitude.toFixed(6));
-          setRadius(String(res.radius));
-          if (res.address) setLocationName(res.address.split(',')[0]);
+          if (activePickerTarget === 'PRIMARY') {
+            setLatitude(res.latitude.toFixed(6));
+            setLongitude(res.longitude.toFixed(6));
+            setRadius(String(res.radius));
+            if (res.address) setLocationName(res.address.split(',')[0]);
+          } else {
+            handleUpdateExtraLocation(activePickerTarget, 'latitude', res.latitude.toFixed(6));
+            handleUpdateExtraLocation(activePickerTarget, 'longitude', res.longitude.toFixed(6));
+            handleUpdateExtraLocation(activePickerTarget, 'radius', String(res.radius));
+            if (res.address) {
+              handleUpdateExtraLocation(activePickerTarget, 'name', res.address.split(',')[0]);
+            }
+          }
         }}
       />
     </View>

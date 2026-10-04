@@ -33,6 +33,7 @@ import {
 } from 'lucide-react-native';
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
+import UserAvatar from '@/components/UserAvatar';
 
 export interface TaskItem {
   id: string | number;
@@ -294,13 +295,8 @@ export default function UserTasksScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => router.push('/user/profile')}
-            className="w-10 h-10 rounded-full overflow-hidden border-2 border-white dark:border-slate-800 shadow-sm"
           >
-            <Image
-              source={{ uri: avatarUri }}
-              className="w-full h-full"
-              resizeMode="cover"
-            />
+            <UserAvatar name={user?.name} photo={user?.photo || user?.avatar} size={36} />
           </TouchableOpacity>
         </View>
 

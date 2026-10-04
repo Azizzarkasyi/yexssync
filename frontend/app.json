@@ -13,6 +13,15 @@
     "android": {
       "package": "com.yexssync.app",
       "versionCode": 1,
+      "androidStatusBar": {
+        "translucent": true,
+        "backgroundColor": "#00000000",
+        "barStyle": "light-content"
+      },
+      "androidNavigationBar": {
+        "backgroundColor": "#08142c",
+        "barStyle": "light-content"
+      },
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
