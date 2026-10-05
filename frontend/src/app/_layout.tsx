@@ -27,7 +27,7 @@ import { RouteGuard } from '@/components/RouteGuard';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   
-  const [loaded] = useFonts({
+  const [loaded, fontError] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,
     Poppins_600SemiBold,
@@ -35,12 +35,20 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    if (loaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {});
     }
-  }, [loaded]);
+  }, [loaded, fontError]);
 
-  if (!loaded) return null;
+  // Safety fallback: dismiss native splash after 2.5s even if font loading is slow
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {});
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!loaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>

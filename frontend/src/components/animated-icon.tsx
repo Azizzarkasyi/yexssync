@@ -1,7 +1,7 @@
+import {useEffect, useState} from "react";
+import {Dimensions, StyleSheet, View} from "react-native";
 import {Image} from "expo-image";
 import * as SplashScreen from "expo-splash-screen";
-import {useState} from "react";
-import {Dimensions, StyleSheet, View} from "react-native";
 import Animated, {Easing, Keyframe} from "react-native-reanimated";
 import {scheduleOnRN} from "react-native-worklets";
 
@@ -11,6 +11,14 @@ const DURATION = 600;
 export function AnimatedSplashOverlay() {
   const [animate, setAnimate] = useState(false);
   const [visible, setVisible] = useState(true);
+
+  // Fallback safety: ensure splash overlay is removed even if animation hangs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisible(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (!visible) return null;
 
