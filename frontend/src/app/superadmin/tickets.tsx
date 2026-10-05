@@ -48,6 +48,7 @@ import { AuthContext } from '@/context/AuthContext';
 import { useError } from '@/context/ErrorContext';
 import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
+import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
 
 // Ticket Interface
 export interface TicketReply {
@@ -74,7 +75,7 @@ export interface TicketItem {
 
 export default function SuperAdminTicketsScreen() {
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 1024;
+  const isDesktop = width >= 768;
   const theme = useSuperAdminTheme();
   const { user, logout } = useContext(AuthContext);
   const { showError } = useError();
@@ -255,279 +256,12 @@ export default function SuperAdminTicketsScreen() {
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
       >
-        {/* Header / Topbar */}
-        <View
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingVertical: 20,
-            marginBottom: 20,
-            backgroundColor: theme.bg,
-            zIndex: 10,
-          }}
-        >
-          {/* Page Title & Hamburger */}
-          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {!isDesktop && (
-              <TouchableOpacity
-                onPress={() => setIsMobileMenuOpen(true)}
-                style={{
-                  padding: 8,
-                  borderRadius: 8,
-                  backgroundColor: theme.cardBg,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                }}
-              >
-                <Menu size={20} color={theme.text} />
-              </TouchableOpacity>
-            )}
-            <View>
-              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>
-                Tiket Bantuan (Support)
-              </Text>
-            </View>
-          </View>
-
-          {/* Topbar Right */}
-          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 15 }}>
-            {/* Search Bar */}
-            {isDesktop && (
-              <View
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: theme.cardBg,
-                  paddingVertical: 8,
-                  paddingHorizontal: 15,
-                  borderRadius: 20,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  width: 250,
-                }}
-              >
-                <Search size={16} color={theme.textMuted} />
-                <TextInput
-                  placeholder="Cari ID tiket atau subjek..."
-                  placeholderTextColor={theme.placeholder}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  style={{
-                    borderWidth: 0,
-                    outline: 'none',
-                    marginLeft: 10,
-                    backgroundColor: 'transparent',
-                    width: '100%',
-                    fontSize: 13,
-                    color: theme.text,
-                  } as any}
-                />
-              </View>
-            )}
-
-            {/* Theme Toggle Button */}
-            <TouchableOpacity
-              onPress={theme.toggleTheme}
-              title={theme.isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: theme.cardBg,
-                borderWidth: 1,
-                borderColor: theme.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              } as any}
-            >
-              {theme.isDark ? (
-                <Sun size={18} color="#f59e0b" />
-              ) : (
-                <Moon size={18} color={theme.textMuted} />
-              )}
-            </TouchableOpacity>
-
-            {/* Notification Bell */}
-            <TouchableOpacity
-              onPress={() => setShowNotifModal(true)}
-              style={{ position: 'relative', cursor: 'pointer' } as any}
-            >
-              <View
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: theme.cardBg,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Bell size={18} color={theme.textMuted} />
-              </View>
-              {openTicketsCount > 0 && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: -3,
-                    right: -3,
-                    backgroundColor: '#ef4444',
-                    borderRadius: 10,
-                    paddingHorizontal: 5,
-                    paddingVertical: 1.5,
-                    minWidth: 16,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '700' }}>{openTicketsCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {/* User Profile Pill */}
-            <View style={{ position: 'relative' }}>
-              <TouchableOpacity
-                onPress={() => setShowProfileDropdown(!showProfileDropdown)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  backgroundColor: theme.cardBg,
-                  paddingVertical: 5,
-                  paddingLeft: 5,
-                  paddingRight: 15,
-                  borderRadius: 30,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Image
-                  source={{ uri: 'https://i.pravatar.cc/150?img=11' }}
-                  style={{ width: 36, height: 36, borderRadius: 18 }}
-                />
-                <View style={{ display: 'flex', flexDirection: 'column' }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>
-                    {user?.name || 'Super Admin'}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: theme.accent, fontWeight: '500' }}>
-                    Super Admin
-                  </Text>
-                </View>
-                <ChevronDown size={14} color={theme.textMuted} />
-              </TouchableOpacity>
-
-              {/* Profile Dropdown */}
-              {showProfileDropdown && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 50,
-                    right: 0,
-                    width: 210,
-                    backgroundColor: theme.cardBg,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 10,
-                    elevation: 5,
-                    padding: 8,
-                    zIndex: 50,
-                  }}
-                >
-                  <View style={{ padding: 8, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 4 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
-                      {user?.email || 'superadmin@yexssync.com'}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: theme.textMuted }}>Hak Akses Penuh</Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowProfileDropdown(false);
-                      router.push('/superadmin');
-                    }}
-                    style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 10,
-                      borderRadius: 6,
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      cursor: 'pointer',
-                    } as any}
-                  >
-                    <PieChart size={15} color={theme.textMuted} />
-                    <Text style={{ fontSize: 13, color: theme.text }}>Dashboard Ikhtisar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleLogout}
-                    style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 10,
-                      borderRadius: 6,
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                      marginTop: 4,
-                      cursor: 'pointer',
-                    } as any}
-                  >
-                    <LogOut size={15} color="#ef4444" />
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#ef4444' }}>Keluar</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Mobile Search Bar */}
-        {!isDesktop && (
-          <View
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: theme.cardBg,
-              paddingVertical: 8,
-              paddingHorizontal: 15,
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: theme.border,
-              marginBottom: 20,
-            }}
-          >
-            <Search size={16} color={theme.textMuted} />
-            <TextInput
-              placeholder="Cari ID tiket atau subjek..."
-              placeholderTextColor={theme.placeholder}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              style={{
-                borderWidth: 0,
-                outline: 'none',
-                marginLeft: 10,
-                backgroundColor: 'transparent',
-                flex: 1,
-                fontSize: 13,
-                color: theme.text,
-              } as any}
-            />
-          </View>
-        )}
+        {/* Top Header */}
+        <SuperAdminTopHeader
+          title="Tiket Bantuan"
+          isDesktop={isDesktop}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
 
         {/* Summary Cards Khusus Tiket */}
         <View
@@ -739,10 +473,48 @@ export default function SuperAdminTicketsScreen() {
               display: 'flex',
               flexDirection: 'row',
               flexWrap: 'wrap',
-              gap: 15,
+              gap: 12,
               alignItems: 'center',
             }}
           >
+            {/* Search Input */}
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: theme.subtleBg,
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: theme.border,
+                width: isDesktop ? 220 : '100%',
+              }}
+            >
+              <Search size={14} color={theme.textMuted} />
+              <TextInput
+                placeholder="Cari tiket..."
+                placeholderTextColor={theme.placeholder}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={{
+                  borderWidth: 0,
+                  outlineStyle: 'none',
+                  marginLeft: 8,
+                  backgroundColor: 'transparent',
+                  flex: 1,
+                  fontSize: 13,
+                  color: theme.text,
+                } as any}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <X size={14} color={theme.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
             {/* Filter Status */}
             <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
               {Platform.OS === 'web' ? (

@@ -42,6 +42,7 @@ import { AuthContext } from '@/context/AuthContext';
 import { useError } from '@/context/ErrorContext';
 import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
+import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
 import api from '@/lib/api';
 
 // Interfaces
@@ -99,7 +100,7 @@ const DEFAULT_PLANS: PlanData[] = [
 
 export default function SuperAdminBillingScreen() {
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 1024;
+  const isDesktop = width >= 768;
   const theme = useSuperAdminTheme();
   const { user, logout } = useContext(AuthContext);
   const { showError } = useError();
@@ -253,218 +254,12 @@ export default function SuperAdminBillingScreen() {
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
       >
-        {/* Header / Topbar */}
-        <View
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingVertical: 20,
-            marginBottom: 20,
-            backgroundColor: theme.bg,
-            zIndex: 10,
-          }}
-        >
-          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {!isDesktop && (
-              <TouchableOpacity
-                onPress={() => setIsMobileMenuOpen(true)}
-                style={{ padding: 8, backgroundColor: theme.cardBg, borderRadius: 8, borderWidth: 1, borderColor: theme.border }}
-              >
-                <Menu size={20} color={theme.text} />
-              </TouchableOpacity>
-            )}
-            <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>
-              Paket & Tagihan Langganan
-            </Text>
-          </View>
-
-          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            {/* Search Bar */}
-            <View
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: theme.cardBg,
-                paddingVertical: 8,
-                paddingHorizontal: 15,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: theme.border,
-                width: isDesktop ? 250 : 160,
-              }}
-            >
-              <Search size={16} color={theme.textMuted} />
-              <TextInput
-                placeholder="Cari invoice atau tenant..."
-                placeholderTextColor={theme.placeholder}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                style={{
-                  borderWidth: 0,
-                  outlineStyle: 'none',
-                  marginLeft: 10,
-                  backgroundColor: 'transparent',
-                  width: '100%',
-                  fontSize: 13,
-                  color: theme.text,
-                } as any}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <X size={14} color={theme.textMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Theme Toggle (Device / Auto / Manual) */}
-            <TouchableOpacity
-              onPress={theme.toggleTheme}
-              title={theme.isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: theme.cardBg,
-                borderWidth: 1,
-                borderColor: theme.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              } as any}
-            >
-              {theme.isDark ? (
-                <Sun size={18} color="#f59e0b" />
-              ) : (
-                <Moon size={18} color={theme.textMuted} />
-              )}
-            </TouchableOpacity>
-
-            {/* Notifications */}
-            <TouchableOpacity
-              onPress={() => setShowNotifModal(true)}
-              style={{ position: 'relative', cursor: 'pointer' } as any}
-            >
-              <View
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: theme.cardBg,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Bell size={18} color={theme.textMuted} />
-              </View>
-              {(pendingInvoices.length + overdueInvoicesCount) > 0 && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: -3,
-                    right: -3,
-                    backgroundColor: '#ef4444',
-                    borderRadius: 10,
-                    paddingHorizontal: 5,
-                    paddingVertical: 1.5,
-                    minWidth: 16,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '700' }}>
-                    {pendingInvoices.length + overdueInvoicesCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {/* User Profile */}
-            <View style={{ position: 'relative' }}>
-              <TouchableOpacity
-                onPress={() => setShowProfileDropdown(!showProfileDropdown)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  backgroundColor: theme.cardBg,
-                  paddingVertical: 5,
-                  paddingLeft: 5,
-                  paddingRight: 15,
-                  borderRadius: 30,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Image
-                  source={{ uri: 'https://i.pravatar.cc/150?img=11' }}
-                  style={{ width: 36, height: 36, borderRadius: 18 }}
-                />
-                <View style={{ display: 'flex', flexDirection: 'column' }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>
-                    {user?.name || 'Super Admin'}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: theme.accent, fontWeight: '500' }}>Super Admin</Text>
-                </View>
-                <ChevronDown size={12} color={theme.textMuted} style={{ marginLeft: 2 }} />
-              </TouchableOpacity>
-
-              {showProfileDropdown && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 50,
-                    right: 0,
-                    width: 200,
-                    backgroundColor: theme.cardBg,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    padding: 8,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.15,
-                    shadowRadius: 10,
-                    elevation: 5,
-                    zIndex: 50,
-                  }}
-                >
-                  <View style={{ padding: 8, borderBottomWidth: 1, borderBottomColor: theme.borderLight, marginBottom: 4 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
-                      {user?.email || 'superadmin@yexssync.com'}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: theme.successText, fontWeight: '500', marginTop: 2 }}>
-                      ● Online ({theme.isDark ? 'Mode Gelap' : 'Mode Terang'})
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowProfileDropdown(false);
-                      router.push('/superadmin/admins');
-                    }}
-                    style={{ padding: 8, borderRadius: 6, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                  >
-                    <Users size={14} color={theme.textMuted} />
-                    <Text style={{ fontSize: 13, color: theme.text }}>Kelola Admin</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleLogout}
-                    style={{ padding: 8, borderRadius: 6, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                  >
-                    <LogOut size={14} color={theme.dangerText} />
-                    <Text style={{ fontSize: 13, color: theme.dangerText, fontWeight: '600' }}>Logout</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
+        {/* Top Header */}
+        <SuperAdminTopHeader
+          title="Paket & Tagihan"
+          isDesktop={isDesktop}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
 
         {/* Summary Cards Keuangan */}
         <View
@@ -781,7 +576,45 @@ export default function SuperAdminBillingScreen() {
               Riwayat Transaksi & Invoice
             </Text>
 
-            <View style={{ display: 'flex', flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+            <View style={{ display: 'flex', flexDirection: 'row', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              {/* Search Bar */}
+              <View
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: theme.subtleBg,
+                  paddingVertical: 6,
+                  paddingHorizontal: 12,
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  width: isDesktop ? 220 : '100%',
+                }}
+              >
+                <Search size={14} color={theme.textMuted} />
+                <TextInput
+                  placeholder="Cari invoice/tenant..."
+                  placeholderTextColor={theme.placeholder}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  style={{
+                    borderWidth: 0,
+                    outlineStyle: 'none',
+                    marginLeft: 8,
+                    backgroundColor: 'transparent',
+                    flex: 1,
+                    fontSize: 13,
+                    color: theme.text,
+                  } as any}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <X size={14} color={theme.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
               {/* Select Status Filter */}
               <View
                 style={{

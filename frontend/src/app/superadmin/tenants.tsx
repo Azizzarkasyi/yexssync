@@ -49,6 +49,7 @@ import { AuthContext } from '@/context/AuthContext';
 import { useError } from '@/context/ErrorContext';
 import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
+import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
 import api from '@/lib/api';
 
 // Interface definitions matching the provided mockup
@@ -78,7 +79,7 @@ interface TenantCompany {
 
 export default function TenantManagementScreen() {
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 1024;
+  const isDesktop = width >= 768;
   const theme = useSuperAdminTheme();
   const { user, logout } = useContext(AuthContext);
   const { showError } = useError();
@@ -457,194 +458,213 @@ export default function TenantManagementScreen() {
 
       {/* Main Page Content */}
       <View style={{ flex: 1, flexDirection: 'column', height: '100%', minHeight: 0 }}>
-        {/* Sticky Topbar */}
-        <View style={{ backgroundColor: theme.cardBg, paddingHorizontal: 24, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.border, zIndex: 10 }}>
-          <View className="flex-row items-center">
-            {!isDesktop && (
-              <TouchableOpacity
-                onPress={() => setIsMobileMenuOpen(true)}
-                className="mr-3 p-2 rounded-lg bg-white dark:bg-slate-800 border border-[#e5e7eb] dark:border-slate-700"
-              >
-                <Menu size={20} color="#111827" />
-              </TouchableOpacity>
-            )}
-            <Text className="text-xl md:text-2xl font-bold text-[#111827] dark:text-white">
-              Manajemen Perusahaan
-            </Text>
-          </View>
-
-          <View className="flex-row items-center gap-3 md:gap-4">
-            {/* Theme Toggle */}
-            <TouchableOpacity
-              onPress={theme.toggleTheme}
-              title={theme.isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
-              className="p-2 bg-white dark:bg-slate-900 border border-[#e5e7eb] dark:border-slate-700 rounded-full"
-            >
-              {theme.isDark ? (
-                <Sun size={18} color="#f59e0b" />
-              ) : (
-                <Moon size={18} color="#6b7280" />
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setShowNotifModal(true)}
-              className="relative p-2 bg-white dark:bg-slate-900 border border-[#e5e7eb] dark:border-slate-700 rounded-full"
-            >
-              <Bell size={19} color="#6b7280" />
-            </TouchableOpacity>
-
-            {/* Profile pill */}
-            <View className="relative">
-              <TouchableOpacity
-                onPress={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex-row items-center bg-white dark:bg-slate-900 pl-1.5 pr-3 py-1 rounded-full border border-[#e5e7eb] dark:border-slate-700"
-              >
-                <Image
-                  source={{ uri: 'https://i.pravatar.cc/150?img=11' }}
-                  className="w-8 h-8 rounded-full mr-2.5"
-                />
-                <View className="mr-2">
-                  <Text className="text-xs font-semibold text-[#111827] dark:text-white">
-                    {user?.name || 'Super Admin'}
-                  </Text>
-                  <Text className="text-[10px] text-[#2a75d3] font-medium">Super Admin</Text>
-                </View>
-                <ChevronDown size={14} color="#6b7280" />
-              </TouchableOpacity>
-
-              {showProfileDropdown && (
-                <View className="absolute right-0 top-12 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-[#e5e7eb] dark:border-slate-700 p-2 z-50">
-                  <View className="p-2 border-b border-slate-100 dark:border-slate-800 mb-1">
-                    <Text className="text-xs font-bold text-[#111827] dark:text-white">
-                      {user?.email || 'superadmin@yexssync.com'}
-                    </Text>
-                    <Text className="text-[10px] text-[#10b981] font-semibold mt-0.5">● Super Admin</Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowProfileDropdown(false);
-                      router.push('/superadmin');
-                    }}
-                    className="flex-row items-center px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
-                  >
-                    <PieChart size={14} color="#6b7280" className="mr-2" />
-                    <Text className="text-xs text-slate-700 dark:text-slate-300 ml-2">Dashboard Ikhtisar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleLogout}
-                    className="flex-row items-center px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 mt-1"
-                  >
-                    <LogOut size={14} color="#ef4444" className="mr-2" />
-                    <Text className="text-xs font-semibold text-red-500 ml-2">Logout</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-
         {/* Scrollable Content Body */}
         <ScrollView
-          className="flex-1 px-4 md:px-6 pt-2 pb-10"
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }}
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingHorizontal: isDesktop ? 24 : 16,
+            paddingBottom: 60,
+          }}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
         >
+          {/* Harmonized Super Admin Header */}
+          <SuperAdminTopHeader
+            title="Data Perusahaan"
+            isDesktop={isDesktop}
+            onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+          />
+
           {/* Action Toolbar & Filters */}
-          <View className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-[#e5e7eb] dark:border-slate-800 shadow-sm mb-5 flex-col md:flex-row md:items-center justify-between gap-4">
+          <View
+            style={{
+              backgroundColor: theme.cardBg,
+              padding: 16,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: theme.border,
+              marginBottom: 20,
+              flexDirection: isDesktop ? 'row' : 'column',
+              alignItems: isDesktop ? 'center' : 'stretch',
+              justifyContent: 'space-between',
+              gap: 16,
+            }}
+          >
             {/* Left: Filters */}
-            <View className="flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <View
+              style={{
+                flex: 1,
+                flexDirection: isDesktop ? 'row' : 'column',
+                alignItems: isDesktop ? 'center' : 'stretch',
+                gap: 12,
+              }}
+            >
               {/* Search box */}
-              <View className="flex-row items-center bg-[#f9fafb] dark:bg-slate-800 px-3 py-2 rounded-lg border border-[#e5e7eb] dark:border-slate-700 flex-1 max-w-full sm:max-w-xs">
-                <Search size={16} color="#6b7280" />
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: theme.subtleBg,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  flex: isDesktop ? 1 : undefined,
+                  maxWidth: isDesktop ? 320 : '100%',
+                }}
+              >
+                <Search size={16} color={theme.textMuted} />
                 <TextInput
                   placeholder="Cari ID atau nama perusahaan..."
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={theme.placeholder}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  className="ml-2 flex-1 text-xs md:text-sm text-[#111827] dark:text-white outline-none"
+                  style={{
+                    marginLeft: 8,
+                    flex: 1,
+                    fontSize: 13,
+                    color: theme.text,
+                    outlineStyle: 'none',
+                    backgroundColor: 'transparent',
+                    borderWidth: 0,
+                  } as any}
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <X size={14} color="#9ca3af" />
+                    <X size={14} color={theme.textMuted} />
                   </TouchableOpacity>
                 )}
               </View>
 
               {/* Filter: Paket */}
-              <View className="flex-row items-center bg-[#f9fafb] dark:bg-slate-800 rounded-lg border border-[#e5e7eb] dark:border-slate-700 px-3 py-1.5">
-                <Text className="text-xs text-slate-500 mr-2">Paket:</Text>
-                {(['ALL', 'Basic', 'Pro', 'Enterprise'] as const).map((p) => (
-                  <TouchableOpacity
-                    key={p}
-                    onPress={() => setSelectedPlanFilter(p)}
-                    className={`px-2 py-1 rounded-md ${
-                      selectedPlanFilter === p
-                        ? 'bg-[#2a75d3] text-white'
-                        : 'hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-medium ${
-                        selectedPlanFilter === p ? 'text-white font-bold' : 'text-slate-700 dark:text-slate-300'
-                      }`}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: theme.subtleBg,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Text style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Paket:</Text>
+                {(['ALL', 'Basic', 'Pro', 'Enterprise'] as const).map((p) => {
+                  const isSelected = selectedPlanFilter === p;
+                  return (
+                    <TouchableOpacity
+                      key={p}
+                      onPress={() => setSelectedPlanFilter(p)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 6,
+                        backgroundColor: isSelected ? theme.primaryBlue : 'transparent',
+                      }}
                     >
-                      {p === 'ALL' ? 'Semua' : p}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: isSelected ? '700' : '500',
+                          color: isSelected ? '#ffffff' : theme.text,
+                        }}
+                      >
+                        {p === 'ALL' ? 'Semua' : p}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               {/* Filter: Status */}
-              <View className="flex-row items-center bg-[#f9fafb] dark:bg-slate-800 rounded-lg border border-[#e5e7eb] dark:border-slate-700 px-3 py-1.5">
-                <Text className="text-xs text-slate-500 mr-2">Status:</Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: theme.subtleBg,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Text style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Status:</Text>
                 {[
                   { key: 'ALL', label: 'Semua' },
                   { key: 'active', label: 'Aktif' },
                   { key: 'warning', label: 'Tunggakan' },
                   { key: 'suspended', label: 'Suspended' },
-                ].map((s) => (
-                  <TouchableOpacity
-                    key={s.key}
-                    onPress={() => setSelectedStatusFilter(s.key)}
-                    className={`px-2 py-1 rounded-md ${
-                      selectedStatusFilter === s.key
-                        ? 'bg-[#2a75d3] text-white'
-                        : 'hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-medium ${
-                        selectedStatusFilter === s.key ? 'text-white font-bold' : 'text-slate-700 dark:text-slate-300'
-                      }`}
+                ].map((s) => {
+                  const isSelected = selectedStatusFilter === s.key;
+                  return (
+                    <TouchableOpacity
+                      key={s.key}
+                      onPress={() => setSelectedStatusFilter(s.key)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 6,
+                        backgroundColor: isSelected ? theme.primaryBlue : 'transparent',
+                      }}
                     >
-                      {s.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: isSelected ? '700' : '500',
+                          color: isSelected ? '#ffffff' : theme.text,
+                        }}
+                      >
+                        {s.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
             {/* Right: Actions */}
-            <View className="flex-row items-center gap-2.5 self-end sm:self-auto">
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: isDesktop ? 'auto' : 'flex-end' }}>
               <TouchableOpacity
                 onPress={handleExportCSV}
-                className="flex-row items-center px-3.5 py-2 rounded-lg border border-[#e5e7eb] dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-[#f9fafb]"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 14,
+                  paddingVertical: 9,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  backgroundColor: theme.cardBg,
+                  gap: 6,
+                }}
               >
-                <Download size={15} color="#111827" className="mr-1.5" />
-                <Text className="text-xs font-semibold text-[#111827] dark:text-white ml-1.5">
+                <Download size={15} color={theme.text} />
+                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text }}>
                   Export CSV
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setShowAddModal(true)}
-                className="flex-row items-center px-4 py-2 rounded-lg bg-[#2a75d3] hover:bg-[#1d4ed8] shadow-sm"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: theme.primaryBlue,
+                  paddingHorizontal: 16,
+                  paddingVertical: 9,
+                  borderRadius: 8,
+                  gap: 6,
+                }}
               >
-                <Plus size={15} color="#ffffff" className="mr-1.5" />
-                <Text className="text-xs font-bold text-white ml-1.5">Tambah Perusahaan</Text>
+                <Plus size={15} color="#ffffff" />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>Tambah Perusahaan</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -898,18 +918,39 @@ export default function TenantManagementScreen() {
             </ScrollView>
 
             {/* Pagination Controls */}
-            <View className="flex-row items-center justify-between px-5 py-4 border-t border-[#e5e7eb] dark:border-slate-800 bg-white dark:bg-slate-900">
-              <Text className="text-xs text-[#6b7280] dark:text-slate-400">
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 20,
+                paddingVertical: 14,
+                borderTopWidth: 1,
+                borderTopColor: theme.border,
+                backgroundColor: theme.cardBg,
+              }}
+            >
+              <Text style={{ fontSize: 12, color: theme.textMuted }}>
                 Menampilkan {filteredCompanies.length > 0 ? 1 : 0} - {filteredCompanies.length} dari {companies.length} Perusahaan
               </Text>
 
-              <View className="flex-row items-center gap-1.5">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <TouchableOpacity
                   disabled={currentPage === 1}
                   onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  className={`w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800 ${currentPage === 1 ? 'opacity-40' : 'opacity-100'}`}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: theme.cardBg,
+                    opacity: currentPage === 1 ? 0.4 : 1,
+                  }}
                 >
-                  <ChevronLeft size={14} color="#9ca3af" />
+                  <ChevronLeft size={14} color={theme.textMuted} />
                 </TouchableOpacity>
 
                 {Array.from({ length: Math.max(1, Math.ceil(filteredCompanies.length / 10)) }, (_, i) => i + 1).map((p) => {
@@ -918,9 +959,18 @@ export default function TenantManagementScreen() {
                     <TouchableOpacity
                       key={p}
                       onPress={() => setCurrentPage(p)}
-                      className={`w-8 h-8 rounded-md items-center justify-center ${isActive ? 'bg-[#2a75d3] border border-[#2a75d3]' : 'border border-[#e5e7eb] dark:border-slate-700 bg-white dark:bg-slate-800'}`}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 6,
+                        backgroundColor: isActive ? theme.primaryBlue : theme.cardBg,
+                        borderWidth: 1,
+                        borderColor: isActive ? theme.primaryBlue : theme.border,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
-                      <Text className={`text-xs ${isActive ? 'font-bold text-white' : 'font-medium text-[#111827] dark:text-white'}`}>{p}</Text>
+                      <Text style={{ fontSize: 12, fontWeight: isActive ? '700' : '500', color: isActive ? '#ffffff' : theme.text }}>{p}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -928,9 +978,19 @@ export default function TenantManagementScreen() {
                 <TouchableOpacity
                   disabled={currentPage >= Math.max(1, Math.ceil(filteredCompanies.length / 10))}
                   onPress={() => setCurrentPage(Math.min(Math.max(1, Math.ceil(filteredCompanies.length / 10)), currentPage + 1))}
-                  className={`w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800 ${currentPage >= Math.max(1, Math.ceil(filteredCompanies.length / 10)) ? 'opacity-40' : 'opacity-100'}`}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: theme.cardBg,
+                    opacity: currentPage >= Math.max(1, Math.ceil(filteredCompanies.length / 10)) ? 0.4 : 1,
+                  }}
                 >
-                  <ChevronRight size={14} color="#111827" />
+                  <ChevronRight size={14} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -940,115 +1000,185 @@ export default function TenantManagementScreen() {
 
       {/* MODAL: TAMBAH PERUSAHAAN */}
       <Modal visible={showAddModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/60 items-center justify-center p-4">
-          <View className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg border border-[#e5e7eb] dark:border-slate-800 shadow-2xl p-6">
-            <View className="flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-              <View className="flex-row items-center">
-                <View className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 items-center justify-center mr-2.5">
-                  <Building2 size={18} color="#2a75d3" />
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <View
+            style={{
+              backgroundColor: theme.cardBg,
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 520,
+              borderWidth: 1,
+              borderColor: theme.border,
+              padding: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.2,
+              shadowRadius: 20,
+              elevation: 10,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: theme.infoBg, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                  <Building2 size={18} color={theme.primaryBlue} />
                 </View>
-                <Text className="text-lg font-bold text-[#111827] dark:text-white">
+                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text }}>
                   Tambah Perusahaan Baru
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <X size={20} color="#6b7280" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView className="max-h-[460px] pr-1" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-              <View className="gap-3.5">
+            <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+              <View style={{ gap: 14 }}>
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Nama Perusahaan *
                   </Text>
                   <TextInput
                     placeholder="Contoh: PT Nama Perusahaan"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={theme.placeholder}
                     value={formName}
                     onChangeText={setFormName}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Kode Subdomain / Schema
                   </Text>
                   <TextInput
                     placeholder="suryakencana (tanpa spasi)"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={theme.placeholder}
                     value={formCode}
                     onChangeText={setFormCode}
                     autoCapitalize="none"
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
 
-                <View className="grid grid-cols-2 gap-3">
-                  <View>
-                    <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                       Kontak Utama
                     </Text>
                     <TextInput
                       placeholder="Nama PIC"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor={theme.placeholder}
                       value={formContactName}
                       onChangeText={setFormContactName}
-                      className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        borderRadius: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        fontSize: 14,
+                        color: theme.text,
+                        backgroundColor: theme.subtleBg,
+                      } as any}
                     />
                   </View>
-                  <View>
-                    <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                       No. Telepon / WhatsApp
                     </Text>
                     <TextInput
                       placeholder="0812-3456-7890"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor={theme.placeholder}
                       keyboardType="phone-pad"
                       value={formContactPhone}
                       onChangeText={setFormContactPhone}
-                      className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        borderRadius: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        fontSize: 14,
+                        color: theme.text,
+                        backgroundColor: theme.subtleBg,
+                      } as any}
                     />
                   </View>
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Email Admin Utama *
                   </Text>
                   <TextInput
                     placeholder="admin@suryakencana.co.id"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={theme.placeholder}
                     value={formContactEmail}
                     onChangeText={setFormContactEmail}
                     autoCapitalize="none"
                     keyboardType="email-address"
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Password Awal Admin *
                   </Text>
-                  <View className="relative justify-center">
+                  <View style={{ position: 'relative', justifyContent: 'center' }}>
                     <TextInput
                       placeholder="Minimal 6 karakter"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor={theme.placeholder}
                       secureTextEntry={!showFormPassword}
                       value={formPassword}
                       onChangeText={setFormPassword}
-                      className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 pr-10 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        borderRadius: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        paddingRight: 40,
+                        fontSize: 14,
+                        color: theme.text,
+                        backgroundColor: theme.subtleBg,
+                      } as any}
                     />
                     <TouchableOpacity
                       onPress={() => setShowFormPassword(!showFormPassword)}
                       style={{ position: 'absolute', right: 10, padding: 4 }}
                     >
                       {showFormPassword ? (
-                        <EyeOff size={16} color="#6b7280" />
+                        <EyeOff size={16} color={theme.textMuted} />
                       ) : (
-                        <Eye size={16} color="#6b7280" />
+                        <Eye size={16} color={theme.textMuted} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -1056,64 +1186,95 @@ export default function TenantManagementScreen() {
 
                 {/* Pilih Paket */}
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Pilih Paket Langganan
                   </Text>
-                  <View className="flex-row gap-2">
-                    {(['Basic', 'Pro', 'Enterprise'] as const).map((p) => (
-                      <TouchableOpacity
-                        key={p}
-                        onPress={() => setFormPlan(p)}
-                        className={`flex-1 py-2.5 items-center rounded-xl border ${
-                          formPlan === p
-                            ? 'bg-[#2a75d3] border-[#2a75d3]'
-                            : 'border-[#e5e7eb] dark:border-slate-700 bg-white dark:bg-slate-800'
-                        }`}
-                      >
-                        <Text
-                          className={`text-xs font-bold ${
-                            formPlan === p ? 'text-white' : 'text-slate-700 dark:text-slate-300'
-                          }`}
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {(['Basic', 'Pro', 'Enterprise'] as const).map((p) => {
+                      const isSelected = formPlan === p;
+                      return (
+                        <TouchableOpacity
+                          key={p}
+                          onPress={() => setFormPlan(p)}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 10,
+                            alignItems: 'center',
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: isSelected ? theme.primaryBlue : theme.border,
+                            backgroundColor: isSelected ? theme.primaryBlue : theme.cardBg,
+                          }}
                         >
-                          {p}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: '700',
+                              color: isSelected ? '#ffffff' : theme.text,
+                            }}
+                          >
+                            {p}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Batas Maksimal Kuota Pengguna
                   </Text>
                   <TextInput
                     placeholder="50"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={theme.placeholder}
                     keyboardType="numeric"
                     value={formMaxUsers}
                     onChangeText={setFormMaxUsers}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
               </View>
             </ScrollView>
 
-            <View className="flex-row justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.border, marginTop: 16 }}>
               <TouchableOpacity
                 onPress={() => setShowAddModal(false)}
-                className="px-4 py-2.5 rounded-xl border border-[#e5e7eb] dark:border-slate-700"
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                }}
               >
-                <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
                   Batal
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleCreateCompany}
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-xl bg-[#2a75d3] hover:bg-[#1d4ed8] flex-row items-center"
+                style={{
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  backgroundColor: theme.primaryBlue,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
               >
-                {isSubmitting && <ActivityIndicator size="small" color="#fff" className="mr-2" />}
-                <Text className="text-xs font-bold text-white">Simpan Perusahaan</Text>
+                {isSubmitting && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />}
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>Daftarkan Perusahaan</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1122,128 +1283,210 @@ export default function TenantManagementScreen() {
 
       {/* MODAL: EDIT PERUSAHAAN */}
       <Modal visible={showEditModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/60 items-center justify-center p-4">
-          <View className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg border border-[#e5e7eb] dark:border-slate-800 shadow-2xl p-6">
-            <View className="flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-              <View className="flex-row items-center">
-                <View className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 items-center justify-center mr-2.5">
-                  <Edit2 size={18} color="#2a75d3" />
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <View
+            style={{
+              backgroundColor: theme.cardBg,
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 520,
+              borderWidth: 1,
+              borderColor: theme.border,
+              padding: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.2,
+              shadowRadius: 20,
+              elevation: 10,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: theme.infoBg, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                  <Edit2 size={18} color={theme.primaryBlue} />
                 </View>
-                <Text className="text-lg font-bold text-[#111827] dark:text-white">
+                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text }}>
                   Edit Data Perusahaan
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                <X size={20} color="#6b7280" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView className="max-h-[460px] pr-1" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-              <View className="gap-3.5">
+            <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+              <View style={{ gap: 14 }}>
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Nama Perusahaan
                   </Text>
                   <TextInput
                     value={formName}
                     onChangeText={setFormName}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
 
-                <View className="grid grid-cols-2 gap-3">
-                  <View>
-                    <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                       Kontak Utama
                     </Text>
                     <TextInput
                       value={formContactName}
                       onChangeText={setFormContactName}
-                      className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        borderRadius: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        fontSize: 14,
+                        color: theme.text,
+                        backgroundColor: theme.subtleBg,
+                      } as any}
                     />
                   </View>
-                  <View>
-                    <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                       Telepon / WA
                     </Text>
                     <TextInput
                       value={formContactPhone}
                       onChangeText={setFormContactPhone}
-                      className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        borderRadius: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        fontSize: 14,
+                        color: theme.text,
+                        backgroundColor: theme.subtleBg,
+                      } as any}
                     />
                   </View>
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Email Kontak
                   </Text>
                   <TextInput
                     value={formContactEmail}
                     onChangeText={setFormContactEmail}
                     autoCapitalize="none"
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
 
                 {/* Pilih Paket */}
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Paket Langganan
                   </Text>
-                  <View className="flex-row gap-2">
-                    {(['Basic', 'Pro', 'Enterprise'] as const).map((p) => (
-                      <TouchableOpacity
-                        key={p}
-                        onPress={() => setFormPlan(p)}
-                        className={`flex-1 py-2.5 items-center rounded-xl border ${
-                          formPlan === p
-                            ? 'bg-[#2a75d3] border-[#2a75d3]'
-                            : 'border-[#e5e7eb] dark:border-slate-700 bg-white dark:bg-slate-800'
-                        }`}
-                      >
-                        <Text
-                          className={`text-xs font-bold ${
-                            formPlan === p ? 'text-white' : 'text-slate-700 dark:text-slate-300'
-                          }`}
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {(['Basic', 'Pro', 'Enterprise'] as const).map((p) => {
+                      const isSelected = formPlan === p;
+                      return (
+                        <TouchableOpacity
+                          key={p}
+                          onPress={() => setFormPlan(p)}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 10,
+                            alignItems: 'center',
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: isSelected ? theme.primaryBlue : theme.border,
+                            backgroundColor: isSelected ? theme.primaryBlue : theme.cardBg,
+                          }}
                         >
-                          {p}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: '700',
+                              color: isSelected ? '#ffffff' : theme.text,
+                            }}
+                          >
+                            {p}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Batas Kuota Pengguna
                   </Text>
                   <TextInput
                     value={formMaxUsers}
                     onChangeText={setFormMaxUsers}
                     keyboardType="numeric"
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
               </View>
             </ScrollView>
 
-            <View className="flex-row justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.border, marginTop: 16 }}>
               <TouchableOpacity
                 onPress={() => setShowEditModal(false)}
-                className="px-4 py-2.5 rounded-xl border border-[#e5e7eb] dark:border-slate-700"
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                }}
               >
-                <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
                   Batal
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleUpdateCompany}
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-xl bg-[#2a75d3] hover:bg-[#1d4ed8] flex-row items-center"
+                style={{
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  backgroundColor: theme.primaryBlue,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
               >
-                {isSubmitting && <ActivityIndicator size="small" color="#fff" className="mr-2" />}
-                <Text className="text-xs font-bold text-white">Simpan Perubahan</Text>
+                {isSubmitting && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />}
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>Simpan Perubahan</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1252,96 +1495,128 @@ export default function TenantManagementScreen() {
 
       {/* MODAL: DETAIL PERUSAHAAN */}
       <Modal visible={showDetailModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/60 items-center justify-center p-4">
-          <View className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md border border-[#e5e7eb] dark:border-slate-800 shadow-2xl p-6">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <View
+            style={{
+              backgroundColor: theme.cardBg,
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 460,
+              borderWidth: 1,
+              borderColor: theme.border,
+              padding: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.2,
+              shadowRadius: 20,
+              elevation: 10,
+            }}
+          >
             {activeCompany && (
               <View>
-                <View className="flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-                  <View className="flex-row items-center">
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 16 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View
-                      style={{ backgroundColor: activeCompany.initialsBg }}
-                      className="w-10 h-10 rounded-lg items-center justify-center mr-3"
+                      style={{
+                        backgroundColor: activeCompany.initialsBg,
+                        width: 40,
+                        height: 40,
+                        borderRadius: 10,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 12,
+                      }}
                     >
-                      <Text style={{ color: activeCompany.initialsColor }} className="text-sm font-bold">
+                      <Text style={{ color: activeCompany.initialsColor, fontSize: 14, fontWeight: '700' }}>
                         {activeCompany.initials}
                       </Text>
                     </View>
                     <View>
-                      <Text className="text-base font-bold text-[#111827] dark:text-white">
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>
                         {activeCompany.name}
                       </Text>
-                      <Text className="text-xs text-[#6b7280] font-mono">
+                      <Text style={{ fontSize: 12, color: theme.textMuted }}>
                         {activeCompany.tenantCodeId}
                       </Text>
                     </View>
                   </View>
                   <TouchableOpacity onPress={() => setShowDetailModal(false)}>
-                    <X size={20} color="#6b7280" />
+                    <X size={20} color={theme.textMuted} />
                   </TouchableOpacity>
                 </View>
 
                 {/* Information rows */}
-                <View className="gap-2.5 mb-5">
-                  <View className="flex-row justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                    <Text className="text-xs text-slate-500">Status Akun</Text>
+                <View style={{ gap: 10, marginBottom: 20 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted }}>Status Akun</Text>
                     {renderStatusBadge(activeCompany.status)}
                   </View>
-                  <View className="flex-row justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                    <Text className="text-xs text-slate-500">Paket Langganan</Text>
-                    <Text className="text-xs font-bold text-[#2a75d3]">{activeCompany.plan}</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted }}>Paket Langganan</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: theme.primaryBlue }}>{activeCompany.plan}</Text>
                   </View>
-                  <View className="flex-row justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                    <Text className="text-xs text-slate-500">Kontak Utama</Text>
-                    <View className="items-end">
-                      <Text className="text-xs font-semibold text-[#111827] dark:text-white">
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted }}>Kontak Utama</Text>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text }}>
                         {activeCompany.contactPerson.name}
                       </Text>
-                      <Text className="text-[11px] text-slate-400">
+                      <Text style={{ fontSize: 11, color: theme.textMuted }}>
                         {activeCompany.contactPerson.email}
                       </Text>
-                      <Text className="text-[11px] text-slate-400">
+                      <Text style={{ fontSize: 11, color: theme.textMuted }}>
                         {activeCompany.contactPerson.phone}
                       </Text>
                     </View>
                   </View>
-                  <View className="flex-row justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                    <Text className="text-xs text-slate-500">Penggunaan Kuota</Text>
-                    <Text className="text-xs font-semibold text-[#111827] dark:text-white">
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted }}>Penggunaan Kuota</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text }}>
                       {activeCompany.quota.used} / {activeCompany.quota.max} Akun
                     </Text>
                   </View>
-                  <View className="flex-row justify-between py-2">
-                    <Text className="text-xs text-slate-500">Tanggal Terdaftar</Text>
-                    <Text className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted }}>Tanggal Terdaftar</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '500', color: theme.text }}>
                       {activeCompany.subscriptionDate}
                     </Text>
                   </View>
                 </View>
 
                 {/* Action Buttons */}
-                <View className="gap-2">
+                <View style={{ gap: 8 }}>
                   <TouchableOpacity
                     onPress={() => {
                       setShowDetailModal(false);
                       handleOpenEdit(activeCompany);
                     }}
-                    className="py-2.5 rounded-xl items-center bg-[#2a75d3] hover:bg-[#1d4ed8]"
+                    style={{
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      alignItems: 'center',
+                      backgroundColor: theme.primaryBlue,
+                    }}
                   >
-                    <Text className="text-xs font-bold text-white">Edit Informasi</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>Edit Informasi</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     onPress={() => handleToggleSuspend(activeCompany)}
-                    className={`py-2.5 rounded-xl items-center border ${
-                      activeCompany.status === 'Suspended'
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                        : 'border-red-200 bg-red-50 text-red-600'
-                    }`}
+                    style={{
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: activeCompany.status === 'Suspended' ? theme.success : theme.danger,
+                      backgroundColor: activeCompany.status === 'Suspended' ? theme.successBg : theme.dangerBg,
+                    }}
                   >
                     <Text
-                      className={`text-xs font-bold ${
-                        activeCompany.status === 'Suspended' ? 'text-emerald-700' : 'text-red-600'
-                      }`}
+                      style={{
+                        fontSize: 13,
+                        fontWeight: '700',
+                        color: activeCompany.status === 'Suspended' ? theme.success : theme.danger,
+                      }}
                     >
                       {activeCompany.status === 'Suspended' ? 'Pulihkan Akun Perusahaan' : 'Suspend Perusahaan'}
                     </Text>
@@ -1349,58 +1624,20 @@ export default function TenantManagementScreen() {
 
                   <TouchableOpacity
                     onPress={() => setShowDetailModal(false)}
-                    className="py-2.5 rounded-xl items-center bg-slate-100 dark:bg-slate-800 mt-1"
+                    style={{
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      marginTop: 4,
+                    }}
                   >
-                    <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tutup</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>Tutup</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAL: NOTIFIKASI */}
-      <Modal visible={showNotifModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/60 items-center justify-center p-4">
-          <View className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm border border-[#e5e7eb] dark:border-slate-800 shadow-2xl p-5">
-            <View className="flex-row items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-3">
-              <View className="flex-row items-center">
-                <Bell size={18} color="#2a75d3" className="mr-2" />
-                <Text className="text-sm font-bold text-[#111827] dark:text-white ml-2">
-                  Notifikasi Sistem (3)
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowNotifModal(false)}>
-                <X size={18} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-
-            <View className="gap-3">
-              <View className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100">
-                <Text className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                  Status Sistem Siap
-                </Text>
-                <Text className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                  Layanan multi-tenant YexsSync berjalan normal dan optimal.
-                </Text>
-              </View>
-              <View className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100">
-                <Text className="text-xs font-bold text-blue-800 dark:text-blue-300">
-                  Tenant Pengujian Play Store
-                </Text>
-                <Text className="text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">
-                  PT YexsSync Solusi Digital aktif untuk peninjauan aplikasi.
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              onPress={() => setShowNotifModal(false)}
-              className="mt-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl items-center"
-            >
-              <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tutup</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>

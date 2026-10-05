@@ -39,12 +39,13 @@ import { router } from 'expo-router';
 import { AuthContext } from '@/context/AuthContext';
 import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
+import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
 
 type SettingsTab = 'general' | 'payment' | 'smtp' | 'security' | 'backup';
 
 export default function SuperAdminSettingsScreen() {
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 1024;
+  const isDesktop = width >= 768;
   const theme = useSuperAdminTheme();
   const { user, logout } = useContext(AuthContext);
 
@@ -147,187 +148,12 @@ export default function SuperAdminSettingsScreen() {
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
       >
-        {/* Header / Topbar */}
-        <View
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingVertical: 20,
-            marginBottom: 20,
-            backgroundColor: theme.bg,
-            zIndex: 10,
-          }}
-        >
-          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {!isDesktop && (
-              <TouchableOpacity
-                onPress={() => setIsMobileMenuOpen(true)}
-                style={{
-                  padding: 8,
-                  borderRadius: 8,
-                  backgroundColor: theme.cardBg,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                }}
-              >
-                <Menu size={20} color={theme.text} />
-              </TouchableOpacity>
-            )}
-            <View>
-              <Text style={{ fontSize: 24, fontWeight: '700', color: theme.text }}>
-                Pengaturan Sistem Global
-              </Text>
-            </View>
-          </View>
-
-          {/* Topbar Right */}
-          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 15 }}>
-            {/* Theme Toggle Button */}
-            <TouchableOpacity
-              onPress={theme.toggleTheme}
-              title={theme.isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: theme.cardBg,
-                borderWidth: 1,
-                borderColor: theme.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              } as any}
-            >
-              {theme.isDark ? (
-                <Sun size={18} color="#f59e0b" />
-              ) : (
-                <Moon size={18} color={theme.textMuted} />
-              )}
-            </TouchableOpacity>
-
-            {/* Notifications */}
-            <TouchableOpacity
-              onPress={() => setShowNotifModal(true)}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: theme.cardBg,
-                borderWidth: 1,
-                borderColor: theme.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              } as any}
-            >
-              <Bell size={18} color={theme.textMuted} />
-            </TouchableOpacity>
-
-            {/* User Profile */}
-            <View style={{ position: 'relative' }}>
-              <TouchableOpacity
-                onPress={() => setShowProfileDropdown(!showProfileDropdown)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  backgroundColor: theme.cardBg,
-                  paddingVertical: 5,
-                  paddingLeft: 5,
-                  paddingRight: 15,
-                  borderRadius: 30,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  cursor: 'pointer',
-                } as any}
-              >
-                <Image
-                  source={{ uri: 'https://i.pravatar.cc/150?img=11' }}
-                  style={{ width: 36, height: 36, borderRadius: 18 }}
-                />
-                <View style={{ display: 'flex', flexDirection: 'column' }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>
-                    {user?.name || 'Super Admin'}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: theme.accent, fontWeight: '500' }}>
-                    Super Admin
-                  </Text>
-                </View>
-                <ChevronDown size={14} color={theme.textMuted} />
-              </TouchableOpacity>
-
-              {/* Profile Dropdown */}
-              {showProfileDropdown && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 50,
-                    right: 0,
-                    width: 210,
-                    backgroundColor: theme.cardBg,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 10,
-                    elevation: 5,
-                    padding: 8,
-                    zIndex: 50,
-                  }}
-                >
-                  <View style={{ padding: 8, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 4 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
-                      {user?.email || 'azizsework@gmail.com'}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: theme.textMuted }}>Hak Akses Penuh</Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowProfileDropdown(false);
-                      router.push('/superadmin');
-                    }}
-                    style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 10,
-                      borderRadius: 6,
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      cursor: 'pointer',
-                    } as any}
-                  >
-                    <PieChart size={15} color={theme.textMuted} />
-                    <Text style={{ fontSize: 13, color: theme.text }}>Dashboard Ikhtisar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleLogout}
-                    style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 10,
-                      borderRadius: 6,
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                      marginTop: 4,
-                      cursor: 'pointer',
-                    } as any}
-                  >
-                    <LogOut size={15} color="#ef4444" />
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#ef4444' }}>Keluar</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
+        {/* Top Header */}
+        <SuperAdminTopHeader
+          title="Pengaturan Global"
+          isDesktop={isDesktop}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
 
         {/* Save Success Banner */}
         {saveSuccessMessage && (

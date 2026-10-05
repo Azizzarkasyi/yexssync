@@ -50,6 +50,7 @@ import { AuthContext } from '@/context/AuthContext';
 import { useError } from '@/context/ErrorContext';
 import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
+import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
 import api from '@/lib/api';
 
 // Interface definitions
@@ -74,7 +75,7 @@ interface AdminUser {
 
 export default function CentralAdminManagementScreen() {
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 1024;
+  const isDesktop = width >= 768;
   const theme = useSuperAdminTheme();
   const { user, logout } = useContext(AuthContext);
   const { showError } = useError();
@@ -326,28 +327,70 @@ export default function CentralAdminManagementScreen() {
 
   // Role Badge Component
   const renderRoleBadge = (role: AdminUser['role'], isInactive: boolean) => {
-    const opacityClass = isInactive ? 'opacity-60' : '';
+    const opacityStyle = isInactive ? { opacity: 0.6 } : {};
 
     if (role === 'SUPER_ADMIN') {
       return (
-        <View className={`flex-row items-center bg-[#ede9fe] dark:bg-purple-950/40 px-2.5 py-1 rounded-md self-start ${opacityClass}`}>
-          <ShieldCheck size={14} color="#8b5cf6" className="mr-1" />
-          <Text className="text-xs font-semibold text-[#8b5cf6] ml-1">Super Admin</Text>
+        <View
+          style={[
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: theme.isDark ? 'rgba(139, 92, 246, 0.2)' : '#ede9fe',
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 6,
+              alignSelf: 'flex-start',
+              gap: 6,
+            },
+            opacityStyle,
+          ]}
+        >
+          <ShieldCheck size={14} color="#8b5cf6" />
+          <Text style={{ fontSize: 12, fontWeight: '600', color: '#8b5cf6' }}>Super Admin</Text>
         </View>
       );
     }
     if (role === 'SUPPORT') {
       return (
-        <View className={`flex-row items-center bg-[#dbeafe] dark:bg-blue-950/40 px-2.5 py-1 rounded-md self-start ${opacityClass}`}>
-          <Headphones size={14} color="#3b82f6" className="mr-1" />
-          <Text className="text-xs font-semibold text-[#3b82f6] ml-1">Tim Support</Text>
+        <View
+          style={[
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: theme.isDark ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe',
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 6,
+              alignSelf: 'flex-start',
+              gap: 6,
+            },
+            opacityStyle,
+          ]}
+        >
+          <Headphones size={14} color="#3b82f6" />
+          <Text style={{ fontSize: 12, fontWeight: '600', color: '#3b82f6' }}>Tim Support</Text>
         </View>
       );
     }
     return (
-      <View className={`flex-row items-center bg-[#d1fae5] dark:bg-emerald-950/40 px-2.5 py-1 rounded-md self-start ${opacityClass}`}>
-        <Receipt size={14} color="#10b981" className="mr-1" />
-        <Text className="text-xs font-semibold text-[#10b981] ml-1">Finance</Text>
+      <View
+        style={[
+          {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: theme.isDark ? 'rgba(16, 185, 129, 0.2)' : '#d1fae5',
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            borderRadius: 6,
+            alignSelf: 'flex-start',
+            gap: 6,
+          },
+          opacityStyle,
+        ]}
+      >
+        <Receipt size={14} color="#10b981" />
+        <Text style={{ fontSize: 12, fontWeight: '600', color: '#10b981' }}>Finance</Text>
       </View>
     );
   };
@@ -356,14 +399,34 @@ export default function CentralAdminManagementScreen() {
   const renderStatusBadge = (status: AdminUser['status']) => {
     if (status === 'Aktif') {
       return (
-        <View className="bg-[#d1fae5] px-3 py-1 rounded-full items-center justify-center self-start">
-          <Text className="text-[#10b981] text-xs font-semibold">Aktif</Text>
+        <View
+          style={{
+            backgroundColor: theme.successBg,
+            paddingHorizontal: 12,
+            paddingVertical: 4,
+            borderRadius: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+            alignSelf: 'flex-start',
+          }}
+        >
+          <Text style={{ color: theme.success, fontSize: 12, fontWeight: '600' }}>Aktif</Text>
         </View>
       );
     }
     return (
-      <View className="bg-[#f3f4f6] dark:bg-slate-800 px-3 py-1 rounded-full items-center justify-center self-start">
-        <Text className="text-[#6b7280] dark:text-slate-400 text-xs font-semibold">Non-Aktif</Text>
+      <View
+        style={{
+          backgroundColor: theme.subtleBg,
+          paddingHorizontal: 12,
+          paddingVertical: 4,
+          borderRadius: 20,
+          alignItems: 'center',
+          justifyContent: 'center',
+          alignSelf: 'flex-start',
+        }}
+      >
+        <Text style={{ color: theme.textMuted, fontSize: 12, fontWeight: '600' }}>Non-Aktif</Text>
       </View>
     );
   };
@@ -380,190 +443,196 @@ export default function CentralAdminManagementScreen() {
 
       {/* Main Content View */}
       <View style={{ flex: 1, flexDirection: 'column', height: '100%', minHeight: 0 }}>
-        {/* Sticky Topbar */}
-        <View style={{ backgroundColor: theme.cardBg, paddingHorizontal: 24, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.border, zIndex: 10 }}>
-          <View className="flex-row items-center">
-            {!isDesktop && (
-              <TouchableOpacity
-                onPress={() => setIsMobileMenuOpen(true)}
-                className="mr-3 p-2 rounded-lg bg-white dark:bg-slate-800 border border-[#e5e7eb] dark:border-slate-700"
-              >
-                <Menu size={20} color="#111827" />
-              </TouchableOpacity>
-            )}
-            <Text className="text-xl md:text-2xl font-bold text-[#111827] dark:text-white">
-              Manajemen Admin Pusat
-            </Text>
-          </View>
-
-          <View className="flex-row items-center gap-3 md:gap-4">
-            {/* Theme Toggle */}
-            <TouchableOpacity
-              onPress={theme.toggleTheme}
-              title={theme.isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
-              className="p-2 bg-white dark:bg-slate-900 border border-[#e5e7eb] dark:border-slate-700 rounded-full"
-            >
-              {theme.isDark ? (
-                <Sun size={18} color="#f59e0b" />
-              ) : (
-                <Moon size={18} color="#6b7280" />
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setShowNotifModal(true)}
-              className="relative p-2 bg-white dark:bg-slate-900 border border-[#e5e7eb] dark:border-slate-700 rounded-full"
-            >
-              <Bell size={19} color="#6b7280" />
-            </TouchableOpacity>
-
-            {/* Profile pill */}
-            <View className="relative">
-              <TouchableOpacity
-                onPress={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex-row items-center bg-white dark:bg-slate-900 pl-1.5 pr-3 py-1 rounded-full border border-[#e5e7eb] dark:border-slate-700"
-              >
-                <Image
-                  source={{ uri: 'https://i.pravatar.cc/150?img=11' }}
-                  className="w-8 h-8 rounded-full mr-2.5"
-                />
-                <View className="mr-2">
-                  <Text className="text-xs font-semibold text-[#111827] dark:text-white">
-                    {user?.name || 'Super Admin'}
-                  </Text>
-                  <Text className="text-[10px] text-[#2a75d3] font-medium">Super Admin</Text>
-                </View>
-                <ChevronDown size={14} color="#6b7280" />
-              </TouchableOpacity>
-
-              {showProfileDropdown && (
-                <View className="absolute right-0 top-12 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-[#e5e7eb] dark:border-slate-700 p-2 z-50">
-                  <View className="p-2 border-b border-slate-100 dark:border-slate-800 mb-1">
-                    <Text className="text-xs font-bold text-[#111827] dark:text-white">
-                      {user?.email || 'superadmin@yexssync.com'}
-                    </Text>
-                    <Text className="text-[10px] text-[#10b981] font-semibold mt-0.5">● Super Admin</Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowProfileDropdown(false);
-                      router.push('/superadmin');
-                    }}
-                    className="flex-row items-center px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
-                  >
-                    <PieChart size={14} color="#6b7280" className="mr-2" />
-                    <Text className="text-xs text-slate-700 dark:text-slate-300 ml-2">Dashboard Ikhtisar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleLogout}
-                    className="flex-row items-center px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 mt-1"
-                  >
-                    <LogOut size={14} color="#ef4444" className="mr-2" />
-                    <Text className="text-xs font-semibold text-red-500 ml-2">Logout</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-
         {/* Scrollable Body */}
         <ScrollView
-          className="flex-1 px-4 md:px-6 pt-2 pb-10"
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }}
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingHorizontal: isDesktop ? 24 : 16,
+            paddingBottom: 60,
+          }}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
         >
+          {/* Harmonized Super Admin Header */}
+          <SuperAdminTopHeader
+            title="Manajemen Admin"
+            isDesktop={isDesktop}
+            onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+          />
+
           {/* Action Toolbar & Filters */}
-          <View className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-[#e5e7eb] dark:border-slate-800 shadow-sm mb-5 flex-col md:flex-row md:items-center justify-between gap-4">
-            <View className="flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <View
+            style={{
+              backgroundColor: theme.cardBg,
+              padding: 16,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: theme.border,
+              marginBottom: 20,
+              flexDirection: isDesktop ? 'row' : 'column',
+              alignItems: isDesktop ? 'center' : 'stretch',
+              justifyContent: 'space-between',
+              gap: 16,
+            }}
+          >
+            <View
+              style={{
+                flex: 1,
+                flexDirection: isDesktop ? 'row' : 'column',
+                alignItems: isDesktop ? 'center' : 'stretch',
+                gap: 12,
+              }}
+            >
               {/* Search box */}
-              <View className="flex-row items-center bg-[#f9fafb] dark:bg-slate-800 px-3 py-2 rounded-lg border border-[#e5e7eb] dark:border-slate-700 flex-1 max-w-full sm:max-w-xs">
-                <Search size={16} color="#6b7280" />
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: theme.subtleBg,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  flex: isDesktop ? 1 : undefined,
+                  maxWidth: isDesktop ? 320 : '100%',
+                }}
+              >
+                <Search size={16} color={theme.textMuted} />
                 <TextInput
                   placeholder="Cari nama atau email admin..."
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={theme.placeholder}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  className="ml-2 flex-1 text-xs md:text-sm text-[#111827] dark:text-white outline-none"
+                  style={{
+                    marginLeft: 8,
+                    flex: 1,
+                    fontSize: 13,
+                    color: theme.text,
+                    outlineStyle: 'none',
+                    backgroundColor: 'transparent',
+                    borderWidth: 0,
+                  } as any}
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <X size={14} color="#9ca3af" />
+                    <X size={14} color={theme.textMuted} />
                   </TouchableOpacity>
                 )}
               </View>
 
               {/* Filter Peran */}
-              <View className="flex-row items-center bg-[#f9fafb] dark:bg-slate-800 rounded-lg border border-[#e5e7eb] dark:border-slate-700 px-3 py-1.5">
-                <Text className="text-xs text-slate-500 mr-2">Peran:</Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: theme.subtleBg,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Text style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Peran:</Text>
                 {[
                   { key: 'ALL', label: 'Semua' },
                   { key: 'superadmin', label: 'Super Admin' },
                   { key: 'support', label: 'Support' },
                   { key: 'finance', label: 'Finance' },
-                ].map((r) => (
-                  <TouchableOpacity
-                    key={r.key}
-                    onPress={() => setSelectedRoleFilter(r.key)}
-                    className={`px-2.5 py-1 rounded-md ${
-                      selectedRoleFilter === r.key
-                        ? 'bg-[#2a75d3] text-white'
-                        : 'hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-medium ${
-                        selectedRoleFilter === r.key
-                          ? 'text-white font-bold'
-                          : 'text-slate-700 dark:text-slate-300'
-                      }`}
+                ].map((r) => {
+                  const isSelected = selectedRoleFilter === r.key;
+                  return (
+                    <TouchableOpacity
+                      key={r.key}
+                      onPress={() => setSelectedRoleFilter(r.key)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 6,
+                        backgroundColor: isSelected ? theme.primaryBlue : 'transparent',
+                      }}
                     >
-                      {r.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: isSelected ? '700' : '500',
+                          color: isSelected ? '#ffffff' : theme.text,
+                        }}
+                      >
+                        {r.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               {/* Filter Status */}
-              <View className="flex-row items-center bg-[#f9fafb] dark:bg-slate-800 rounded-lg border border-[#e5e7eb] dark:border-slate-700 px-3 py-1.5">
-                <Text className="text-xs text-slate-500 mr-2">Status:</Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: theme.subtleBg,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Text style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Status:</Text>
                 {[
                   { key: 'ALL', label: 'Semua' },
                   { key: 'active', label: 'Aktif' },
                   { key: 'inactive', label: 'Non-Aktif' },
-                ].map((s) => (
-                  <TouchableOpacity
-                    key={s.key}
-                    onPress={() => setSelectedStatusFilter(s.key)}
-                    className={`px-2.5 py-1 rounded-md ${
-                      selectedStatusFilter === s.key
-                        ? 'bg-[#2a75d3] text-white'
-                        : 'hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-medium ${
-                        selectedStatusFilter === s.key
-                          ? 'text-white font-bold'
-                          : 'text-slate-700 dark:text-slate-300'
-                      }`}
+                ].map((s) => {
+                  const isSelected = selectedStatusFilter === s.key;
+                  return (
+                    <TouchableOpacity
+                      key={s.key}
+                      onPress={() => setSelectedStatusFilter(s.key)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 6,
+                        backgroundColor: isSelected ? theme.primaryBlue : 'transparent',
+                      }}
                     >
-                      {s.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: isSelected ? '700' : '500',
+                          color: isSelected ? '#ffffff' : theme.text,
+                        }}
+                      >
+                        {s.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
             {/* Tambah Admin Button */}
             <TouchableOpacity
               onPress={() => setShowAddModal(true)}
-              className="flex-row items-center px-4 py-2 rounded-lg bg-[#2a75d3] hover:bg-[#1d4ed8] shadow-sm self-end sm:self-auto"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: theme.primaryBlue,
+                paddingHorizontal: 16,
+                paddingVertical: 9,
+                borderRadius: 8,
+                alignSelf: isDesktop ? 'auto' : 'flex-end',
+                gap: 8,
+              }}
             >
-              <UserPlus size={16} color="#ffffff" className="mr-1.5" />
-              <Text className="text-xs font-bold text-white ml-1.5">Tambah Admin</Text>
+              <UserPlus size={16} color="#ffffff" />
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>Tambah Admin</Text>
             </TouchableOpacity>
           </View>
 
@@ -778,28 +847,68 @@ export default function CentralAdminManagementScreen() {
             </ScrollView>
 
             {/* Pagination Controls */}
-            <View className="flex-row items-center justify-between px-5 py-4 border-t border-[#e5e7eb] dark:border-slate-800 bg-white dark:bg-slate-900">
-              <Text className="text-xs text-[#6b7280] dark:text-slate-400">
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 20,
+                paddingVertical: 14,
+                borderTopWidth: 1,
+                borderTopColor: theme.border,
+                backgroundColor: theme.cardBg,
+              }}
+            >
+              <Text style={{ fontSize: 12, color: theme.textMuted }}>
                 Menampilkan {filteredAdmins.length > 0 ? 1 : 0} - {filteredAdmins.length} dari {admins.length} Admin
               </Text>
 
-              <View className="flex-row items-center gap-1.5">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <TouchableOpacity
                   disabled
-                  className="w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800 opacity-50"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: theme.cardBg,
+                    opacity: 0.5,
+                  }}
                 >
-                  <ChevronLeft size={14} color="#9ca3af" />
+                  <ChevronLeft size={14} color={theme.textMuted} />
                 </TouchableOpacity>
 
-                <TouchableOpacity className="w-8 h-8 rounded-md bg-[#2a75d3] border border-[#2a75d3] items-center justify-center">
-                  <Text className="text-xs font-bold text-white">1</Text>
+                <TouchableOpacity
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 6,
+                    backgroundColor: theme.primaryBlue,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#ffffff' }}>1</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   disabled
-                  className="w-8 h-8 rounded-md border border-[#e5e7eb] dark:border-slate-700 items-center justify-center bg-white dark:bg-slate-800 opacity-50"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: theme.cardBg,
+                    opacity: 0.5,
+                  }}
                 >
-                  <ChevronRight size={14} color="#9ca3af" />
+                  <ChevronRight size={14} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -809,118 +918,179 @@ export default function CentralAdminManagementScreen() {
 
       {/* MODAL: TAMBAH ADMIN */}
       <Modal visible={showAddModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/60 items-center justify-center p-4">
-          <View className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg border border-[#e5e7eb] dark:border-slate-800 shadow-2xl p-6">
-            <View className="flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-              <View className="flex-row items-center">
-                <View className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 items-center justify-center mr-2.5">
-                  <UserPlus size={18} color="#2a75d3" />
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <View
+            style={{
+              backgroundColor: theme.cardBg,
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 520,
+              borderWidth: 1,
+              borderColor: theme.border,
+              padding: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.2,
+              shadowRadius: 20,
+              elevation: 10,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: theme.infoBg, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                  <UserPlus size={18} color={theme.primaryBlue} />
                 </View>
-                <Text className="text-lg font-bold text-[#111827] dark:text-white">
+                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text }}>
                   Tambah Admin Pusat
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <X size={20} color="#6b7280" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView className="max-h-[460px] pr-1" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-              <View className="gap-3.5">
+            <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+              <View style={{ gap: 14 }}>
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Nama Lengkap *
                   </Text>
                   <TextInput
                     placeholder="Contoh: Nama Lengkap Admin"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={theme.placeholder}
                     value={formName}
                     onChangeText={setFormName}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Email Resmi *
                   </Text>
                   <TextInput
                     placeholder="admin@perusahaan.com"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={theme.placeholder}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     value={formEmail}
                     onChangeText={setFormEmail}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
 
                 {/* Pilih Peran */}
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Peran (Role)
                   </Text>
-                  <View className="flex-row gap-2">
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
                     {[
                       { key: 'SUPER_ADMIN', label: 'Super Admin' },
                       { key: 'SUPPORT', label: 'Tim Support' },
                       { key: 'FINANCE', label: 'Finance' },
-                    ].map((r) => (
-                      <TouchableOpacity
-                        key={r.key}
-                        onPress={() => setFormRole(r.key as any)}
-                        className={`flex-1 py-2.5 items-center rounded-xl border ${
-                          formRole === r.key
-                            ? 'bg-[#2a75d3] border-[#2a75d3]'
-                            : 'border-[#e5e7eb] dark:border-slate-700 bg-white dark:bg-slate-800'
-                        }`}
-                      >
-                        <Text
-                          className={`text-xs font-bold ${
-                            formRole === r.key ? 'text-white' : 'text-slate-700 dark:text-slate-300'
-                          }`}
+                    ].map((r) => {
+                      const isSelected = formRole === r.key;
+                      return (
+                        <TouchableOpacity
+                          key={r.key}
+                          onPress={() => setFormRole(r.key as any)}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 10,
+                            alignItems: 'center',
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: isSelected ? theme.primaryBlue : theme.border,
+                            backgroundColor: isSelected ? theme.primaryBlue : theme.cardBg,
+                          }}
                         >
-                          {r.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: '700',
+                              color: isSelected ? '#ffffff' : theme.text,
+                            }}
+                          >
+                            {r.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Departemen
                   </Text>
                   <TextInput
                     placeholder="Contoh: Customer Success / IT"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={theme.placeholder}
                     value={formDepartment}
                     onChangeText={setFormDepartment}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Password Awal *
                   </Text>
-                  <View className="relative justify-center">
+                  <View style={{ position: 'relative', justifyContent: 'center' }}>
                     <TextInput
                       placeholder="Minimal 6 karakter"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor={theme.placeholder}
                       secureTextEntry={!showFormPassword}
                       value={formPassword}
                       onChangeText={setFormPassword}
-                      className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 pr-10 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        borderRadius: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        paddingRight: 40,
+                        fontSize: 14,
+                        color: theme.text,
+                        backgroundColor: theme.subtleBg,
+                      } as any}
                     />
                     <TouchableOpacity
                       onPress={() => setShowFormPassword(!showFormPassword)}
                       style={{ position: 'absolute', right: 10, padding: 4 }}
                     >
                       {showFormPassword ? (
-                        <EyeOff size={16} color="#6b7280" />
+                        <EyeOff size={16} color={theme.textMuted} />
                       ) : (
-                        <Eye size={16} color="#6b7280" />
+                        <Eye size={16} color={theme.textMuted} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -928,22 +1098,35 @@ export default function CentralAdminManagementScreen() {
               </View>
             </ScrollView>
 
-            <View className="flex-row justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.border, marginTop: 16 }}>
               <TouchableOpacity
                 onPress={() => setShowAddModal(false)}
-                className="px-4 py-2.5 rounded-xl border border-[#e5e7eb] dark:border-slate-700"
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                }}
               >
-                <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
                   Batal
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleCreateAdmin}
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-xl bg-[#2a75d3] flex-row items-center"
+                style={{
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  backgroundColor: theme.primaryBlue,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
               >
-                {isSubmitting && <ActivityIndicator size="small" color="#fff" className="mr-2" />}
-                <Text className="text-xs font-bold text-white">Simpan Admin</Text>
+                {isSubmitting && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />}
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>Simpan Admin</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -952,107 +1135,171 @@ export default function CentralAdminManagementScreen() {
 
       {/* MODAL: EDIT ADMIN */}
       <Modal visible={showEditModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/60 items-center justify-center p-4">
-          <View className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg border border-[#e5e7eb] dark:border-slate-800 shadow-2xl p-6">
-            <View className="flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-              <View className="flex-row items-center">
-                <View className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 items-center justify-center mr-2.5">
-                  <Edit2 size={18} color="#2a75d3" />
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <View
+            style={{
+              backgroundColor: theme.cardBg,
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 520,
+              borderWidth: 1,
+              borderColor: theme.border,
+              padding: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.2,
+              shadowRadius: 20,
+              elevation: 10,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: theme.infoBg, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                  <Edit2 size={18} color={theme.primaryBlue} />
                 </View>
-                <Text className="text-lg font-bold text-[#111827] dark:text-white">
-                  Edit Profil Admin
+                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text }}>
+                  Edit Admin
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                <X size={20} color="#6b7280" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView className="max-h-[460px] pr-1" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-              <View className="gap-3.5">
+            <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+              <View style={{ gap: 14 }}>
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Nama Lengkap
                   </Text>
                   <TextInput
                     value={formName}
                     onChangeText={setFormName}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Email
                   </Text>
                   <TextInput
                     value={formEmail}
                     onChangeText={setFormEmail}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
 
                 {/* Pilih Peran */}
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Peran (Role)
                   </Text>
-                  <View className="flex-row gap-2">
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
                     {[
                       { key: 'SUPER_ADMIN', label: 'Super Admin' },
                       { key: 'SUPPORT', label: 'Tim Support' },
                       { key: 'FINANCE', label: 'Finance' },
-                    ].map((r) => (
-                      <TouchableOpacity
-                        key={r.key}
-                        onPress={() => setFormRole(r.key as any)}
-                        className={`flex-1 py-2.5 items-center rounded-xl border ${
-                          formRole === r.key
-                            ? 'bg-[#2a75d3] border-[#2a75d3]'
-                            : 'border-[#e5e7eb] dark:border-slate-700 bg-white dark:bg-slate-800'
-                        }`}
-                      >
-                        <Text
-                          className={`text-xs font-bold ${
-                            formRole === r.key ? 'text-white' : 'text-slate-700 dark:text-slate-300'
-                          }`}
+                    ].map((r) => {
+                      const isSelected = formRole === r.key;
+                      return (
+                        <TouchableOpacity
+                          key={r.key}
+                          onPress={() => setFormRole(r.key as any)}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 10,
+                            alignItems: 'center',
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: isSelected ? theme.primaryBlue : theme.border,
+                            backgroundColor: isSelected ? theme.primaryBlue : theme.cardBg,
+                          }}
                         >
-                          {r.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: '700',
+                              color: isSelected ? '#ffffff' : theme.text,
+                            }}
+                          >
+                            {r.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 </View>
 
                 <View>
-                  <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
                     Departemen
                   </Text>
                   <TextInput
                     value={formDepartment}
                     onChangeText={setFormDepartment}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                 </View>
               </View>
             </ScrollView>
 
-            <View className="flex-row justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.border, marginTop: 16 }}>
               <TouchableOpacity
                 onPress={() => setShowEditModal(false)}
-                className="px-4 py-2.5 rounded-xl border border-[#e5e7eb] dark:border-slate-700"
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                }}
               >
-                <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
                   Batal
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleUpdateAdmin}
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-xl bg-[#2a75d3] flex-row items-center"
+                style={{
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  backgroundColor: theme.primaryBlue,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
               >
-                {isSubmitting && <ActivityIndicator size="small" color="#fff" className="mr-2" />}
-                <Text className="text-xs font-bold text-white">Simpan Perubahan</Text>
+                {isSubmitting && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />}
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>Simpan Perubahan</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1061,107 +1308,98 @@ export default function CentralAdminManagementScreen() {
 
       {/* MODAL: RESET PASSWORD */}
       <Modal visible={showResetPasswordModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/60 items-center justify-center p-4">
-          <View className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm border border-[#e5e7eb] dark:border-slate-800 shadow-2xl p-6">
-            <View className="flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-              <View className="flex-row items-center">
-                <KeyRound size={18} color="#2a75d3" className="mr-2" />
-                <Text className="text-base font-bold text-[#111827] dark:text-white ml-2">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <View
+            style={{
+              backgroundColor: theme.cardBg,
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 420,
+              borderWidth: 1,
+              borderColor: theme.border,
+              padding: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.2,
+              shadowRadius: 20,
+              elevation: 10,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', pb: 12, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <KeyRound size={18} color={theme.primaryBlue} style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>
                   Reset Password
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowResetPasswordModal(false)}>
-                <X size={20} color="#6b7280" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             {selectedAdmin && (
-              <View className="gap-3">
-                <Text className="text-xs text-slate-500">
-                  Masukkan password baru untuk admin <Text className="font-bold text-slate-800 dark:text-white">{selectedAdmin.name}</Text>:
+              <View style={{ gap: 14 }}>
+                <Text style={{ fontSize: 12, color: theme.textMuted }}>
+                  Masukkan password baru untuk admin <Text style={{ fontWeight: '700', color: theme.text }}>{selectedAdmin.name}</Text>:
                 </Text>
-                <View className="relative justify-center">
+                <View style={{ position: 'relative', justifyContent: 'center' }}>
                   <TextInput
                     placeholder="Password baru (min 6 karakter)"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={theme.placeholder}
                     secureTextEntry={!showResetPassword}
                     value={newResetPassword}
                     onChangeText={setNewResetPassword}
-                    className="border border-[#e5e7eb] dark:border-slate-700 rounded-xl px-3.5 py-2.5 pr-10 text-sm text-[#111827] dark:text-white bg-slate-50/50 dark:bg-slate-800/50"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      paddingRight: 40,
+                      fontSize: 14,
+                      color: theme.text,
+                      backgroundColor: theme.subtleBg,
+                    } as any}
                   />
                   <TouchableOpacity
                     onPress={() => setShowResetPassword(!showResetPassword)}
                     style={{ position: 'absolute', right: 10, padding: 4 }}
                   >
                     {showResetPassword ? (
-                      <EyeOff size={16} color="#6b7280" />
+                      <EyeOff size={16} color={theme.textMuted} />
                     ) : (
-                      <Eye size={16} color="#6b7280" />
+                      <Eye size={16} color={theme.textMuted} />
                     )}
                   </TouchableOpacity>
                 </View>
 
-                <View className="flex-row justify-end gap-2 pt-3">
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, paddingTop: 12 }}>
                   <TouchableOpacity
                     onPress={() => setShowResetPasswordModal(false)}
-                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700"
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                    }}
                   >
-                    <Text className="text-xs font-semibold text-slate-600 dark:text-slate-300">Batal</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text }}>Batal</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleResetPassword}
-                    className="px-4 py-2 rounded-xl bg-[#2a75d3]"
+                    style={{
+                      paddingHorizontal: 18,
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      backgroundColor: theme.primaryBlue,
+                    }}
                   >
-                    <Text className="text-xs font-bold text-white">Perbarui Password</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#ffffff' }}>Perbarui Password</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAL: NOTIFIKASI */}
-      <Modal visible={showNotifModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/60 items-center justify-center p-4">
-          <View className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm border border-[#e5e7eb] dark:border-slate-800 shadow-2xl p-5">
-            <View className="flex-row items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-3">
-              <View className="flex-row items-center">
-                <Bell size={18} color="#2a75d3" className="mr-2" />
-                <Text className="text-sm font-bold text-[#111827] dark:text-white ml-2">
-                  Notifikasi Sistem (3)
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowNotifModal(false)}>
-                <X size={18} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-
-            <View className="gap-3">
-              <View className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100">
-                <Text className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                  Status Sistem Siap
-                </Text>
-                <Text className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                  Layanan multi-tenant YexsSync berjalan normal dan optimal.
-                </Text>
-              </View>
-              <View className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100">
-                <Text className="text-xs font-bold text-blue-800 dark:text-blue-300">
-                  Tenant Pengujian Play Store
-                </Text>
-                <Text className="text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">
-                  PT YexsSync Solusi Digital aktif untuk peninjauan aplikasi.
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              onPress={() => setShowNotifModal(false)}
-              className="mt-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl items-center"
-            >
-              <Text className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tutup</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
