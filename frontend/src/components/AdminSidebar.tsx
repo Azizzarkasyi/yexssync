@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, Modal, Platform, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
   CheckCircle,
@@ -43,6 +44,7 @@ export default function AdminSidebar({
   mobileOpen = false,
   onCloseMobile,
 }: AdminSidebarProps) {
+  const insets = useSafeAreaInsets();
   const theme = useAdminTheme();
   const { logout } = useContext(AuthContext);
 
@@ -96,6 +98,7 @@ export default function AdminSidebar({
       <View
         style={{
           padding: 20,
+          paddingTop: isMobileModal ? Math.max(insets.top, 20) : 20,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -172,7 +175,14 @@ export default function AdminSidebar({
       </ScrollView>
 
       {/* Bottom Logout Button */}
-      <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: theme.borderColor }}>
+      <View
+        style={{
+          padding: 16,
+          paddingBottom: isMobileModal ? Math.max(insets.bottom, 16) : 16,
+          borderTopWidth: 1,
+          borderTopColor: theme.borderColor,
+        }}
+      >
         <TouchableOpacity
           onPress={handleLogout}
           style={{

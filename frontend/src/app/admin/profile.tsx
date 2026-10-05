@@ -49,10 +49,12 @@ import {
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
 import AdminTopHeader from '@/components/AdminTopHeader';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
 
 export default function AdminSettingsProfileScreen() {
+  const insets = useSafeAreaInsets();
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
@@ -193,7 +195,7 @@ export default function AdminSettingsProfileScreen() {
   };
 
   return (
-    <View style={{ flex: 1, flexDirection: 'row', height: '100vh', width: '100%', backgroundColor: theme.bgColor, overflow: 'hidden' }}>
+    <View style={{ flex: 1, flexDirection: 'row', height: Platform.OS === 'web' ? '100vh' : '100%', width: '100%', backgroundColor: theme.bgColor, overflow: 'hidden' }}>
       {/* Shared Persistent Sidebar */}
       <AdminSidebar
         currentPath="/admin/profile"
@@ -209,7 +211,7 @@ export default function AdminSettingsProfileScreen() {
           contentContainerStyle={{
             flexGrow: 1,
             paddingHorizontal: isDesktop ? 24 : 16,
-            paddingBottom: 60,
+            paddingBottom: (isDesktop ? 60 : 80) + Math.max(insets.bottom, 16),
           }}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}

@@ -1,7 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Menu, Sun, Moon, Bell, ChevronDown, CheckCircle, Clock, AlertCircle, X, Shield } from 'lucide-react-native';
+import { Menu, Sun, Moon, Bell, ChevronDown, CheckCircle, Clock, AlertCircle, X, Shield, ArrowLeft } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { AuthContext } from '@/context/AuthContext';
 import UserAvatar from '@/components/UserAvatar';
@@ -12,6 +13,7 @@ export interface AdminTopHeaderProps {
   isDesktop: boolean;
   onOpenMobileMenu: () => void;
   rightAction?: React.ReactNode;
+  onBack?: () => void;
 }
 
 export default function AdminTopHeader({
@@ -19,7 +21,9 @@ export default function AdminTopHeader({
   isDesktop,
   onOpenMobileMenu,
   rightAction,
+  onBack,
 }: AdminTopHeaderProps) {
+  const insets = useSafeAreaInsets();
   const theme = useAdminTheme();
   const { user } = useContext(AuthContext);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -33,38 +37,59 @@ export default function AdminTopHeader({
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          minHeight: 68,
-          paddingVertical: 14,
-          marginBottom: 18,
+          minHeight: isDesktop ? 68 : 52,
+          paddingTop: isDesktop ? 14 : Math.max(insets.top, 14),
+          paddingBottom: 12,
+          marginBottom: 16,
           borderBottomWidth: 1,
           borderBottomColor: theme.borderColor,
+          width: '100%',
         }}
       >
-        {/* Left Title & Mobile Hamburger */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          {!isDesktop && (
+        {/* Left Title & Mobile Hamburger / Back Button */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: isDesktop ? 12 : 8, flex: 1, minWidth: 0, marginRight: 8 }}>
+          {onBack && (
             <TouchableOpacity
-              onPress={onOpenMobileMenu}
+              onPress={onBack}
               style={{
-                padding: 9,
+                padding: 8,
                 borderRadius: 8,
                 backgroundColor: theme.cardBg,
                 borderWidth: 1,
                 borderColor: theme.borderColor,
+                flexShrink: 0,
               }}
             >
-              <Menu size={20} color={theme.textDark} />
+              <ArrowLeft size={18} color={theme.textDark} />
             </TouchableOpacity>
           )}
 
-          <View>
+          {!isDesktop && !onBack && (
+            <TouchableOpacity
+              onPress={onOpenMobileMenu}
+              style={{
+                padding: 8,
+                borderRadius: 8,
+                backgroundColor: theme.cardBg,
+                borderWidth: 1,
+                borderColor: theme.borderColor,
+                flexShrink: 0,
+              }}
+            >
+              <Menu size={18} color={theme.textDark} />
+            </TouchableOpacity>
+          )}
+
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text
               style={{
-                fontSize: 22,
+                fontSize: isDesktop ? 22 : 18,
                 fontWeight: '700',
                 color: theme.primaryBlue,
                 letterSpacing: -0.3,
               }}
+              numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {title}
             </Text>
@@ -72,14 +97,14 @@ export default function AdminTopHeader({
         </View>
 
         {/* Right Actions */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: isDesktop ? 10 : 6, flexShrink: 0 }}>
           {rightAction}
 
           {/* Theme Toggle Sun / Moon */}
           <TouchableOpacity
             onPress={theme.toggleTheme}
             style={{
-              padding: 9,
+              padding: isDesktop ? 9 : 7,
               borderRadius: 8,
               backgroundColor: theme.cardBg,
               borderWidth: 1,
@@ -87,9 +112,9 @@ export default function AdminTopHeader({
             }}
           >
             {theme.isDark ? (
-              <Sun size={18} color="#f59e0b" />
+              <Sun size={isDesktop ? 18 : 16} color="#f59e0b" />
             ) : (
-              <Moon size={18} color={theme.textDark} />
+              <Moon size={isDesktop ? 18 : 16} color={theme.textDark} />
             )}
           </TouchableOpacity>
 
@@ -98,14 +123,14 @@ export default function AdminTopHeader({
             onPress={() => setShowNotifications(true)}
             style={{
               position: 'relative',
-              padding: 9,
+              padding: isDesktop ? 9 : 7,
               borderRadius: 8,
               backgroundColor: theme.cardBg,
               borderWidth: 1,
               borderColor: theme.borderColor,
             }}
           >
-            <Bell size={18} color={theme.textDark} />
+            <Bell size={isDesktop ? 18 : 16} color={theme.textDark} />
             {notificationsList.length > 0 && (
               <View
                 style={{
@@ -113,9 +138,9 @@ export default function AdminTopHeader({
                   top: -3,
                   right: -3,
                   backgroundColor: theme.danger,
-                  width: 17,
-                  height: 17,
-                  borderRadius: 9,
+                  width: 16,
+                  height: 16,
+                  borderRadius: 8,
                   justifyContent: 'center',
                   alignItems: 'center',
                   borderWidth: 2,
@@ -134,9 +159,9 @@ export default function AdminTopHeader({
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 10,
-              paddingVertical: 5,
-              paddingHorizontal: 8,
+              gap: 8,
+              paddingVertical: isDesktop ? 5 : 3,
+              paddingHorizontal: isDesktop ? 8 : 4,
               borderRadius: 24,
               backgroundColor: theme.cardBg,
               borderWidth: 1,
@@ -146,7 +171,7 @@ export default function AdminTopHeader({
             <UserAvatar
               name={user?.name || 'Admin'}
               photo={(user as any)?.photo || (user as any)?.avatar}
-              size={34}
+              size={isDesktop ? 34 : 28}
             />
             {isDesktop && (
               <View style={{ maxWidth: 140 }}>
@@ -165,7 +190,7 @@ export default function AdminTopHeader({
                 </Text>
               </View>
             )}
-            <ChevronDown size={14} color={theme.textMuted} />
+            {isDesktop && <ChevronDown size={14} color={theme.textMuted} />}
           </TouchableOpacity>
         </View>
       </View>

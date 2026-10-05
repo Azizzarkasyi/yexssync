@@ -10,10 +10,10 @@ import {
   Modal,
   TextInput,
   RefreshControl,
-  SafeAreaView,
   useColorScheme,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -271,7 +271,7 @@ export default function ProfileScreen() {
   const departmentName = (user as any)?.department || 'Umum';
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
       <View className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm" style={{ flex: 1, height: '100%', minHeight: 0 }}>
         
         {/* Header disamakan persis dengan halaman lain */}

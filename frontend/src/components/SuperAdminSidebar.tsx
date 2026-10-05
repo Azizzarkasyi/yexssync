@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
   PieChart,
@@ -41,6 +42,7 @@ export default function SuperAdminSidebar({
   mobileOpen = false,
   onCloseMobile,
 }: SuperAdminSidebarProps) {
+  const insets = useSafeAreaInsets();
   const theme = useSuperAdminTheme();
   const { logout } = useContext(AuthContext);
 
@@ -88,7 +90,8 @@ export default function SuperAdminSidebar({
         {/* Brand Header */}
         <View
           style={{
-            paddingVertical: 18,
+            paddingTop: isMobileModal ? Math.max(insets.top, 18) : 18,
+            paddingBottom: 18,
             paddingHorizontal: 20,
             flexDirection: 'row',
             alignItems: 'center',
@@ -190,7 +193,7 @@ export default function SuperAdminSidebar({
       </View>
 
       {/* Logout Button */}
-      <View style={{ padding: 14, borderTopWidth: 1, borderTopColor: theme.border }}>
+      <View style={{ padding: 14, paddingBottom: isMobileModal ? Math.max(insets.bottom, 14) : 14, borderTopWidth: 1, borderTopColor: theme.border }}>
         <TouchableOpacity
           onPress={handleLogout}
           style={{

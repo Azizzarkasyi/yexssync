@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, Modal, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
   Menu,
@@ -31,6 +32,7 @@ export default function SuperAdminTopHeader({
   onOpenMobileMenu,
   rightAction,
 }: SuperAdminTopHeaderProps) {
+  const insets = useSafeAreaInsets();
   const theme = useSuperAdminTheme();
   const { user, logout } = useContext(AuthContext);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -55,40 +57,45 @@ export default function SuperAdminTopHeader({
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          minHeight: 68,
-          paddingVertical: 14,
-          marginBottom: 18,
+          minHeight: isDesktop ? 68 : 52,
+          paddingTop: isDesktop ? 14 : Math.max(insets.top, 14),
+          paddingBottom: 12,
+          marginBottom: 16,
           borderBottomWidth: 1,
           borderBottomColor: theme.border,
           backgroundColor: 'transparent',
+          width: '100%',
           zIndex: 20,
         }}
       >
         {/* Left Title & Mobile Hamburger */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: isDesktop ? 12 : 8, flex: 1, minWidth: 0, marginRight: 8 }}>
           {!isDesktop && (
             <TouchableOpacity
               onPress={onOpenMobileMenu}
               style={{
-                padding: 9,
+                padding: 8,
                 borderRadius: 8,
                 backgroundColor: theme.cardBg,
                 borderWidth: 1,
                 borderColor: theme.border,
+                flexShrink: 0,
               }}
             >
-              <Menu size={20} color={theme.text} />
+              <Menu size={18} color={theme.text} />
             </TouchableOpacity>
           )}
 
-          <View>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text
               style={{
-                fontSize: 22,
+                fontSize: isDesktop ? 22 : 18,
                 fontWeight: '700',
                 color: theme.primaryBlue,
                 letterSpacing: -0.3,
               }}
+              numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {title}
             </Text>
@@ -96,14 +103,14 @@ export default function SuperAdminTopHeader({
         </View>
 
         {/* Right Actions */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: isDesktop ? 10 : 6, flexShrink: 0 }}>
           {rightAction}
 
           {/* Theme Toggle Sun / Moon */}
           <TouchableOpacity
             onPress={theme.toggleTheme}
             style={{
-              padding: 9,
+              padding: isDesktop ? 9 : 7,
               borderRadius: 8,
               backgroundColor: theme.cardBg,
               borderWidth: 1,
@@ -111,9 +118,9 @@ export default function SuperAdminTopHeader({
             }}
           >
             {theme.isDark ? (
-              <Sun size={18} color="#f59e0b" />
+              <Sun size={isDesktop ? 18 : 16} color="#f59e0b" />
             ) : (
-              <Moon size={18} color={theme.text} />
+              <Moon size={isDesktop ? 18 : 16} color={theme.text} />
             )}
           </TouchableOpacity>
 
@@ -122,14 +129,14 @@ export default function SuperAdminTopHeader({
             onPress={() => setShowNotifications(true)}
             style={{
               position: 'relative',
-              padding: 9,
+              padding: isDesktop ? 9 : 7,
               borderRadius: 8,
               backgroundColor: theme.cardBg,
               borderWidth: 1,
               borderColor: theme.border,
             }}
           >
-            <Bell size={18} color={theme.text} />
+            <Bell size={isDesktop ? 18 : 16} color={theme.text} />
             {notificationsList.length > 0 && (
               <View
                 style={{
@@ -173,7 +180,7 @@ export default function SuperAdminTopHeader({
               <UserAvatar
                 name={user?.name || 'Super Admin'}
                 photo={(user as any)?.photo || (user as any)?.avatar}
-                size={34}
+                size={isDesktop ? 34 : 28}
               />
               {isDesktop && (
                 <View style={{ maxWidth: 140 }}>
@@ -199,7 +206,7 @@ export default function SuperAdminTopHeader({
                   </Text>
                 </View>
               )}
-              <ChevronDown size={14} color={theme.textMuted} />
+              {isDesktop && <ChevronDown size={14} color={theme.textMuted} />}
             </TouchableOpacity>
 
             {/* Profile Dropdown Popover */}

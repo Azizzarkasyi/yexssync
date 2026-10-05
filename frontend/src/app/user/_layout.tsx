@@ -1,12 +1,17 @@
 import { Tabs } from 'expo-router';
 import { Home, History, ListChecks, MailOpen, User } from 'lucide-react-native';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function UserLayout() {
   const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
   const isDark = colorScheme === 'dark';
   const primaryColor = '#2a75d3';
   const inactiveColor = '#a0aec0';
+
+  const bottomPadding = Platform.OS === 'web' ? 12 : Math.max(insets.bottom, 12);
+  const barHeight = Platform.OS === 'web' ? 68 : 56 + bottomPadding;
 
   return (
     <Tabs
@@ -23,8 +28,8 @@ export default function UserLayout() {
           shadowOpacity: 0.03,
           shadowOffset: { width: 0, height: -4 },
           shadowRadius: 15,
-          height: 70,
-          paddingBottom: 12,
+          height: barHeight,
+          paddingBottom: bottomPadding,
           paddingTop: 8,
         },
         tabBarLabelStyle: {

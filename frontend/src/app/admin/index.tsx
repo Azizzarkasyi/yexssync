@@ -9,7 +9,9 @@ import {
   RefreshControl,
   Image,
   Modal,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
   CheckCircle,
@@ -43,6 +45,7 @@ import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
 
 export default function AdminDashboardScreen() {
+  const insets = useSafeAreaInsets();
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
@@ -151,7 +154,7 @@ export default function AdminDashboardScreen() {
   };
 
   return (
-    <View style={{ flex: 1, flexDirection: 'row', height: '100vh', width: '100%', backgroundColor: theme.bgColor, overflow: 'hidden' }}>
+    <View style={{ flex: 1, flexDirection: 'row', height: Platform.OS === 'web' ? '100vh' : '100%', width: '100%', backgroundColor: theme.bgColor, overflow: 'hidden' }}>
       {/* Shared Persistent Sidebar */}
       <AdminSidebar
         currentPath="/admin"
@@ -167,7 +170,7 @@ export default function AdminDashboardScreen() {
           contentContainerStyle={{
             flexGrow: 1,
             paddingHorizontal: isDesktop ? 24 : 16,
-            paddingBottom: 60,
+            paddingBottom: (isDesktop ? 60 : 80) + Math.max(insets.bottom, 16),
           }}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}

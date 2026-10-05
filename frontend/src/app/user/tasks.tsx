@@ -9,10 +9,10 @@ import {
   Alert,
   Modal,
   RefreshControl,
-  SafeAreaView,
   useColorScheme,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   Play,
@@ -278,6 +278,7 @@ export default function UserTasksScreen() {
 
   return (
     <SafeAreaView
+      edges={['top', 'left', 'right']}
       className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center"
       style={{ flex: 1, height: '100%', minHeight: '100%' }}
     >

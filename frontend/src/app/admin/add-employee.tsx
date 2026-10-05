@@ -41,6 +41,7 @@ import AdminTopHeader from '@/components/AdminTopHeader';
 import InlineLeafletMap from '@/components/InlineLeafletMap';
 import { LocationMapPicker } from '@/components/LocationMapPicker';
 import FaceRecognitionModal from '@/components/FaceRecognitionModal';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '@/lib/api';
 
 export interface ExtraWorkLocation {
@@ -52,6 +53,7 @@ export interface ExtraWorkLocation {
 }
 
 export default function AddEmployeeScreen() {
+  const insets = useSafeAreaInsets();
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
@@ -404,7 +406,7 @@ export default function AddEmployeeScreen() {
   };
 
   return (
-    <View style={{ flex: 1, flexDirection: 'row', height: '100vh', width: '100%', backgroundColor: theme.bgColor, overflow: 'hidden' }}>
+    <View style={{ flex: 1, flexDirection: 'row', height: Platform.OS === 'web' ? '100vh' : '100%', width: '100%', backgroundColor: theme.bgColor, overflow: 'hidden' }}>
       {/* HadirYuk Persistent Sidebar (250px) */}
       <AdminSidebar
         currentPath="/admin/users"
@@ -420,47 +422,18 @@ export default function AddEmployeeScreen() {
           contentContainerStyle={{
             flexGrow: 1,
             paddingHorizontal: isDesktop ? 20 : 16,
-            paddingBottom: 60,
+            paddingBottom: (isDesktop ? 60 : 80) + Math.max(insets.bottom, 16),
           }}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
         >
           {/* Header Topbar with Back Arrow */}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: 15,
-              marginBottom: 20,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
-              <TouchableOpacity
-                onPress={() => router.push('/admin/users')}
-                style={{ padding: 6 }}
-                title="Kembali"
-              >
-                <ArrowLeft size={20} color={theme.textMuted} />
-              </TouchableOpacity>
-              <Text
-                style={{
-                  fontSize: 22,
-                  fontWeight: '700',
-                  color: theme.primaryBlue,
-                }}
-              >
-                Tambah Pegawai Baru
-              </Text>
-            </View>
-
-            {/* Profile on right */}
-            <AdminTopHeader
-              title=""
-              isDesktop={isDesktop}
-              onOpenMobileMenu={() => setMobileMenuOpen(true)}
-            />
-          </View>
+          <AdminTopHeader
+            title="Tambah Pegawai Baru"
+            isDesktop={isDesktop}
+            onOpenMobileMenu={() => setMobileMenuOpen(true)}
+            onBack={() => router.push('/admin/users')}
+          />
 
           {/* Form Container (max-width 900px, centered) */}
           <View
