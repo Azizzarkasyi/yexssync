@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { getPublicPrisma, getTenantPrisma } from '../prisma/tenant-prisma';
-import { normalizeEmail } from '../utils/email';
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 const employees = [
   { email: 'hasnarhma@gmail.com', name: 'Hasna Rahma' },
