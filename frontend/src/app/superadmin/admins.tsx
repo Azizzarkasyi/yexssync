@@ -1325,7 +1325,7 @@ export default function CentralAdminManagementScreen() {
               elevation: 10,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', pb: 12, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <KeyRound size={18} color={theme.primaryBlue} style={{ marginRight: 8 }} />
                 <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>

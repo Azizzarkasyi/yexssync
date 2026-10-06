@@ -64,7 +64,9 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Aplikasi YexsSync memerlukan akses lokasi untuk verifikasi kehadiran di area kantor."
         }
-      ]
+      ],
+      "expo-image",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

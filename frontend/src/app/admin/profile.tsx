@@ -52,6 +52,7 @@ import AdminTopHeader from '@/components/AdminTopHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
+import { LocationMapPicker, LocationPickerResult } from '@/components/LocationMapPicker';
 
 export default function AdminSettingsProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -78,6 +79,7 @@ export default function AdminSettingsProfileScreen() {
   const [longitude, setLongitude] = useState('106.816666');
   const [radius, setRadius] = useState('100');
   const [locatingCurrent, setLocatingCurrent] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   // Form states: Security & Validation (Panel 2)
   const [requireGps, setRequireGps] = useState(true);
@@ -139,6 +141,19 @@ export default function AdminSettingsProfileScreen() {
     setTimeout(() => {
       setToastMessage('');
     }, 3500);
+  };
+
+  const handleSelectMapLocation = (result: LocationPickerResult) => {
+    setLatitude(result.latitude.toFixed(6));
+    setLongitude(result.longitude.toFixed(6));
+    if (result.radius) {
+      setRadius(String(result.radius));
+    }
+    if (result.address && (!companyAddress || companyAddress.trim() === '')) {
+      setCompanyAddress(result.address);
+    }
+    setShowMapPicker(false);
+    showToast('Titik koordinat kantor berhasil diperbarui dari peta!');
   };
 
   useEffect(() => {
@@ -454,18 +469,20 @@ export default function AdminSettingsProfileScreen() {
                       </Text>
                     </View>
 
-                    {/* Visual Map Radar Preview */}
-                    <View
+                    {/* Visual Map Radar Preview with Interactive Click */}
+                    <TouchableOpacity
+                      onPress={() => setShowMapPicker(true)}
+                      activeOpacity={0.85}
                       style={{
                         width: '100%',
                         height: 250,
                         backgroundColor: theme.isDark ? '#142036' : '#e2e8f0',
-                        borderRadius: 8,
+                        borderRadius: 12,
                         justifyContent: 'center',
                         alignItems: 'center',
                         marginBottom: 18,
-                        borderWidth: 1,
-                        borderColor: theme.borderColor,
+                        borderWidth: 1.5,
+                        borderColor: theme.primaryBlue,
                         position: 'relative',
                         overflow: 'hidden',
                       }}
@@ -526,7 +543,33 @@ export default function AdminSettingsProfileScreen() {
                           {latitude}, {longitude}
                         </Text>
                       </View>
-                    </View>
+
+                      {/* Floating Badge to Open Map */}
+                      <View
+                        style={{
+                          position: 'absolute',
+                          bottom: 12,
+                          right: 12,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          backgroundColor: theme.primaryBlue,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          borderRadius: 20,
+                          gap: 6,
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 4,
+                          elevation: 4,
+                        }}
+                      >
+                        <Map size={15} color="#ffffff" />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#ffffff' }}>
+                          Pilih di Peta
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
 
                     {/* Form Row: Lat & Long */}
                     <View
@@ -645,32 +688,65 @@ export default function AdminSettingsProfileScreen() {
                       </Text>
                     </View>
 
-                    {/* Button: Gunakan Lokasi Saat Ini */}
-                    <TouchableOpacity
-                      onPress={handleGetCurrentLocation}
-                      disabled={locatingCurrent}
+                    {/* Action Buttons: Buka Peta Interaktif & Gunakan GPS */}
+                    <View
                       style={{
-                        width: '100%',
-                        paddingVertical: 11,
-                        borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: theme.borderColor,
-                        backgroundColor: theme.subtleBg,
-                        flexDirection: 'row',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: 8,
+                        flexDirection: isDesktop ? 'row' : 'column',
+                        gap: 12,
                       }}
                     >
-                      {locatingCurrent ? (
-                        <ActivityIndicator size="small" color={theme.primaryBlue} />
-                      ) : (
-                        <Crosshair size={16} color={theme.textDark} />
-                      )}
-                      <Text style={{ fontSize: 14, fontWeight: '500', color: theme.textDark }}>
-                        {locatingCurrent ? 'Mendeteksi Lokasi...' : 'Gunakan Lokasi Saat Ini'}
-                      </Text>
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setShowMapPicker(true)}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          borderRadius: 10,
+                          backgroundColor: theme.primaryBlue,
+                          flexDirection: 'row',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: 8,
+                          shadowColor: theme.primaryBlue,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.2,
+                          shadowRadius: 4,
+                          elevation: 3,
+                        }}
+                      >
+                        <Map size={16} color="#ffffff" />
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#ffffff' }}>
+                          Pilih Titik di Peta (Interactive Map)
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={handleGetCurrentLocation}
+                        disabled={locatingCurrent}
+                        style={{
+                          flex: isDesktop ? 1 : undefined,
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          borderRadius: 10,
+                          borderWidth: 1,
+                          borderColor: theme.borderColor,
+                          backgroundColor: theme.subtleBg,
+                          flexDirection: 'row',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}
+                      >
+                        {locatingCurrent ? (
+                          <ActivityIndicator size="small" color={theme.primaryBlue} />
+                        ) : (
+                          <Crosshair size={16} color={theme.textDark} />
+                        )}
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark }}>
+                          {locatingCurrent ? 'Mendeteksi...' : 'Ambil GPS Saat Ini'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
 
                   {/* PANEL 2: Validasi Keamanan Presensi */}
@@ -1511,6 +1587,17 @@ export default function AdminSettingsProfileScreen() {
           </View>
         </ScrollView>
       </View>
+
+      {/* Fullscreen Interactive Map Picker Modal */}
+      <LocationMapPicker
+        visible={showMapPicker}
+        onClose={() => setShowMapPicker(false)}
+        onSelectLocation={handleSelectMapLocation}
+        initialLatitude={parseFloat(latitude) || -6.2088}
+        initialLongitude={parseFloat(longitude) || 106.8456}
+        initialRadius={parseInt(radius, 10) || 50}
+        title="Tentukan Titik Pusat Kantor Perusahaan"
+      />
     </View>
   );
 }
