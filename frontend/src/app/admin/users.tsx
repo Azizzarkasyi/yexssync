@@ -10,6 +10,7 @@ import {
   Platform,
   useWindowDimensions,
   Modal,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { router } from 'expo-router';
 import {
@@ -1401,15 +1402,19 @@ export default function AdminUsersScreen() {
         animationType="fade"
         onRequestClose={() => setShowAddModal(false)}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-          }}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
         >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+            }}
+          >
           <View
             style={{
               width: '100%',
@@ -1707,7 +1712,8 @@ export default function AdminUsersScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </KeyboardAvoidingView>
+    </Modal>
 
       {/* ======================================================== */}
       {/* MODAL 3: EDIT PEGAWAI                                    */}
@@ -1718,15 +1724,19 @@ export default function AdminUsersScreen() {
         animationType="fade"
         onRequestClose={() => setEditModalUser(null)}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-          }}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
         >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+            }}
+          >
           <View
             style={{
               width: '100%',
@@ -2014,7 +2024,8 @@ export default function AdminUsersScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </KeyboardAvoidingView>
+    </Modal>
 
       {/* ======================================================== */}
       {/* MODAL 4: HAPUS PEGAWAI                                   */}

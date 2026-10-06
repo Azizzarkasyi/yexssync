@@ -11,6 +11,8 @@ import {
   TextInput,
   RefreshControl,
   useColorScheme,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -459,108 +461,113 @@ export default function HistoryScreen() {
         <Modal
           visible={showModal}
           transparent
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setShowModal(false)}
         >
-          <View className="flex-1 bg-black/50 justify-end items-center">
-            <View className="w-full max-w-[414px] bg-white dark:bg-slate-900 rounded-t-[28px] p-6 max-h-[85%]">
-              {/* Modal Header */}
-              <View className="flex-row justify-between items-center mb-5 pb-3 border-b border-[#eef1f6] dark:border-slate-800">
-                <Text className="text-[18px] font-bold text-[#222222] dark:text-white">
-                  Ajukan Koreksi Presensi
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setShowModal(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
-                >
-                  <X size={18} color={isDark ? '#cbd5e1' : '#555555'} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                {/* Tanggal Terpilih */}
-                <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-1.5">
-                  Tanggal Presensi
-                </Text>
-                <View className="bg-slate-50 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700 rounded-xl px-4 py-3 mb-4">
-                  <Text className="text-[14px] text-[#222222] dark:text-white font-medium">
-                    {targetDate || 'Hari ini'}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <View className="flex-1 bg-black/50 justify-center items-center px-4 py-6">
+              <View className="w-full max-w-[414px] bg-white dark:bg-slate-900 rounded-[24px] p-6 max-h-[85%] shadow-2xl border border-slate-100 dark:border-slate-800">
+                {/* Modal Header */}
+                <View className="flex-row justify-between items-center mb-5 pb-3 border-b border-[#eef1f6] dark:border-slate-800">
+                  <Text className="text-[18px] font-bold text-[#222222] dark:text-white">
+                    Ajukan Koreksi Presensi
                   </Text>
-                </View>
-
-                {/* Input Jam Masuk & Jam Pulang */}
-                <View className="flex-row gap-3 mb-4">
-                  <View className="flex-1">
-                    <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-1.5">
-                      Jam Masuk Baru
-                    </Text>
-                    <TextInput
-                      value={clockIn}
-                      onChangeText={setClockIn}
-                      placeholder="08:00"
-                      placeholderTextColor="#94a3b8"
-                      className="bg-slate-50 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700 rounded-xl px-4 py-3 text-[14px] text-[#222222] dark:text-white"
-                    />
-                  </View>
-
-                  <View className="flex-1">
-                    <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-1.5">
-                      Jam Pulang Baru
-                    </Text>
-                    <TextInput
-                      value={clockOut}
-                      onChangeText={setClockOut}
-                      placeholder="17:00"
-                      placeholderTextColor="#94a3b8"
-                      className="bg-slate-50 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700 rounded-xl px-4 py-3 text-[14px] text-[#222222] dark:text-white"
-                    />
-                  </View>
-                </View>
-
-                {/* Alasan Koreksi */}
-                <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-1.5">
-                  Alasan Koreksi
-                </Text>
-                <TextInput
-                  value={reason}
-                  onChangeText={setReason}
-                  placeholder="Misal: Lupa tap masuk karena jaringan error..."
-                  placeholderTextColor="#94a3b8"
-                  multiline
-                  numberOfLines={4}
-                  style={{ textAlignVertical: 'top', height: 90 }}
-                  className="bg-slate-50 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700 rounded-xl p-3.5 text-[14px] text-[#222222] dark:text-white mb-6"
-                />
-
-                {/* Submit Action Button */}
-                <TouchableOpacity
-                  activeOpacity={0.88}
-                  onPress={submitCorrection}
-                  disabled={isSubmitting}
-                  className="rounded-xl overflow-hidden"
-                >
-                  <LinearGradient
-                    colors={['#2a75d3', '#1f5ca8']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      paddingVertical: 14,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                  <TouchableOpacity
+                    onPress={() => setShowModal(false)}
+                    className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
                   >
-                    {isSubmitting ? (
-                      <ActivityIndicator color="#ffffff" size="small" />
-                    ) : (
-                      <Text className="text-white font-bold text-[14px] tracking-wide">
-                        KIRIM PENGAJUAN KOREKSI
+                    <X size={18} color={isDark ? '#cbd5e1' : '#555555'} />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+                  {/* Tanggal Terpilih */}
+                  <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-1.5">
+                    Tanggal Presensi
+                  </Text>
+                  <View className="bg-slate-50 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700 rounded-xl px-4 py-3 mb-4">
+                    <Text className="text-[14px] text-[#222222] dark:text-white font-medium">
+                      {targetDate || 'Hari ini'}
+                    </Text>
+                  </View>
+
+                  {/* Input Jam Masuk & Jam Pulang */}
+                  <View className="flex-row gap-3 mb-4">
+                    <View className="flex-1">
+                      <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-1.5">
+                        Jam Masuk Baru
                       </Text>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
-              </ScrollView>
+                      <TextInput
+                        value={clockIn}
+                        onChangeText={setClockIn}
+                        placeholder="08:00"
+                        placeholderTextColor="#94a3b8"
+                        className="bg-slate-50 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700 rounded-xl px-4 py-3 text-[14px] text-[#222222] dark:text-white"
+                      />
+                    </View>
+
+                    <View className="flex-1">
+                      <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-1.5">
+                        Jam Pulang Baru
+                      </Text>
+                      <TextInput
+                        value={clockOut}
+                        onChangeText={setClockOut}
+                        placeholder="17:00"
+                        placeholderTextColor="#94a3b8"
+                        className="bg-slate-50 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700 rounded-xl px-4 py-3 text-[14px] text-[#222222] dark:text-white"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Alasan Koreksi */}
+                  <Text className="text-[13px] font-semibold text-[#222222] dark:text-slate-200 mb-1.5">
+                    Alasan Koreksi
+                  </Text>
+                  <TextInput
+                    value={reason}
+                    onChangeText={setReason}
+                    placeholder="Misal: Lupa tap masuk karena jaringan error..."
+                    placeholderTextColor="#94a3b8"
+                    multiline
+                    numberOfLines={4}
+                    style={{ textAlignVertical: 'top', height: 90 }}
+                    className="bg-slate-50 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700 rounded-xl p-3.5 text-[14px] text-[#222222] dark:text-white mb-6"
+                  />
+
+                  {/* Submit Action Button */}
+                  <TouchableOpacity
+                    activeOpacity={0.88}
+                    onPress={submitCorrection}
+                    disabled={isSubmitting}
+                    className="rounded-xl overflow-hidden"
+                  >
+                    <LinearGradient
+                      colors={['#2a75d3', '#1f5ca8']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{
+                        paddingVertical: 14,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {isSubmitting ? (
+                        <ActivityIndicator color="#ffffff" size="small" />
+                      ) : (
+                        <Text className="text-white font-bold text-[14px] tracking-wide">
+                          KIRIM PENGAJUAN KOREKSI
+                        </Text>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
       </View>
     </SafeAreaView>

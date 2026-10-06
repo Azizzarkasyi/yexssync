@@ -12,6 +12,7 @@ import {
   RefreshControl,
   useColorScheme,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -618,91 +619,98 @@ export default function ProfileScreen() {
           animationType="fade"
           onRequestClose={() => setShowEditModal(false)}
         >
-          <View className="flex-1 bg-black/50 justify-end sm:justify-center items-center px-4 pb-6">
-            <View className="w-full max-w-[390px] bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-xl border border-slate-100 dark:border-slate-800">
-              <View className="flex-row justify-between items-center mb-4">
-                <View className="flex-row items-center gap-2">
-                  <View className="w-8 h-8 rounded-full bg-[#2a75d3]/10 items-center justify-center">
-                    <User size={16} color="#2a75d3" strokeWidth={2.2} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <View className="flex-1 bg-black/50 justify-center items-center px-4 py-6">
+              <View className="w-full max-w-[390px] max-h-[85%] bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-xl border border-slate-100 dark:border-slate-800">
+                <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                  <View className="flex-row justify-between items-center mb-4">
+                    <View className="flex-row items-center gap-2">
+                      <View className="w-8 h-8 rounded-full bg-[#2a75d3]/10 items-center justify-center">
+                        <User size={16} color="#2a75d3" strokeWidth={2.2} />
+                      </View>
+                      <Text className="text-[16px] font-bold text-[#222222] dark:text-white">
+                        Informasi Pribadi
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setShowEditModal(false)}
+                      className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
+                    >
+                      <X size={15} color={isDark ? '#cbd5e1' : '#64748b'} strokeWidth={2.2} />
+                    </TouchableOpacity>
                   </View>
-                  <Text className="text-[16px] font-bold text-[#222222] dark:text-white">
-                    Informasi Pribadi
+
+                  <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
+                    Nama Lengkap
                   </Text>
-                </View>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setShowEditModal(false)}
-                  className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
-                >
-                  <X size={15} color={isDark ? '#cbd5e1' : '#64748b'} strokeWidth={2.2} />
-                </TouchableOpacity>
-              </View>
+                  <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Masukkan nama lengkap"
+                    placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                    className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white mb-3 text-[14px]"
+                  />
 
-              <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
-                Nama Lengkap
-              </Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="Masukkan nama lengkap"
-                placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-                className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white mb-3 text-[14px]"
-              />
-
-              <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
-                Nomor Telepon / WhatsApp
-              </Text>
-              <TextInput
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="Contoh: 081234567890"
-                keyboardType="phone-pad"
-                placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-                className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white mb-3 text-[14px]"
-              />
-
-              <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
-                Alamat Email
-              </Text>
-              <TextInput
-                value={user?.email || ''}
-                editable={false}
-                className="w-full bg-slate-100 dark:bg-slate-800/50 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-slate-500 dark:text-slate-400 mb-3 text-[14px]"
-              />
-
-              <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
-                Peran Pengguna
-              </Text>
-              <TextInput
-                value={user?.role || 'USER'}
-                editable={false}
-                className="w-full bg-slate-100 dark:bg-slate-800/50 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-slate-500 dark:text-slate-400 mb-4 text-[14px]"
-              />
-
-              <View className="flex-row gap-2.5">
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  disabled={isProcessing}
-                  onPress={handleSaveProfile}
-                  className="flex-1 py-3 rounded-[10px] bg-[#2a75d3] items-center justify-center flex-row gap-2"
-                >
-                  <Text className="text-white font-semibold text-[13px]">
-                    {isProcessing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                  <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
+                    Nomor Telepon / WhatsApp
                   </Text>
-                </TouchableOpacity>
+                  <TextInput
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="Contoh: 081234567890"
+                    keyboardType="phone-pad"
+                    placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                    className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white mb-3 text-[14px]"
+                  />
 
-                <TouchableOpacity
-                  activeOpacity={0.75}
-                  onPress={() => setShowEditModal(false)}
-                  className="px-4 py-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 items-center justify-center"
-                >
-                  <Text className="text-[#777777] dark:text-slate-300 font-medium text-[13px]">
-                    Batal
+                  <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
+                    Alamat Email
                   </Text>
-                </TouchableOpacity>
+                  <TextInput
+                    value={user?.email || ''}
+                    editable={false}
+                    className="w-full bg-slate-100 dark:bg-slate-800/50 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-slate-500 dark:text-slate-400 mb-3 text-[14px]"
+                  />
+
+                  <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
+                    Peran Pengguna
+                  </Text>
+                  <TextInput
+                    value={user?.role || 'USER'}
+                    editable={false}
+                    className="w-full bg-slate-100 dark:bg-slate-800/50 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-slate-500 dark:text-slate-400 mb-4 text-[14px]"
+                  />
+
+                  <View className="flex-row gap-2.5">
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      disabled={isProcessing}
+                      onPress={handleSaveProfile}
+                      className="flex-1 py-3 rounded-[10px] bg-[#2a75d3] items-center justify-center flex-row gap-2"
+                    >
+                      <Text className="text-white font-semibold text-[13px]">
+                        {isProcessing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.75}
+                      onPress={() => setShowEditModal(false)}
+                      className="px-4 py-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 items-center justify-center"
+                    >
+                      <Text className="text-[#777777] dark:text-slate-300 font-medium text-[13px]">
+                        Batal
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
               </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* Modal 2: Data Pekerjaan */}
@@ -712,7 +720,7 @@ export default function ProfileScreen() {
           animationType="fade"
           onRequestClose={() => setShowJobModal(false)}
         >
-          <View className="flex-1 bg-black/50 justify-end sm:justify-center items-center px-4 pb-6">
+          <View className="flex-1 bg-black/50 justify-center items-center px-4 py-6">
             <View className="w-full max-w-[390px] bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-xl border border-slate-100 dark:border-slate-800">
               <View className="flex-row justify-between items-center mb-4">
                 <View className="flex-row items-center gap-2">
@@ -789,122 +797,129 @@ export default function ProfileScreen() {
           animationType="fade"
           onRequestClose={() => setShowPasswordModal(false)}
         >
-          <View className="flex-1 bg-black/50 justify-end sm:justify-center items-center px-4 pb-6">
-            <View className="w-full max-w-[390px] bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-xl border border-slate-100 dark:border-slate-800">
-              <View className="flex-row justify-between items-center mb-4">
-                <View className="flex-row items-center gap-2">
-                  <View className="w-8 h-8 rounded-full bg-orange-500/10 items-center justify-center">
-                    <Lock size={16} color="#f97316" strokeWidth={2.2} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <View className="flex-1 bg-black/50 justify-center items-center px-4 py-6">
+              <View className="w-full max-w-[390px] max-h-[85%] bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-xl border border-slate-100 dark:border-slate-800">
+                <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                  <View className="flex-row justify-between items-center mb-4">
+                    <View className="flex-row items-center gap-2">
+                      <View className="w-8 h-8 rounded-full bg-orange-500/10 items-center justify-center">
+                        <Lock size={16} color="#f97316" strokeWidth={2.2} />
+                      </View>
+                      <Text className="text-[16px] font-bold text-[#222222] dark:text-white">
+                        Ganti Kata Sandi
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setShowPasswordModal(false)}
+                      className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
+                    >
+                      <X size={15} color={isDark ? '#cbd5e1' : '#64748b'} strokeWidth={2.2} />
+                    </TouchableOpacity>
                   </View>
-                  <Text className="text-[16px] font-bold text-[#222222] dark:text-white">
-                    Ganti Kata Sandi
+
+                  <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
+                    Password Saat Ini
                   </Text>
-                </View>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setShowPasswordModal(false)}
-                  className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
-                >
-                  <X size={15} color={isDark ? '#cbd5e1' : '#64748b'} strokeWidth={2.2} />
-                </TouchableOpacity>
-              </View>
+                  <View className="relative justify-center mb-3">
+                    <TextInput
+                      value={currentPassword}
+                      onChangeText={setCurrentPassword}
+                      secureTextEntry={!showCurrentPassword}
+                      placeholder="Masukkan password saat ini"
+                      placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                      className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                      style={{ position: 'absolute', right: 12, padding: 4 }}
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                      ) : (
+                        <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
 
-              <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
-                Password Saat Ini
-              </Text>
-              <View className="relative justify-center mb-3">
-                <TextInput
-                  value={currentPassword}
-                  onChangeText={setCurrentPassword}
-                  secureTextEntry={!showCurrentPassword}
-                  placeholder="Masukkan password saat ini"
-                  placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-                  className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-                  style={{ position: 'absolute', right: 12, padding: 4 }}
-                >
-                  {showCurrentPassword ? (
-                    <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                  ) : (
-                    <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
-                Password Baru
-              </Text>
-              <View className="relative justify-center mb-3">
-                <TextInput
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  secureTextEntry={!showNewPassword}
-                  placeholder="Minimal 6 karakter"
-                  placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-                  className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowNewPassword(!showNewPassword)}
-                  style={{ position: 'absolute', right: 12, padding: 4 }}
-                >
-                  {showNewPassword ? (
-                    <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                  ) : (
-                    <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
-                Konfirmasi Password Baru
-              </Text>
-              <View className="relative justify-center mb-4">
-                <TextInput
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                  placeholder="Ulangi password baru"
-                  placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-                  className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={{ position: 'absolute', right: 12, padding: 4 }}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                  ) : (
-                    <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              <View className="flex-row gap-2.5">
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  disabled={isProcessing}
-                  onPress={handleChangePassword}
-                  className="flex-1 py-3 rounded-[10px] bg-orange-500 items-center justify-center"
-                >
-                  <Text className="text-white font-semibold text-[13px]">
-                    {isProcessing ? 'Memproses...' : 'Ubah Sandi'}
+                  <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
+                    Password Baru
                   </Text>
-                </TouchableOpacity>
+                  <View className="relative justify-center mb-3">
+                    <TextInput
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      secureTextEntry={!showNewPassword}
+                      placeholder="Minimal 6 karakter"
+                      placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                      className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowNewPassword(!showNewPassword)}
+                      style={{ position: 'absolute', right: 12, padding: 4 }}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                      ) : (
+                        <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
 
-                <TouchableOpacity
-                  activeOpacity={0.75}
-                  onPress={() => setShowPasswordModal(false)}
-                  className="px-4 py-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 items-center justify-center"
-                >
-                  <Text className="text-[#777777] dark:text-slate-300 font-medium text-[13px]">
-                    Batal
+                  <Text className="text-[12px] font-semibold text-[#777777] dark:text-slate-400 mb-1">
+                    Konfirmasi Password Baru
                   </Text>
-                </TouchableOpacity>
+                  <View className="relative justify-center mb-4">
+                    <TextInput
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry={!showConfirmPassword}
+                      placeholder="Ulangi password baru"
+                      placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                      className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={{ position: 'absolute', right: 12, padding: 4 }}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                      ) : (
+                        <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+
+                  <View className="flex-row gap-2.5">
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      disabled={isProcessing}
+                      onPress={handleChangePassword}
+                      className="flex-1 py-3 rounded-[10px] bg-orange-500 items-center justify-center"
+                    >
+                      <Text className="text-white font-semibold text-[13px]">
+                        {isProcessing ? 'Memproses...' : 'Ubah Sandi'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.75}
+                      onPress={() => setShowPasswordModal(false)}
+                      className="px-4 py-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 items-center justify-center"
+                    >
+                      <Text className="text-[#777777] dark:text-slate-300 font-medium text-[13px]">
+                        Batal
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
               </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* Modal 4: Rekening Bank */}
@@ -914,7 +929,7 @@ export default function ProfileScreen() {
           animationType="fade"
           onRequestClose={() => setShowBankModal(false)}
         >
-          <View className="flex-1 bg-black/50 justify-end sm:justify-center items-center px-4 pb-6">
+          <View className="flex-1 bg-black/50 justify-center items-center px-4 py-6">
             <View className="w-full max-w-[390px] bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-xl border border-slate-100 dark:border-slate-800">
               <View className="flex-row justify-between items-center mb-4">
                 <View className="flex-row items-center gap-2">
@@ -978,7 +993,7 @@ export default function ProfileScreen() {
           animationType="fade"
           onRequestClose={() => setShowContractModal(false)}
         >
-          <View className="flex-1 bg-black/50 justify-end sm:justify-center items-center px-4 pb-6">
+          <View className="flex-1 bg-black/50 justify-center items-center px-4 py-6">
             <View className="w-full max-w-[390px] bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-xl border border-slate-100 dark:border-slate-800">
               <View className="flex-row justify-between items-center mb-4">
                 <View className="flex-row items-center gap-2">
@@ -1043,7 +1058,7 @@ export default function ProfileScreen() {
           animationType="fade"
           onRequestClose={() => setShowSettingsModal(false)}
         >
-          <View className="flex-1 bg-black/50 justify-end sm:justify-center items-center px-4 pb-6">
+          <View className="flex-1 bg-black/50 justify-center items-center px-4 py-6">
             <View className="w-full max-w-[390px] bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-xl border border-slate-100 dark:border-slate-800">
               <View className="flex-row justify-between items-center mb-4">
                 <View className="flex-row items-center gap-2">

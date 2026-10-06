@@ -12,6 +12,7 @@ import {
   Platform,
   ActivityIndicator,
   RefreshControl,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {
   ClipboardList,
@@ -1253,15 +1254,19 @@ export default function AdminTasksScreen() {
               animationType="fade"
               onRequestClose={() => setIsModalOpen(false)}
             >
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: 'rgba(0,0,0,0.5)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 16,
-                }}
+              <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
               >
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 16,
+                  }}
+                >
                 <View
                   style={{
                     backgroundColor: theme.cardBg,
@@ -1500,8 +1505,9 @@ export default function AdminTasksScreen() {
                   </View>
                 </View>
               </View>
-            </Modal>
-          )}
+            </KeyboardAvoidingView>
+          </Modal>
+        )}
 
           {/* MODAL 2: Konfirmasi Hapus Tugas */}
           {deleteConfirmTask && (
