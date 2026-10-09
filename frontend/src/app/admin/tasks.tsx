@@ -103,6 +103,28 @@ export default function AdminTasksScreen() {
   const [formStatus, setFormStatus] = useState<TaskItem['status']>('PENDING');
   const [formPriority, setFormPriority] = useState<TaskItem['priority']>('MEDIUM');
 
+  // Calendar Picker State for Due Date
+  const [showDatePickerModal, setShowDatePickerModal] = useState(false);
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+
+  const setQuickDueDate = (daysOffset: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysOffset);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    setFormDueDate(`${yyyy}-${mm}-${dd}`);
+  };
+
+  const selectCalendarDay = (day: number) => {
+    const yyyy = calYear;
+    const mm = String(calMonth + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    setFormDueDate(`${yyyy}-${mm}-${dd}`);
+    setShowDatePickerModal(false);
+  };
+
   // Tasks & Employees state (loaded from real database API)
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [employees, setEmployees] = useState<EmployeeItem[]>([]);
@@ -1444,16 +1466,53 @@ export default function AdminTasksScreen() {
                       </View>
                     </View>
 
-                    {/* Due Date Input */}
+                    {/* Due Date Input with Interactive Calendar Trigger & Presets */}
                     <View>
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textMuted, marginBottom: 6 }}>
-                        Batas Waktu (Due Date)
-                      </Text>
-                      <TextInput
-                        placeholder="YYYY-MM-DD (e.g. 2026-09-10)"
-                        placeholderTextColor={theme.placeholder}
-                        value={formDueDate}
-                        onChangeText={setFormDueDate}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textMuted }}>
+                          Batas Waktu (Due Date)
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => setShowDatePickerModal(true)}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                        >
+                          <Calendar size={13} color={theme.primaryBlue} />
+                          <Text style={{ fontSize: 12, fontWeight: '600', color: theme.primaryBlue }}>
+                            Pilih Kalender
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Quick Date Presets */}
+                      <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+                        {[
+                          { label: 'Hari Ini', offset: 0 },
+                          { label: 'Besok', offset: 1 },
+                          { label: '+3 Hari', offset: 3 },
+                          { label: '+1 Minggu', offset: 7 },
+                        ].map((q) => (
+                          <TouchableOpacity
+                            key={q.label}
+                            onPress={() => setQuickDueDate(q.offset)}
+                            style={{
+                              paddingVertical: 4,
+                              paddingHorizontal: 8,
+                              borderRadius: 6,
+                              backgroundColor: theme.subtleBg,
+                              borderWidth: 1,
+                              borderColor: theme.borderColor,
+                            }}
+                          >
+                            <Text style={{ fontSize: 11, color: theme.textDark, fontWeight: '500' }}>
+                              {q.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+
+                      {/* Due Date Display & Trigger */}
+                      <TouchableOpacity
+                        onPress={() => setShowDatePickerModal(true)}
                         style={{
                           backgroundColor: theme.inputBg,
                           borderWidth: 1,
@@ -1461,10 +1520,16 @@ export default function AdminTasksScreen() {
                           borderRadius: 8,
                           paddingHorizontal: 12,
                           height: 40,
-                          fontSize: 13,
-                          color: theme.textDark,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
                         }}
-                      />
+                      >
+                        <Text style={{ fontSize: 13, color: formDueDate ? theme.textDark : theme.placeholder }}>
+                          {formDueDate || 'Pilih batas waktu dari kalender...'}
+                        </Text>
+                        <Calendar size={16} color={theme.primaryBlue} />
+                      </TouchableOpacity>
                     </View>
                   </View>
 
@@ -1506,6 +1571,183 @@ export default function AdminTasksScreen() {
                 </View>
               </View>
             </KeyboardAvoidingView>
+          </Modal>
+        )}
+
+        {/* MODAL: Kalender Interaktif untuk Memilih Due Date */}
+        {showDatePickerModal && (
+          <Modal
+            transparent
+            visible
+            animationType="fade"
+            onRequestClose={() => setShowDatePickerModal(false)}
+          >
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 16,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: theme.cardBg,
+                  borderRadius: 16,
+                  width: '100%',
+                  maxWidth: 380,
+                  padding: 20,
+                  borderWidth: 1,
+                  borderColor: theme.borderColor,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 20,
+                  elevation: 10,
+                }}
+              >
+                {/* Calendar Header with Month Navigation */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 16,
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (calMonth === 0) {
+                        setCalMonth(11);
+                        setCalYear((y) => y - 1);
+                      } else {
+                        setCalMonth((m) => m - 1);
+                      }
+                    }}
+                    style={{ padding: 6, borderRadius: 6, backgroundColor: theme.subtleBg }}
+                  >
+                    <ChevronLeft size={18} color={theme.textDark} />
+                  </TouchableOpacity>
+
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: theme.textDark }}>
+                    {[
+                      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                    ][calMonth]}{' '}
+                    {calYear}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (calMonth === 11) {
+                        setCalMonth(0);
+                        setCalYear((y) => y + 1);
+                      } else {
+                        setCalMonth((m) => m + 1);
+                      }
+                    }}
+                    style={{ padding: 6, borderRadius: 6, backgroundColor: theme.subtleBg }}
+                  >
+                    <ChevronRight size={18} color={theme.textDark} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Day Names Row */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
+                    <View key={d} style={{ width: 44, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: theme.textMuted }}>{d}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Calendar Grid */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                  {(() => {
+                    const firstDay = new Date(calYear, calMonth, 1).getDay();
+                    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+                    const cells = [];
+                    for (let i = 0; i < firstDay; i++) {
+                      cells.push(<View key={`empty-${i}`} style={{ width: `${100 / 7}%`, height: 38 }} />);
+                    }
+                    for (let d = 1; d <= daysInMonth; d++) {
+                      const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                      const isSelected = formDueDate === dateStr;
+                      cells.push(
+                        <TouchableOpacity
+                          key={`day-${d}`}
+                          onPress={() => selectCalendarDay(d)}
+                          style={{
+                            width: `${100 / 7}%`,
+                            height: 38,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <View
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: 16,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              backgroundColor: isSelected ? theme.primaryBlue : 'transparent',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: isSelected ? '700' : '500',
+                                color: isSelected ? '#fff' : theme.textDark,
+                              }}
+                            >
+                              {d}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    }
+                    return cells;
+                  })()}
+                </View>
+
+                {/* Close / Clear buttons */}
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setFormDueDate('');
+                      setShowDatePickerModal(false);
+                    }}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 9,
+                      backgroundColor: theme.subtleBg,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textMuted }}>
+                      Hapus Batas Waktu
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setShowDatePickerModal(false)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 9,
+                      backgroundColor: theme.primaryBlue,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>
+                      Selesai
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
           </Modal>
         )}
 

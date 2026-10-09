@@ -31,10 +31,12 @@ import {
 } from 'lucide-react-native';
 import { AuthContext } from '@/context/AuthContext';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '@/lib/api';
 import { YexsLogo } from '@/components/YexsLogo';
 
 export default function LoginScreen() {
+  const insets = useSafeAreaInsets();
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
@@ -163,8 +165,8 @@ export default function LoginScreen() {
         title={`Ubah ke mode ${theme.isDark ? 'terang' : 'gelap'}`}
         style={{
           position: 'absolute',
-          top: 20,
-          right: 20,
+          top: isDesktop ? 24 : Math.max(insets.top + 16, 52),
+          right: isDesktop ? 24 : 20,
           width: 40,
           height: 40,
           borderRadius: 20,

@@ -10,149 +10,140 @@ export const generatePayroll = async (req: Request, res: Response) => {
     const prisma = req.prisma!;
     const { userId, periodStart, periodEnd } = req.body;
 
-    if (!userId || !periodStart || !periodEnd) {
+    if (!periodStart || !periodEnd) {
       return res.status(400).json({
         success: false,
-        message: 'userId, periodStart, and periodEnd are required',
+        message: 'periodStart and periodEnd are required',
       });
     }
 
     const startDate = new Date(periodStart);
     const endDate = new Date(periodEnd);
 
-    // Get user with salary info
-    const user = await prisma.user.findUnique({
-      where: { id: Number(userId) },
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
-    }
-
     // Get company config for overtime rate
     const config = await prisma.companyConfig.findFirst();
     const overtimeRate = config?.overtimeRateMultiplier || 1.5;
 
-    // Get attendance records for the period
-    const attendances = await prisma.attendance.findMany({
-      where: {
-        userId: Number(userId),
-        date: {
-          gte: startDate,
-          lte: endDate,
+    // Get users (single or all active employees)
+    const isAll = !userId || userId === 'ALL' || userId === '';
+    const users = isAll
+      ? await prisma.user.findMany({ where: { role: 'USER' } })
+      : await prisma.user.findMany({ where: { id: Number(userId) } });
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User tidak ditemukan',
+      });
+    }
+
+    const generatedPayrolls = [];
+
+    for (const user of users) {
+      // Get attendance records for the period
+      const attendances = await prisma.attendance.findMany({
+        where: {
+          userId: user.id,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
         },
-      },
-      include: { breaks: true },
-    });
+        include: { breaks: true },
+      });
 
-    // Calculate working stats
-    let workingDays = 0;
-    let workingHours = 0;
-    let lateCount = 0;
-    let totalBreakMinutes = 0;
+      // Calculate working stats
+      let workingDays = 0;
+      let workingHours = 0;
+      let lateCount = 0;
+      let totalBreakMinutes = 0;
 
-    for (const attendance of attendances) {
-      if (attendance.clockIn && attendance.clockOut) {
-        workingDays++;
-        
-        let hoursWorked = 
-          (attendance.clockOut.getTime() - attendance.clockIn.getTime()) / 3600000;
-        
-        const breakHours = (attendance.totalBreakMinutes || 0) / 60;
-        hoursWorked = Math.max(0, hoursWorked - breakHours);
-        
-        workingHours += hoursWorked;
-        
-        if (attendance.status === 'LATE' && attendance.lateDeductionStatus !== 'APPROVED') {
-          lateCount++;
+      for (const attendance of attendances) {
+        if (attendance.clockIn && attendance.clockOut) {
+          workingDays++;
+          let hoursWorked =
+            (attendance.clockOut.getTime() - attendance.clockIn.getTime()) / 3600000;
+          const breakHours = (attendance.totalBreakMinutes || 0) / 60;
+          hoursWorked = Math.max(0, hoursWorked - breakHours);
+          workingHours += hoursWorked;
+
+          if (attendance.status === 'LATE' && attendance.lateDeductionStatus !== 'APPROVED') {
+            lateCount++;
+          }
+          totalBreakMinutes += attendance.totalBreakMinutes;
         }
-        
-        totalBreakMinutes += attendance.totalBreakMinutes;
       }
-    }
 
-    // Calculate salary based on type
-    let baseSalary = user.salary;
-    
-    switch (user.salaryType) {
-      case 'HOURLY':
-        baseSalary = user.salary * workingHours;
-        break;
-      case 'DAILY':
-        baseSalary = user.salary * workingDays;
-        break;
-      case 'WEEKLY':
-        baseSalary = user.salary * Math.ceil(workingDays / 7);
-        break;
-      case 'MONTHLY':
-      default:
-        baseSalary = user.salary;
-        break;
-    }
+      // Calculate salary based on type
+      let baseSalary = user.salary;
+      switch (user.salaryType) {
+        case 'HOURLY':
+          baseSalary = user.salary * workingHours;
+          break;
+        case 'DAILY':
+          baseSalary = user.salary * workingDays;
+          break;
+        case 'WEEKLY':
+          baseSalary = user.salary * Math.ceil(workingDays / 7);
+          break;
+        case 'MONTHLY':
+        default:
+          baseSalary = user.salary;
+          break;
+      }
 
-    // Calculate deductions
-    const lateDeductions = lateCount * user.latePenalty;
+      const lateDeductions = lateCount * user.latePenalty;
+      const expectedHours = workingDays * 8;
+      const overtimeHours = Math.max(0, workingHours - expectedHours);
 
-    // Calculate overtime (assuming 8 hours per day is standard)
-    const expectedHours = workingDays * 8;
-    const overtimeHours = Math.max(0, workingHours - expectedHours);
-    
-    // Calculate hourly rate for overtime
-    let hourlyRate = user.salary;
-    if (user.salaryType === 'MONTHLY') {
-      hourlyRate = user.salary / 160; // Assuming 160 hours per month
-    } else if (user.salaryType === 'DAILY') {
-      hourlyRate = user.salary / 8;
-    } else if (user.salaryType === 'WEEKLY') {
-      hourlyRate = user.salary / 40;
-    }
-    
-    // Total deductions
-    const totalDeductions = lateDeductions;
+      let hourlyRate = user.salary;
+      if (user.salaryType === 'MONTHLY') {
+        hourlyRate = user.salary / 160;
+      } else if (user.salaryType === 'DAILY') {
+        hourlyRate = user.salary / 8;
+      } else if (user.salaryType === 'WEEKLY') {
+        hourlyRate = user.salary / 40;
+      }
 
-    // Fix bug: If HOURLY, the baseSalary ALREADY paid for the overtime hours at 1.0x rate.
-    // So the overtimeBonus should only be the remaining 0.5x (or (overtimeRate - 1.0)x) bonus.
-    // For NON-HOURLY, baseSalary is fixed, so overtime pays the FULL overtimeRate (e.g. 1.5x)
-    let overtimeBonus = 0;
-    if (user.salaryType === 'HOURLY') {
-      overtimeBonus = overtimeHours * hourlyRate * (overtimeRate - 1.0);
-    } else {
-      overtimeBonus = overtimeHours * hourlyRate * overtimeRate;
-    }
+      const totalDeductions = lateDeductions;
+      let overtimeBonus = 0;
+      if (user.salaryType === 'HOURLY') {
+        overtimeBonus = overtimeHours * hourlyRate * (overtimeRate - 1.0);
+      } else {
+        overtimeBonus = overtimeHours * hourlyRate * overtimeRate;
+      }
 
-    // Net salary
-    const netSalary = baseSalary + overtimeBonus - totalDeductions;
+      const netSalary = baseSalary + overtimeBonus - totalDeductions;
 
-    // Create payroll record
-    const payroll = await prisma.payroll.create({
-      data: {
-        userId: Number(userId),
-        periodStart: startDate,
-        periodEnd: endDate,
-        baseSalary,
-        workingDays,
-        workingHours,
-        overtimeHours,
-        lateDeductions,
-        breakDeductions: 0, // Can implement break penalties if needed
-        overtimeBonus,
-        deductions: totalDeductions,
-        netSalary,
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
+      const payroll = await prisma.payroll.create({
+        data: {
+          userId: user.id,
+          periodStart: startDate,
+          periodEnd: endDate,
+          baseSalary,
+          workingDays,
+          workingHours,
+          overtimeHours,
+          lateDeductions,
+          breakDeductions: 0,
+          overtimeBonus,
+          deductions: totalDeductions,
+          netSalary,
         },
-      },
-    });
+        include: {
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      });
+
+      generatedPayrolls.push(payroll);
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Payroll generated successfully',
-      data: payroll,
+      message: `Payroll berhasil digenerate untuk ${generatedPayrolls.length} karyawan`,
+      data: generatedPayrolls.length === 1 ? generatedPayrolls[0] : generatedPayrolls,
     });
   } catch (error) {
     console.error('Generate payroll error:', error);
@@ -221,20 +212,41 @@ export const getMyPayrolls = async (req: Request, res: Response) => {
 export const getAllPayrolls = async (req: Request, res: Response) => {
   try {
     const prisma = req.prisma!;
-    const { periodStart, periodEnd } = req.query;
+    const { periodStart, periodEnd, userId, month, year } = req.query;
 
     const where: any = {};
+
+    if (userId && userId !== 'ALL' && userId !== '') {
+      where.userId = Number(userId);
+    }
 
     if (periodStart && periodEnd) {
       where.periodStart = { gte: new Date(periodStart as string) };
       where.periodEnd = { lte: new Date(periodEnd as string) };
+    } else if (month && year) {
+      const m = Number(month) - 1;
+      const y = Number(year);
+      const start = new Date(Date.UTC(y, m, 1));
+      const end = new Date(Date.UTC(m === 11 ? y + 1 : y, m === 11 ? 0 : m + 1, 1));
+      where.periodStart = { gte: start };
+      where.periodEnd = { lt: end };
     }
 
     const payrolls = await prisma.payroll.findMany({
       where,
       include: {
         user: {
-          select: { id: true, name: true, email: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            department: true,
+            position: true,
+            photo: true,
+            bankName: true,
+            bankAccountNumber: true,
+            bankAccountHolder: true,
+          },
         },
       },
       orderBy: { periodEnd: 'desc' },

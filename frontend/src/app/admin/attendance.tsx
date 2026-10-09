@@ -54,14 +54,32 @@ export default function AttendanceScreen() {
   // Detail Modal
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  useEffect(() => {
-    fetchAttendance();
-  }, []);
+  // Date Navigation State (Bisa lihat hari-hari sebelumnya)
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    return new Date().toISOString().split('T')[0];
+  });
 
-  const fetchAttendance = async () => {
+  const changeDateOffset = (offsetDays: number) => {
+    const current = new Date(selectedDate + 'T00:00:00');
+    current.setDate(current.getDate() + offsetDays);
+    setSelectedDate(current.toISOString().split('T')[0]);
+  };
+
+  const setTodayDate = () => {
+    setSelectedDate(new Date().toISOString().split('T')[0]);
+  };
+
+  useEffect(() => {
+    fetchAttendance(selectedDate);
+  }, [selectedDate]);
+
+  const fetchAttendance = async (dateVal?: string) => {
     setLoading(true);
     try {
-      const res = await api.get('/attendance/admin/today');
+      const targetDate = dateVal || selectedDate;
+      const res = await api.get('/attendance/admin/today', {
+        params: { date: targetDate },
+      });
       if (res.data?.success && Array.isArray(res.data.data)) {
         setAttendanceData(res.data.data);
       } else {
@@ -78,7 +96,7 @@ export default function AttendanceScreen() {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    fetchAttendance();
+    fetchAttendance(selectedDate);
   };
 
   const handleExport = async () => {
@@ -235,6 +253,148 @@ export default function AttendanceScreen() {
             isDesktop={isDesktop}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
           />
+
+          {/* Date Navigation Bar (Lihat Hari-Hari Sebelumnya) */}
+          <View
+            style={{
+              backgroundColor: theme.cardBg,
+              borderRadius: 12,
+              padding: 14,
+              paddingHorizontal: 16,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: theme.borderColor,
+              flexDirection: isDesktop ? 'row' : 'column',
+              justifyContent: 'space-between',
+              alignItems: isDesktop ? 'center' : 'stretch',
+              gap: 12,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  backgroundColor: theme.activeNavBg,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Calendar size={18} color={theme.primaryBlue} />
+              </View>
+              <View>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: '500' }}>
+                  Tanggal Presensi Ditampilkan:
+                </Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.textDark }}>
+                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {/* Prev Day */}
+              <TouchableOpacity
+                onPress={() => changeDateOffset(-1)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  paddingVertical: 7,
+                  paddingHorizontal: 10,
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: theme.borderColor,
+                  backgroundColor: theme.subtleBg,
+                }}
+              >
+                <ChevronLeft size={14} color={theme.textDark} />
+                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textDark }}>
+                  Hari Sebelumnya
+                </Text>
+              </TouchableOpacity>
+
+              {/* Hari Ini */}
+              <TouchableOpacity
+                onPress={setTodayDate}
+                style={{
+                  paddingVertical: 7,
+                  paddingHorizontal: 12,
+                  borderRadius: 6,
+                  backgroundColor:
+                    selectedDate === new Date().toISOString().split('T')[0]
+                      ? theme.primaryBlue
+                      : theme.subtleBg,
+                  borderWidth: 1,
+                  borderColor:
+                    selectedDate === new Date().toISOString().split('T')[0]
+                      ? theme.primaryBlue
+                      : theme.borderColor,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '700',
+                    color:
+                      selectedDate === new Date().toISOString().split('T')[0]
+                        ? '#fff'
+                        : theme.textDark,
+                  }}
+                >
+                  Hari Ini
+                </Text>
+              </TouchableOpacity>
+
+              {/* Next Day */}
+              <TouchableOpacity
+                onPress={() => changeDateOffset(1)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  paddingVertical: 7,
+                  paddingHorizontal: 10,
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: theme.borderColor,
+                  backgroundColor: theme.subtleBg,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textDark }}>
+                  Hari Berikutnya
+                </Text>
+                <ChevronRight size={14} color={theme.textDark} />
+              </TouchableOpacity>
+
+              {/* Input Tanggal Manual */}
+              <TextInput
+                value={selectedDate}
+                onChangeText={setSelectedDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={theme.placeholder}
+                style={{
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: theme.borderColor,
+                  backgroundColor: theme.cardBg,
+                  fontSize: 12,
+                  color: theme.textDark,
+                  width: 105,
+                  textAlign: 'center',
+                  outlineStyle: 'none',
+                } as any}
+              />
+            </View>
+          </View>
 
           {/* Quick Metrics */}
           <View
@@ -480,7 +640,7 @@ export default function AttendanceScreen() {
             {/* Actions: Refresh & Export */}
             <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
               <TouchableOpacity
-                onPress={fetchAttendance}
+                onPress={() => fetchAttendance()}
                 style={{
                   padding: 10,
                   borderRadius: 8,

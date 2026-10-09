@@ -21,6 +21,16 @@ export interface WorkLocationItem {
   radius: string;
 }
 
+const SHIFT_PRESETS = [
+  { id: 'REGULAR', label: 'Normal (08:00 - 17:00)', start: '08:00', end: '17:00' },
+  { id: 'OFFICE_9_5', label: 'Kantor (09:00 - 17:00)', start: '09:00', end: '17:00' },
+  { id: 'SHIFT_PAGI', label: 'Shift Pagi (07:00 - 15:00)', start: '07:00', end: '15:00' },
+  { id: 'SHIFT_SIANG', label: 'Shift Siang (14:00 - 22:00)', start: '14:00', end: '22:00' },
+  { id: 'SHIFT_MALAM', label: 'Shift Malam (22:00 - 06:00)', start: '22:00', end: '06:00' },
+  { id: 'MULTI_SHIFT', label: 'Rotasi Shift (3 Shift)', start: '07:00, 14:00, 22:00', end: '15:00' },
+  { id: 'FLEX', label: 'Fleksibel (FLEX)', start: 'FLEX', end: 'FLEX' },
+];
+
 export default function EditEmployeeScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
@@ -39,8 +49,8 @@ export default function EditEmployeeScreen() {
     
     // Kepegawaian
     employeeId: '',
-    department: 'Operasional',
-    position: 'Staff',
+    department: '',
+    position: '',
     phone: '',
     joinDate: '',
 
@@ -152,8 +162,8 @@ export default function EditEmployeeScreen() {
           password: '', // Kosongkan password saat edit
           role: u.role || 'USER',
           employeeId: u.employeeId || '',
-          department: u.department || 'Operasional',
-          position: u.position || 'Staff',
+          department: u.department || '',
+          position: u.position || '',
           phone: u.phone || '',
           joinDate: u.joinDate ? u.joinDate.substring(0, 10) : '',
           bankName: u.bankName || 'BCA',
@@ -493,11 +503,33 @@ export default function EditEmployeeScreen() {
             <Text className="text-lg font-bold text-slate-900 dark:text-white">Waktu & Istirahat</Text>
           </View>
           <View className="p-6">
-            <View className="flex-row gap-4 mb-4 flex-wrap">
+            <View className="mb-4">
+              <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">
+                Pilih Preset Shift Cepat:
+              </Text>
+              <View className="flex-row flex-wrap gap-2">
+                {SHIFT_PRESETS.map((preset) => {
+                  const isCurrent = formData.startWorkTime === preset.start && formData.endWorkTime === preset.end;
+                  return (
+                    <TouchableOpacity
+                      key={preset.id}
+                      onPress={() => setFormData({ ...formData, startWorkTime: preset.start, endWorkTime: preset.end })}
+                      className={`px-3 py-1.5 rounded-xl border ${isCurrent ? 'bg-purple-100 border-purple-400 dark:bg-purple-900/40 dark:border-purple-600' : 'bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}
+                    >
+                      <Text className={`text-xs font-semibold ${isCurrent ? 'text-purple-700 dark:text-purple-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                        {preset.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View className="flex-row gap-4 mb-2 flex-wrap">
               <View className="flex-1 min-w-[140px]">
                 <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Jam Masuk (HH:mm)</Text>
                 <Input 
-                  placeholder="09:00"
+                  placeholder="08:00 atau 07:00, 14:00, 22:00"
                   value={formData.startWorkTime}
                   onChangeText={(val) => setFormData({ ...formData, startWorkTime: val })}
                 />
@@ -520,6 +552,9 @@ export default function EditEmployeeScreen() {
                 />
               </View>
             </View>
+            <Text className="text-[11px] text-slate-400 mt-2 ml-1">
+              * Mendukung nilai jam tunggal (cth: 08:00), multi-shift dipisah koma (07:00, 14:00, 22:00), atau 'FLEX' untuk jam kerja bebas fleksibel.
+            </Text>
           </View>
         </Card>
 

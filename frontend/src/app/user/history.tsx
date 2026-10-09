@@ -40,9 +40,41 @@ export default function HistoryScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Month filter state
-  const monthOptions = ['September 2026', 'Agustus 2026', 'Juli 2026'];
-  const [selectedMonth, setSelectedMonth] = useState('September 2026');
+  // Dynamic Month filter options (bisa lihat seluruh riwayat bulan & hari sebelumnya)
+  const monthOptions = useMemo(() => {
+    const list = [{ label: 'Semua Riwayat', month: 0, year: 0 }];
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    for (let y = currentYear; y >= currentYear - 1; y--) {
+      const maxM = (y === currentYear) ? now.getMonth() : 11;
+      for (let m = maxM; m >= 0; m--) {
+        list.push({
+          label: `${months[m]} ${y}`,
+          month: m + 1,
+          year: y,
+        });
+      }
+    }
+    return list;
+  }, []);
+
+  const [selectedMonthItem, setSelectedMonthItem] = useState<{ label: string; month: number; year: number }>(() => {
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const now = new Date();
+    return {
+      label: `${months[now.getMonth()]} ${now.getFullYear()}`,
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+    };
+  });
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   // Correction Modal State
@@ -54,27 +86,36 @@ export default function HistoryScreen() {
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
-
-  const fetchHistory = async () => {
+  const fetchHistory = async (targetItem = selectedMonthItem) => {
+    setIsLoading(true);
     try {
-      const response = await api.get('/attendance/history');
+      const params: any = {};
+      if (targetItem.month > 0 && targetItem.year > 0) {
+        params.month = targetItem.month;
+        params.year = targetItem.year;
+      }
+      const response = await api.get('/attendance/history', { params });
       if (response.data?.success && Array.isArray(response.data.data)) {
         setHistory(response.data.data);
+      } else {
+        setHistory([]);
       }
     } catch (error) {
       console.error('Failed to fetch attendance history:', error);
+      setHistory([]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
+  useEffect(() => {
+    fetchHistory(selectedMonthItem);
+  }, [selectedMonthItem]);
+
   const handleRefresh = () => {
     setIsRefreshing(true);
-    fetchHistory();
+    fetchHistory(selectedMonthItem);
   };
 
   const formatHHmm = (dateVal?: string | Date) => {
@@ -273,7 +314,7 @@ export default function HistoryScreen() {
               className="flex-row items-center gap-2 py-2 px-3.5 bg-white dark:bg-slate-900 border border-[#eef1f6] dark:border-slate-800 rounded-[12px] shadow-sm"
             >
               <Text className="text-[14px] font-medium text-[#222222] dark:text-white">
-                {selectedMonth}
+                {selectedMonthItem.label}
               </Text>
               <ChevronDown size={15} color={isDark ? '#cbd5e1' : '#777777'} />
             </TouchableOpacity>
@@ -293,31 +334,36 @@ export default function HistoryScreen() {
 
           {/* Month Picker Modal / Dropdown Popup */}
           {showMonthPicker && (
-            <View className="bg-white dark:bg-slate-900 border border-[#eef1f6] dark:border-slate-800 rounded-xl p-2 mb-4 shadow-md">
-              {monthOptions.map((opt) => (
-                <TouchableOpacity
-                  key={opt}
-                  onPress={() => {
-                    setSelectedMonth(opt);
-                    setShowMonthPicker(false);
-                  }}
-                  className={`py-2.5 px-3 rounded-lg ${
-                    selectedMonth === opt
-                      ? 'bg-blue-50 dark:bg-blue-950/50'
-                      : 'bg-transparent'
-                  }`}
-                >
-                  <Text
-                    className={`text-[13px] ${
-                      selectedMonth === opt
-                        ? 'font-bold text-[#2a75d3]'
-                        : 'font-normal text-[#444444] dark:text-slate-300'
+            <View className="bg-white dark:bg-slate-900 border border-[#eef1f6] dark:border-slate-800 rounded-xl p-2 mb-4 shadow-md max-h-[260px]">
+              <ScrollView style={{ maxHeight: 240 }} nestedScrollEnabled>
+                {monthOptions.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.label}
+                    onPress={() => {
+                      setSelectedMonthItem(opt);
+                      setShowMonthPicker(false);
+                    }}
+                    className={`py-2.5 px-3 rounded-lg flex-row justify-between items-center ${
+                      selectedMonthItem.label === opt.label
+                        ? 'bg-blue-50 dark:bg-blue-950/50'
+                        : 'bg-transparent'
                     }`}
                   >
-                    {opt}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      className={`text-[13px] ${
+                        selectedMonthItem.label === opt.label
+                          ? 'font-bold text-[#2a75d3]'
+                          : 'font-normal text-[#444444] dark:text-slate-300'
+                      }`}
+                    >
+                      {opt.label}
+                    </Text>
+                    {selectedMonthItem.label === opt.label && (
+                      <Check size={14} color="#2a75d3" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           )}
 

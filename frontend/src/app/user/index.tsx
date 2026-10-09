@@ -108,6 +108,7 @@ export default function UserHomeScreen() {
     inRadius: boolean;
     distanceText: string;
     hasGps: boolean;
+    accuracy?: number;
   }>({
     latitude: 0,
     longitude: 0,
@@ -115,6 +116,7 @@ export default function UserHomeScreen() {
     inRadius: false,
     distanceText: 'Menghubungkan ke GPS...',
     hasGps: false,
+    accuracy: 0,
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -148,6 +150,7 @@ export default function UserHomeScreen() {
     locationsToUse: AllowedWorkLocation[],
     hasRestriction: boolean,
     hasGps: boolean = true,
+    gpsAccuracy: number = 0,
   ) => {
     if (!hasGps) {
       return {
@@ -157,6 +160,7 @@ export default function UserHomeScreen() {
         inRadius: false,
         distanceText: 'Akses GPS tidak tersedia',
         hasGps: false,
+        accuracy: 0,
       };
     }
 
@@ -168,6 +172,7 @@ export default function UserHomeScreen() {
         inRadius: true,
         distanceText: 'Bebas Lokasi (Tanpa Batas Radius)',
         hasGps: true,
+        accuracy: gpsAccuracy,
       };
     }
 
@@ -193,9 +198,16 @@ export default function UserHomeScreen() {
       }
     }
 
-    const inRadius = nearestDistance <= nearestLoc.radius;
+    // Toleransi deviasi akurasi GPS smartphone (+30 meter toleransi untuk ponsel kurang akurat)
+    const GPS_TOLERANCE_METERS = 30;
+    const effectiveRadius = nearestLoc.radius + GPS_TOLERANCE_METERS;
+    const inRadius = nearestDistance <= effectiveRadius;
     const locName = nearestLoc.name || 'titik kantor';
-    const distanceText = `${nearestDistance}m dari ${locName} (Maks ${nearestLoc.radius}m)`;
+    const distanceText = inRadius
+      ? nearestDistance <= nearestLoc.radius
+        ? `${nearestDistance}m dari ${locName} (Maks ${nearestLoc.radius}m)`
+        : `${nearestDistance}m dari ${locName} (Toleransi GPS Aktif)`
+      : `${nearestDistance}m dari ${locName} (Maks ${nearestLoc.radius}m)`;
 
     return {
       latitude,
@@ -204,6 +216,7 @@ export default function UserHomeScreen() {
       inRadius,
       distanceText,
       hasGps: true,
+      accuracy: gpsAccuracy,
     };
   };
 
@@ -228,6 +241,7 @@ export default function UserHomeScreen() {
           inRadius: false,
           distanceText: 'Harap aktifkan izin lokasi di pengaturan',
           hasGps: false,
+          accuracy: 0,
         });
         return;
       }
@@ -243,7 +257,7 @@ export default function UserHomeScreen() {
         });
       }
 
-      const { latitude, longitude } = loc.coords;
+      const { latitude, longitude, accuracy } = loc.coords;
 
       let addressName = 'Area Perkantoran';
       try {
@@ -257,7 +271,7 @@ export default function UserHomeScreen() {
         addressName = `Koordinat: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
       }
 
-      const evaluated = evaluateLocation(latitude, longitude, addressName, locs, restriction, true);
+      const evaluated = evaluateLocation(latitude, longitude, addressName, locs, restriction, true, accuracy || 0);
       setLocation(evaluated);
     } catch (err) {
       console.warn('GPS detection error:', err);
@@ -268,6 +282,7 @@ export default function UserHomeScreen() {
         inRadius: false,
         distanceText: 'Pastikan GPS perangkat Anda aktif',
         hasGps: false,
+        accuracy: 0,
       });
     } finally {
       setIsLocating(false);
@@ -399,6 +414,7 @@ export default function UserHomeScreen() {
         faceVerified: true,
         latitude: location.hasGps ? location.latitude : null,
         longitude: location.hasGps ? location.longitude : null,
+        accuracy: location.hasGps ? location.accuracy : null,
         ...(photoUri ? { photo: photoUri } : {}),
       });
       if (res.data?.success) {
@@ -463,6 +479,7 @@ export default function UserHomeScreen() {
         faceVerified: true,
         latitude: location.hasGps ? location.latitude : null,
         longitude: location.hasGps ? location.longitude : null,
+        accuracy: location.hasGps ? location.accuracy : null,
         ...(photoUri ? { photo: photoUri } : {}),
       });
       if (res.data?.success) {

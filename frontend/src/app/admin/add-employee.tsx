@@ -34,6 +34,7 @@ import {
   EyeOff,
   Plus,
   Trash2,
+  Clock,
 } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
@@ -74,20 +75,37 @@ export default function AddEmployeeScreen() {
 
   // Form States - Data Pekerjaan
   const [employeeId, setEmployeeId] = useState('');
-  const DEFAULT_DEPARTMENTS = [
-    'IT & Engineering',
-    'Human Resources',
-    'Finance',
-    'Operations',
-    'Marketing',
-    'Sales',
-  ];
-  const [departmentList, setDepartmentList] = useState<string[]>(DEFAULT_DEPARTMENTS);
-  const [department, setDepartment] = useState('IT & Engineering');
+  const [departmentList, setDepartmentList] = useState<string[]>([]);
+  const [department, setDepartment] = useState('');
   const [showAddCustomDept, setShowAddCustomDept] = useState(false);
   const [customDeptInput, setCustomDeptInput] = useState('');
-  const [position, setPosition] = useState('Staff IT');
+  const [position, setPosition] = useState('');
   const [jobType, setJobType] = useState('fulltime');
+
+  // Form States - Pengaturan Jam Kerja & Shift
+  const [startWorkTime, setStartWorkTime] = useState('08:00');
+  const [endWorkTime, setEndWorkTime] = useState('17:00');
+  const [maxBreakMinutes, setMaxBreakMinutes] = useState('60');
+  const [selectedShiftPreset, setSelectedShiftPreset] = useState('REGULAR');
+
+  const SHIFT_PRESETS = [
+    { id: 'REGULAR', label: 'Normal (08:00 - 17:00)', start: '08:00', end: '17:00', desc: 'Standar 8 Jam Kerja' },
+    { id: 'OFFICE_9_5', label: 'Kantor (09:00 - 17:00)', start: '09:00', end: '17:00', desc: 'Jadwal 9 to 5' },
+    { id: 'SHIFT_PAGI', label: 'Shift Pagi (07:00 - 15:00)', start: '07:00', end: '15:00', desc: 'Shift Pagi' },
+    { id: 'SHIFT_SIANG', label: 'Shift Siang (14:00 - 22:00)', start: '14:00', end: '22:00', desc: 'Shift Sore / Siang' },
+    { id: 'SHIFT_MALAM', label: 'Shift Malam (22:00 - 06:00)', start: '22:00', end: '06:00', desc: 'Shift Malam' },
+    { id: 'MULTI_SHIFT', label: 'Rotasi Shift (3 Shift)', start: '07:00, 14:00, 22:00', end: '15:00', desc: 'Rotasi shift otomatis' },
+    { id: 'FLEX', label: 'Fleksibel (FLEX)', start: 'FLEX', end: 'FLEX', desc: 'Tanpa denda terlambat' },
+    { id: 'CUSTOM', label: 'Kustom Waktu', start: '', end: '', desc: 'Tentukan jam sendiri' },
+  ];
+
+  const applyShiftPreset = (preset: typeof SHIFT_PRESETS[0]) => {
+    setSelectedShiftPreset(preset.id);
+    if (preset.id !== 'CUSTOM') {
+      setStartWorkTime(preset.start);
+      setEndWorkTime(preset.end);
+    }
+  };
 
   // Load custom departments & calculate employee ID on mount
   useEffect(() => {
@@ -105,16 +123,16 @@ export default function AddEmployeeScreen() {
           const userDepts = res.data.data
             .map((u: any) => u.department)
             .filter((d: any) => typeof d === 'string' && d.trim().length > 0);
-          const merged = Array.from(new Set([...DEFAULT_DEPARTMENTS, ...savedDepts, ...userDepts]));
+          const merged = Array.from(new Set([...savedDepts, ...userDepts]));
           setDepartmentList(merged);
           setEmployeeId(`EMP-${new Date().getFullYear()}-${String(res.data.data.length + 1).padStart(3, '0')}`);
         } else {
-          setDepartmentList(Array.from(new Set([...DEFAULT_DEPARTMENTS, ...savedDepts])));
+          setDepartmentList(savedDepts);
           setEmployeeId(`EMP-${new Date().getFullYear()}-001`);
         }
       })
       .catch(() => {
-        setDepartmentList(Array.from(new Set([...DEFAULT_DEPARTMENTS, ...savedDepts])));
+        setDepartmentList(savedDepts);
         setEmployeeId(`EMP-${new Date().getFullYear()}-001`);
       });
   }, []);
@@ -324,7 +342,7 @@ export default function AddEmployeeScreen() {
 
     setIsSubmitting(true);
     try {
-      const deptLabel = department.trim() || 'IT & Engineering';
+      const deptLabel = department.trim();
       // Persist department if newly typed
       if (deptLabel && !departmentList.includes(deptLabel)) {
         const updated = [...departmentList, deptLabel];
@@ -351,6 +369,9 @@ export default function AddEmployeeScreen() {
         jobType: jobLabel,
         salaryType,
         salary: parseFloat(basicSalary) || 0,
+        startWorkTime: startWorkTime.trim() || '08:00',
+        endWorkTime: endWorkTime.trim() || '17:00',
+        maxBreakMinutes: parseInt(maxBreakMinutes, 10) || 60,
         bankName,
         bankAccountNumber,
         overrideLocation,
@@ -779,186 +800,148 @@ export default function AddEmployeeScreen() {
               <View style={{ flex: 1, gap: 8, position: 'relative', zIndex: deptDropdownOpen ? 9999 : 40 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
-                    Departemen / Divisi <Text style={{ color: theme.danger }}>*</Text>
+                    Departemen / Divisi
                   </Text>
-                  <TouchableOpacity
-                    onPress={() => setShowAddCustomDept((prev) => !prev)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                  >
-                    <Plus size={12} color={theme.primaryBlue} />
-                    <Text style={{ fontSize: 12, color: theme.primaryBlue, fontWeight: '600' }}>
-                      {showAddCustomDept ? 'Tutup Input' : '+ Divisi Baru'}
-                    </Text>
-                  </TouchableOpacity>
+                  {departmentList.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setShowAddCustomDept((prev) => !prev)}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                    >
+                      <Plus size={12} color={theme.primaryBlue} />
+                      <Text style={{ fontSize: 12, color: theme.primaryBlue, fontWeight: '600' }}>
+                        {showAddCustomDept ? 'Pilih dari List' : '+ Kustom Baru'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
-                <TouchableOpacity
-                  onPress={toggleDeptDropdown}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    paddingVertical: 12,
-                    paddingHorizontal: 15,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                    borderRadius: 8,
-                    backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, color: department ? theme.textDark : theme.placeholder }}>
-                    {department || 'Pilih Departemen / Divisi...'}
-                  </Text>
-                  <ChevronDown size={14} color={theme.textMuted} />
-                </TouchableOpacity>
-
-                {showAddCustomDept && (
-                  <View
-                    style={{
-                      padding: 12,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: theme.primaryBlue,
-                      backgroundColor: theme.isDark ? '#1e293b' : '#f0f9ff',
-                      gap: 8,
-                    }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.primaryBlue }}>
-                      Ketik Nama Divisi / Departemen Baru:
+                {departmentList.length === 0 || showAddCustomDept ? (
+                  <View style={{ position: 'relative' }}>
+                    <TextInput
+                      placeholder="Contoh: Operasional, IT, HRD, Keuangan..."
+                      placeholderTextColor={theme.placeholder}
+                      value={department}
+                      onChangeText={setDepartment}
+                      style={{
+                        paddingVertical: 12,
+                        paddingHorizontal: 15,
+                        borderWidth: 1,
+                        borderColor: theme.borderColor,
+                        borderRadius: 8,
+                        fontSize: 14,
+                        color: theme.textDark,
+                        backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
+                        outlineStyle: 'none',
+                      } as any}
+                    />
+                    <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
+                      Ketik bebas nama departemen sesuai struktur perusahaan Anda.
                     </Text>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <TextInput
-                        placeholder="Contoh: Digital Marketing, RnD..."
-                        placeholderTextColor={theme.placeholder}
-                        value={customDeptInput}
-                        onChangeText={setCustomDeptInput}
+                  </View>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      onPress={toggleDeptDropdown}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingVertical: 12,
+                        paddingHorizontal: 15,
+                        borderWidth: 1,
+                        borderColor: theme.borderColor,
+                        borderRadius: 8,
+                        backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, color: department ? theme.textDark : theme.placeholder }}>
+                        {department || 'Pilih Departemen / Divisi...'}
+                      </Text>
+                      <ChevronDown size={14} color={theme.textMuted} />
+                    </TouchableOpacity>
+
+                    {deptDropdownOpen && (
+                      <View
                         style={{
-                          flex: 1,
-                          paddingVertical: 8,
-                          paddingHorizontal: 12,
-                          borderRadius: 6,
+                          position: 'absolute',
+                          top: 75,
+                          left: 0,
+                          right: 0,
+                          backgroundColor: theme.cardBg,
                           borderWidth: 1,
                           borderColor: theme.borderColor,
-                          backgroundColor: theme.cardBg,
-                          fontSize: 13,
-                          color: theme.textDark,
-                          outlineStyle: 'none',
-                        } as any}
-                      />
-                      <TouchableOpacity
-                        onPress={handleAddCustomDepartment}
-                        style={{
-                          backgroundColor: theme.primaryBlue,
-                          paddingHorizontal: 14,
-                          paddingVertical: 8,
-                          borderRadius: 6,
-                          justifyContent: 'center',
-                          alignItems: 'center',
+                          borderRadius: 8,
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 6 },
+                          shadowOpacity: 0.15,
+                          shadowRadius: 12,
+                          zIndex: 10000,
+                          elevation: 10,
+                          maxHeight: 260,
+                          overflow: 'hidden',
                         }}
                       >
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Simpan</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setShowAddCustomDept(false);
-                          setCustomDeptInput('');
-                        }}
-                        style={{
-                          backgroundColor: theme.isDark ? '#475569' : '#e2e8f0',
-                          paddingHorizontal: 10,
-                          paddingVertical: 8,
-                          borderRadius: 6,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Text style={{ color: theme.textDark, fontSize: 12, fontWeight: '600' }}>Batal</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
+                        <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                          {departmentList.map((deptName) => (
+                            <TouchableOpacity
+                              key={deptName}
+                              onPress={() => {
+                                setDepartment(deptName);
+                                setDeptDropdownOpen(false);
+                                setShowAddCustomDept(false);
+                              }}
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                paddingVertical: 10,
+                                paddingHorizontal: 15,
+                                borderBottomWidth: 1,
+                                borderBottomColor: theme.borderColor,
+                                backgroundColor:
+                                  department === deptName ? theme.activeNavBg : 'transparent',
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  color: department === deptName ? theme.primaryBlue : theme.textDark,
+                                  fontWeight: department === deptName ? '700' : '400',
+                                }}
+                              >
+                                {deptName}
+                              </Text>
+                              {department === deptName && (
+                                <Check size={14} color={theme.primaryBlue} />
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
 
-                {deptDropdownOpen && (
-                  <View
-                    style={{
-                      position: 'absolute',
-                      top: 75,
-                      left: 0,
-                      right: 0,
-                      backgroundColor: theme.cardBg,
-                      borderWidth: 1,
-                      borderColor: theme.borderColor,
-                      borderRadius: 8,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 6 },
-                      shadowOpacity: 0.15,
-                      shadowRadius: 12,
-                      zIndex: 10000,
-                      elevation: 10,
-                      maxHeight: 260,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                      {departmentList.map((deptName) => (
                         <TouchableOpacity
-                          key={deptName}
                           onPress={() => {
-                            setDepartment(deptName);
                             setDeptDropdownOpen(false);
-                            setShowAddCustomDept(false);
+                            setShowAddCustomDept(true);
                           }}
                           style={{
                             flexDirection: 'row',
                             alignItems: 'center',
-                            justifyContent: 'space-between',
+                            gap: 8,
                             paddingVertical: 10,
                             paddingHorizontal: 15,
-                            borderBottomWidth: 1,
-                            borderBottomColor: theme.borderColor,
-                            backgroundColor:
-                              department === deptName ? theme.activeNavBg : 'transparent',
+                            backgroundColor: theme.isDark ? '#334155' : '#f0f9ff',
+                            borderTopWidth: 1,
+                            borderTopColor: theme.borderColor,
                           }}
                         >
-                          <Text
-                            style={{
-                              fontSize: 13,
-                              color: department === deptName ? theme.primaryBlue : theme.textDark,
-                              fontWeight: department === deptName ? '700' : '400',
-                            }}
-                          >
-                            {deptName}
+                          <Plus size={15} color={theme.primaryBlue} />
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: theme.primaryBlue }}>
+                            + Ketik Departemen Lain (Kustom)
                           </Text>
-                          {department === deptName && (
-                            <Check size={14} color={theme.primaryBlue} />
-                          )}
                         </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-
-                    {/* Button inside dropdown to trigger custom input */}
-                    <TouchableOpacity
-                      onPress={() => {
-                        setDeptDropdownOpen(false);
-                        setShowAddCustomDept(true);
-                      }}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 8,
-                        paddingVertical: 10,
-                        paddingHorizontal: 15,
-                        backgroundColor: theme.isDark ? '#334155' : '#f0f9ff',
-                        borderTopWidth: 1,
-                        borderTopColor: theme.borderColor,
-                      }}
-                    >
-                      <Plus size={15} color={theme.primaryBlue} />
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: theme.primaryBlue }}>
-                        + Tambah Divisi / Departemen Baru
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                      </View>
+                    )}
+                  </>
                 )}
               </View>
             </View>
@@ -1061,6 +1044,156 @@ export default function AddEmployeeScreen() {
                     ))}
                   </View>
                 )}
+              </View>
+            </View>
+
+            {/* Section 2.5: Pengaturan Jam Kerja & Shift */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                paddingBottom: 10,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.borderColor,
+                marginBottom: 20,
+                marginTop: 25,
+              }}
+            >
+              <Clock size={18} color={theme.primaryBlue} />
+              <View>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textDark }}>
+                  Pengaturan Jam Kerja & Shift
+                </Text>
+                <Text style={{ fontSize: 12, color: theme.textMuted }}>
+                  Pilih pola shift atau atur jam masuk/pulang fleksibel karyawan
+                </Text>
+              </View>
+            </View>
+
+            {/* Shift Preset Chips */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark, marginBottom: 8 }}>
+                Pilihan Preset Shift:
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {SHIFT_PRESETS.map((preset) => {
+                  const isSelected = selectedShiftPreset === preset.id;
+                  return (
+                    <TouchableOpacity
+                      key={preset.id}
+                      onPress={() => applyShiftPreset(preset)}
+                      style={{
+                        paddingVertical: 7,
+                        paddingHorizontal: 12,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: isSelected ? theme.primaryBlue : theme.borderColor,
+                        backgroundColor: isSelected
+                          ? (theme.isDark ? '#1e3a8a' : '#eff6ff')
+                          : (theme.isDark ? '#1e293b' : '#f8fafc'),
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: isSelected ? '700' : '500',
+                          color: isSelected ? theme.primaryBlue : theme.textDark,
+                        }}
+                      >
+                        {preset.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Work Time Inputs */}
+            <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 15, marginBottom: 25 }}>
+              <View style={{ flex: 1, gap: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
+                  Jam Masuk Kerja <Text style={{ color: theme.danger }}>*</Text>
+                </Text>
+                <TextInput
+                  placeholder="08:00 atau 07:00, 14:00, 22:00"
+                  placeholderTextColor={theme.placeholder}
+                  value={startWorkTime}
+                  onChangeText={(val) => {
+                    setStartWorkTime(val);
+                    setSelectedShiftPreset('CUSTOM');
+                  }}
+                  style={{
+                    paddingVertical: 12,
+                    paddingHorizontal: 15,
+                    borderWidth: 1,
+                    borderColor: theme.borderColor,
+                    borderRadius: 8,
+                    fontSize: 14,
+                    color: theme.textDark,
+                    backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
+                    outlineStyle: 'none',
+                  } as any}
+                />
+                <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                  Bisa diisi jam tunggal (cth: 08:00), multi-shift dipisah koma, atau 'FLEX'.
+                </Text>
+              </View>
+
+              <View style={{ flex: 1, gap: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
+                  Jam Pulang Kerja <Text style={{ color: theme.danger }}>*</Text>
+                </Text>
+                <TextInput
+                  placeholder="17:00 atau 15:00"
+                  placeholderTextColor={theme.placeholder}
+                  value={endWorkTime}
+                  onChangeText={(val) => {
+                    setEndWorkTime(val);
+                    setSelectedShiftPreset('CUSTOM');
+                  }}
+                  style={{
+                    paddingVertical: 12,
+                    paddingHorizontal: 15,
+                    borderWidth: 1,
+                    borderColor: theme.borderColor,
+                    borderRadius: 8,
+                    fontSize: 14,
+                    color: theme.textDark,
+                    backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
+                    outlineStyle: 'none',
+                  } as any}
+                />
+                <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                  Waktu selesai kerja standar untuk perhitungan lembur/overtime.
+                </Text>
+              </View>
+
+              <View style={{ flex: 1, gap: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
+                  Batas Istirahat (Menit)
+                </Text>
+                <TextInput
+                  placeholder="60"
+                  placeholderTextColor={theme.placeholder}
+                  value={maxBreakMinutes}
+                  keyboardType="numeric"
+                  onChangeText={setMaxBreakMinutes}
+                  style={{
+                    paddingVertical: 12,
+                    paddingHorizontal: 15,
+                    borderWidth: 1,
+                    borderColor: theme.borderColor,
+                    borderRadius: 8,
+                    fontSize: 14,
+                    color: theme.textDark,
+                    backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
+                    outlineStyle: 'none',
+                  } as any}
+                />
+                <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                  Durasi istirahat (menit) yang diizinkan per hari.
+                </Text>
               </View>
             </View>
 

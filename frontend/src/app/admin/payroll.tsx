@@ -32,6 +32,8 @@ import {
   Calendar,
   AlertCircle,
   Search,
+  User,
+  RefreshCw,
 } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
@@ -70,13 +72,41 @@ export default function PayrollScreen() {
   // Mobile menu drawer state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Filters State
-  const [selectedPeriod, setSelectedPeriod] = useState('09-2026');
+  // Filters State - Per Karyawan & Custom Periode / Range
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  const [filterMode, setFilterMode] = useState<'MONTH' | 'RANGE'>('MONTH');
+  const [selectedMonth, setSelectedMonth] = useState<string>('9'); // September
+  const [selectedYear, setSelectedYear] = useState<string>('2026');
+  const [startDate, setStartDate] = useState<string>('2026-09-01');
+  const [endDate, setEndDate] = useState<string>('2026-09-30');
+
+  const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
+  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
-  const [periodDropdownOpen, setPeriodDropdownOpen] = useState(false);
   const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+
+  const MONTH_LIST = [
+    { key: '', label: 'Semua Bulan' },
+    { key: '1', label: 'Januari' },
+    { key: '2', label: 'Februari' },
+    { key: '3', label: 'Maret' },
+    { key: '4', label: 'April' },
+    { key: '5', label: 'Mei' },
+    { key: '6', label: 'Juni' },
+    { key: '7', label: 'Juli' },
+    { key: '8', label: 'Agustus' },
+    { key: '9', label: 'September' },
+    { key: '10', label: 'Oktober' },
+    { key: '11', label: 'November' },
+    { key: '12', label: 'Desember' },
+  ];
+  const YEAR_LIST = ['2024', '2025', '2026', '2027'];
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,8 +117,9 @@ export default function PayrollScreen() {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmittingPay, setIsSubmittingPay] = useState(false);
-  const [generatePeriod, setGeneratePeriod] = useState('September 2026');
-  const [generateDept, setGenerateDept] = useState('Semua Departemen');
+  const [generateTargetUserId, setGenerateTargetUserId] = useState('ALL');
+  const [generateStartDate, setGenerateStartDate] = useState('2026-09-01');
+  const [generateEndDate, setGenerateEndDate] = useState('2026-09-30');
 
   // Payrolls data (loaded from real database API)
   const [payrolls, setPayrolls] = useState<PayrollRecord[]>([]);
@@ -96,35 +127,62 @@ export default function PayrollScreen() {
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch from backend API on mount
+  // Fetch employees on mount
+  useEffect(() => {
+    api.get('/users')
+      .then((res) => {
+        if (res.data?.data && Array.isArray(res.data.data)) {
+          setEmployees(res.data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch payroll from backend API
   useEffect(() => {
     fetchBackendPayroll();
-  }, []);
+  }, [selectedUserId, filterMode, selectedMonth, selectedYear, startDate, endDate]);
 
   const fetchBackendPayroll = async () => {
     try {
-      const res = await api.get('/payroll');
+      const params: any = {};
+      if (selectedUserId && selectedUserId !== 'ALL') {
+        params.userId = selectedUserId;
+      }
+
+      if (filterMode === 'RANGE') {
+        if (startDate) params.periodStart = startDate;
+        if (endDate) params.periodEnd = endDate;
+      } else {
+        if (selectedMonth) params.month = selectedMonth;
+        if (selectedYear) params.year = selectedYear;
+      }
+
+      const res = await api.get('/payroll', { params });
       if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        // Map backend payroll data if available
         const mapped = res.data.data.map((p: any, idx: number) => ({
           id: p.id || idx + 1,
           name: p.user?.name || 'Karyawan',
-          role: p.user?.department || 'IT & Engineering',
-          department: p.user?.department || 'IT & Engineering',
-          avatar: p.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.user?.name || 'Karyawan')}&background=2a75d3&color=fff`,
-          salaryType: 'MONTHLY',
-          salaryTypeDetail: 'MONTHLY',
-          baseSalary: p.basicSalary || 0,
-          overtimeBonus: p.allowance || 0,
-          overtimeDetail: '',
-          lateDeduction: p.deduction || 0,
-          lateDetail: p.deduction > 0 ? `(${p.deduction / 25000}x Telat)` : '',
+          role: p.user?.position || p.user?.department || 'Staff',
+          department: p.user?.department || '-',
+          avatar:
+            p.user?.photo ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(p.user?.name || 'Karyawan')}&background=2a75d3&color=fff`,
+          salaryType: (p.user?.salaryType as any) || 'MONTHLY',
+          salaryTypeDetail: p.user?.salaryType || 'MONTHLY',
+          baseSalary: p.baseSalary ?? p.basicSalary ?? 0,
+          overtimeBonus: p.overtimeBonus ?? p.allowance ?? 0,
+          overtimeDetail: p.overtimeHours ? `(${p.overtimeHours} jam)` : '',
+          lateDeduction: p.lateDeductions ?? p.deduction ?? 0,
+          lateDetail: (p.lateDeductions ?? 0) > 0 ? `(${Math.round(p.lateDeductions / 25000)}x Telat)` : '',
           netSalary: p.netSalary || 0,
           status: p.paymentStatus === 'PAID' ? 'PAID' : 'PENDING',
-          bankName: p.bankName || 'BCA',
-          bankAccount: p.bankAccount || '-',
-          period: p.period || '09-2026',
-          attendanceDays: p.attendanceDays || 0,
+          bankName: p.user?.bankName || p.bankName || 'BCA',
+          bankAccount: p.user?.bankAccountNumber || p.bankAccount || '-',
+          period: p.periodStart
+            ? new Date(p.periodStart).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+            : 'September 2026',
+          attendanceDays: p.workingDays || p.attendanceDays || 0,
           lateCount: p.lateCount || 0,
         }));
         setPayrolls(mapped);
@@ -151,15 +209,14 @@ export default function PayrollScreen() {
   // Filtered List
   const filteredPayrolls = useMemo(() => {
     return payrolls.filter((p) => {
-      const matchPeriod = !selectedPeriod || p.period === selectedPeriod;
       const matchDept =
         !selectedDept ||
         p.department.toLowerCase().includes(selectedDept.toLowerCase());
       const matchStatus =
         !selectedStatus || p.status.toLowerCase() === selectedStatus.toLowerCase();
-      return matchPeriod && matchDept && matchStatus;
+      return matchDept && matchStatus;
     });
-  }, [payrolls, selectedPeriod, selectedDept, selectedStatus]);
+  }, [payrolls, selectedDept, selectedStatus]);
 
   // Dynamic summary metrics
   const totalEstimatedSalary = useMemo(() => {
@@ -201,7 +258,7 @@ export default function PayrollScreen() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Payroll_${selectedPeriod}.csv`;
+        a.download = `Payroll_${filterMode === 'RANGE' ? `${startDate}_sd_${endDate}` : `${selectedMonth || 'all'}-${selectedYear}`}.csv`;
         a.click();
       }
     } else {
@@ -238,19 +295,35 @@ export default function PayrollScreen() {
   };
 
   // Generate Payroll Submit
-  const handleGenerateSubmit = () => {
+  const handleGenerateSubmit = async () => {
     setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
-      setShowGenerateModal(false);
-      if (Platform.OS === 'web') {
-        window.alert(
-          `Payroll periode ${generatePeriod} berhasil digenerate untuk ${generateDept}!`
-        );
-      } else {
-        Alert.alert('Sukses', `Payroll periode ${generatePeriod} berhasil digenerate!`);
+    try {
+      const payload: any = {
+        periodStart: generateStartDate,
+        periodEnd: generateEndDate,
+      };
+      if (generateTargetUserId && generateTargetUserId !== 'ALL') {
+        payload.userId = generateTargetUserId;
       }
-    }, 600);
+      const res = await api.post('/payroll', payload);
+      const msg = res.data?.message || 'Payroll berhasil digenerate!';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Sukses', msg);
+      }
+      setShowGenerateModal(false);
+      fetchBackendPayroll();
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Terjadi kesalahan saat generate payroll';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Gagal', msg);
+      }
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -465,16 +538,19 @@ export default function PayrollScreen() {
             <View
               style={{
                 flexDirection: isDesktop ? 'row' : 'column',
-                gap: 15,
+                gap: 12,
                 alignItems: isDesktop ? 'center' : 'stretch',
                 flexWrap: 'wrap',
+                flex: 1,
               }}
             >
-              {/* Periode Dropdown */}
-              <View style={{ position: 'relative' }}>
+              {/* Filter Per Karyawan */}
+              <View style={{ position: 'relative', zIndex: userDropdownOpen ? 9999 : 50 }}>
                 <TouchableOpacity
                   onPress={() => {
-                    setPeriodDropdownOpen(!periodDropdownOpen);
+                    setUserDropdownOpen(!userDropdownOpen);
+                    setMonthDropdownOpen(false);
+                    setYearDropdownOpen(false);
                     setDeptDropdownOpen(false);
                     setStatusDropdownOpen(false);
                   }}
@@ -485,29 +561,37 @@ export default function PayrollScreen() {
                     paddingVertical: 8,
                     paddingHorizontal: 12,
                     borderWidth: 1,
-                    borderColor: theme.borderColor,
+                    borderColor: selectedUserId ? theme.primaryBlue : theme.borderColor,
                     borderRadius: 6,
                     backgroundColor: theme.cardBg,
-                    minWidth: 160,
+                    minWidth: 180,
                   }}
                 >
-                  <Text style={{ fontSize: 14, color: theme.textDark }}>
-                    {selectedPeriod === '09-2026'
-                      ? 'September 2026'
-                      : selectedPeriod === '08-2026'
-                      ? 'Agustus 2026'
-                      : 'Juli 2026'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                    <User size={14} color={selectedUserId ? theme.primaryBlue : theme.textMuted} />
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontSize: 13,
+                        color: selectedUserId ? theme.primaryBlue : theme.textDark,
+                        fontWeight: selectedUserId ? '600' : '400',
+                      }}
+                    >
+                      {selectedUserId
+                        ? employees.find((e) => String(e.id) === selectedUserId)?.name || 'Karyawan Terpilih'
+                        : 'Semua Karyawan'}
+                    </Text>
+                  </View>
                   <ChevronDown size={14} color={theme.textMuted} />
                 </TouchableOpacity>
 
-                {periodDropdownOpen && (
+                {userDropdownOpen && (
                   <View
                     style={{
                       position: 'absolute',
                       top: 42,
                       left: 0,
-                      width: 160,
+                      width: 220,
                       backgroundColor: theme.cardBg,
                       borderWidth: 1,
                       borderColor: theme.borderColor,
@@ -516,54 +600,344 @@ export default function PayrollScreen() {
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.1,
                       shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      zIndex: 10000,
+                      elevation: 10,
+                      maxHeight: 250,
+                      overflow: 'hidden',
                     }}
                   >
-                    {[
-                      { key: '09-2026', label: 'September 2026' },
-                      { key: '08-2026', label: 'Agustus 2026' },
-                      { key: '07-2026', label: 'Juli 2026' },
-                    ].map((opt) => (
+                    <ScrollView style={{ maxHeight: 240 }} nestedScrollEnabled>
                       <TouchableOpacity
-                        key={opt.key}
                         onPress={() => {
-                          setSelectedPeriod(opt.key);
-                          setPeriodDropdownOpen(false);
+                          setSelectedUserId('');
+                          setUserDropdownOpen(false);
                         }}
                         style={{
                           paddingVertical: 9,
                           paddingHorizontal: 12,
                           borderBottomWidth: 1,
                           borderBottomColor: theme.borderColor,
-                          backgroundColor:
-                            selectedPeriod === opt.key ? theme.activeNavBg : 'transparent',
+                          backgroundColor: !selectedUserId ? theme.activeNavBg : 'transparent',
                         }}
                       >
                         <Text
                           style={{
                             fontSize: 13,
-                            color:
-                              selectedPeriod === opt.key
-                                ? theme.primaryBlue
-                                : theme.textDark,
-                            fontWeight: selectedPeriod === opt.key ? '700' : '400',
+                            color: !selectedUserId ? theme.primaryBlue : theme.textDark,
+                            fontWeight: !selectedUserId ? '700' : '400',
                           }}
                         >
-                          {opt.label}
+                          Semua Karyawan
                         </Text>
                       </TouchableOpacity>
-                    ))}
+                      {employees.map((emp) => (
+                        <TouchableOpacity
+                          key={emp.id}
+                          onPress={() => {
+                            setSelectedUserId(String(emp.id));
+                            setUserDropdownOpen(false);
+                          }}
+                          style={{
+                            paddingVertical: 9,
+                            paddingHorizontal: 12,
+                            borderBottomWidth: 1,
+                            borderBottomColor: theme.borderColor,
+                            backgroundColor:
+                              selectedUserId === String(emp.id) ? theme.activeNavBg : 'transparent',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              color:
+                                selectedUserId === String(emp.id)
+                                  ? theme.primaryBlue
+                                  : theme.textDark,
+                              fontWeight: selectedUserId === String(emp.id) ? '700' : '400',
+                            }}
+                          >
+                            {emp.name}
+                          </Text>
+                          {emp.department && (
+                            <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                              {emp.department}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
                   </View>
                 )}
               </View>
 
+              {/* Mode Toggle: Bulan vs Range */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: theme.borderColor,
+                  overflow: 'hidden',
+                  backgroundColor: theme.subtleBg,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => setFilterMode('MONTH')}
+                  style={{
+                    paddingVertical: 7,
+                    paddingHorizontal: 10,
+                    backgroundColor: filterMode === 'MONTH' ? theme.primaryBlue : 'transparent',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: filterMode === 'MONTH' ? '#fff' : theme.textMuted,
+                    }}
+                  >
+                    Bulan
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setFilterMode('RANGE')}
+                  style={{
+                    paddingVertical: 7,
+                    paddingHorizontal: 10,
+                    backgroundColor: filterMode === 'RANGE' ? theme.primaryBlue : 'transparent',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: filterMode === 'RANGE' ? '#fff' : theme.textMuted,
+                    }}
+                  >
+                    Range Tanggal
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Custom Bulan & Tahun Dropdown */}
+              {filterMode === 'MONTH' ? (
+                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                  {/* Bulan Dropdown */}
+                  <View style={{ position: 'relative', zIndex: monthDropdownOpen ? 9998 : 40 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setMonthDropdownOpen(!monthDropdownOpen);
+                        setYearDropdownOpen(false);
+                        setUserDropdownOpen(false);
+                        setDeptDropdownOpen(false);
+                        setStatusDropdownOpen(false);
+                      }}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingVertical: 8,
+                        paddingHorizontal: 10,
+                        borderWidth: 1,
+                        borderColor: theme.borderColor,
+                        borderRadius: 6,
+                        backgroundColor: theme.cardBg,
+                        minWidth: 130,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, color: theme.textDark }}>
+                        {MONTH_LIST.find((m) => m.key === selectedMonth)?.label || 'Semua Bulan'}
+                      </Text>
+                      <ChevronDown size={14} color={theme.textMuted} />
+                    </TouchableOpacity>
+
+                    {monthDropdownOpen && (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          top: 42,
+                          left: 0,
+                          width: 140,
+                          backgroundColor: theme.cardBg,
+                          borderWidth: 1,
+                          borderColor: theme.borderColor,
+                          borderRadius: 6,
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 8,
+                          zIndex: 10000,
+                          elevation: 10,
+                          maxHeight: 220,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                          {MONTH_LIST.map((opt) => (
+                            <TouchableOpacity
+                              key={opt.key}
+                              onPress={() => {
+                                setSelectedMonth(opt.key);
+                                setMonthDropdownOpen(false);
+                              }}
+                              style={{
+                                paddingVertical: 8,
+                                paddingHorizontal: 12,
+                                borderBottomWidth: 1,
+                                borderBottomColor: theme.borderColor,
+                                backgroundColor:
+                                  selectedMonth === opt.key ? theme.activeNavBg : 'transparent',
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  color:
+                                    selectedMonth === opt.key
+                                      ? theme.primaryBlue
+                                      : theme.textDark,
+                                  fontWeight: selectedMonth === opt.key ? '700' : '400',
+                                }}
+                              >
+                                {opt.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Tahun Dropdown */}
+                  <View style={{ position: 'relative', zIndex: yearDropdownOpen ? 9998 : 40 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setYearDropdownOpen(!yearDropdownOpen);
+                        setMonthDropdownOpen(false);
+                        setUserDropdownOpen(false);
+                        setDeptDropdownOpen(false);
+                        setStatusDropdownOpen(false);
+                      }}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingVertical: 8,
+                        paddingHorizontal: 10,
+                        borderWidth: 1,
+                        borderColor: theme.borderColor,
+                        borderRadius: 6,
+                        backgroundColor: theme.cardBg,
+                        minWidth: 85,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, color: theme.textDark }}>
+                        {selectedYear}
+                      </Text>
+                      <ChevronDown size={14} color={theme.textMuted} />
+                    </TouchableOpacity>
+
+                    {yearDropdownOpen && (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          top: 42,
+                          left: 0,
+                          width: 90,
+                          backgroundColor: theme.cardBg,
+                          borderWidth: 1,
+                          borderColor: theme.borderColor,
+                          borderRadius: 6,
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 8,
+                          zIndex: 10000,
+                          elevation: 10,
+                        }}
+                      >
+                        {YEAR_LIST.map((y) => (
+                          <TouchableOpacity
+                            key={y}
+                            onPress={() => {
+                              setSelectedYear(y);
+                              setYearDropdownOpen(false);
+                            }}
+                            style={{
+                              paddingVertical: 8,
+                              paddingHorizontal: 10,
+                              borderBottomWidth: 1,
+                              borderBottomColor: theme.borderColor,
+                              backgroundColor:
+                                selectedYear === y ? theme.activeNavBg : 'transparent',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                color: selectedYear === y ? theme.primaryBlue : theme.textDark,
+                                fontWeight: selectedYear === y ? '700' : '400',
+                              }}
+                            >
+                              {y}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ) : (
+                /* Mode Range Tanggal Inputs */
+                <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                  <TextInput
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={theme.placeholder}
+                    value={startDate}
+                    onChangeText={setStartDate}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 10,
+                      borderWidth: 1,
+                      borderColor: theme.borderColor,
+                      borderRadius: 6,
+                      fontSize: 12,
+                      color: theme.textDark,
+                      backgroundColor: theme.cardBg,
+                      width: 110,
+                      outlineStyle: 'none',
+                    } as any}
+                  />
+                  <Text style={{ fontSize: 12, color: theme.textMuted }}>s/d</Text>
+                  <TextInput
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={theme.placeholder}
+                    value={endDate}
+                    onChangeText={setEndDate}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 10,
+                      borderWidth: 1,
+                      borderColor: theme.borderColor,
+                      borderRadius: 6,
+                      fontSize: 12,
+                      color: theme.textDark,
+                      backgroundColor: theme.cardBg,
+                      width: 110,
+                      outlineStyle: 'none',
+                    } as any}
+                  />
+                </View>
+              )}
+
               {/* Departemen Dropdown */}
-              <View style={{ position: 'relative' }}>
+              <View style={{ position: 'relative', zIndex: deptDropdownOpen ? 9997 : 30 }}>
                 <TouchableOpacity
                   onPress={() => {
                     setDeptDropdownOpen(!deptDropdownOpen);
-                    setPeriodDropdownOpen(false);
+                    setUserDropdownOpen(false);
+                    setMonthDropdownOpen(false);
+                    setYearDropdownOpen(false);
                     setStatusDropdownOpen(false);
                   }}
                   style={{
@@ -576,104 +950,16 @@ export default function PayrollScreen() {
                     borderColor: theme.borderColor,
                     borderRadius: 6,
                     backgroundColor: theme.cardBg,
-                    minWidth: 170,
+                    minWidth: 150,
                   }}
                 >
-                  <Text style={{ fontSize: 14, color: theme.textDark }}>
-                    {selectedDept || 'Semua Departemen'}
+                  <Text style={{ fontSize: 13, color: theme.textDark }}>
+                    {selectedDept || 'Semua Divisi'}
                   </Text>
                   <ChevronDown size={14} color={theme.textMuted} />
                 </TouchableOpacity>
 
                 {deptDropdownOpen && (
-                  <View
-                    style={{
-                      position: 'absolute',
-                      top: 42,
-                      left: 0,
-                      width: 180,
-                      backgroundColor: theme.cardBg,
-                      borderWidth: 1,
-                      borderColor: theme.borderColor,
-                      borderRadius: 6,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
-                    }}
-                  >
-                    {[
-                      { key: '', label: 'Semua Departemen' },
-                      { key: 'IT & Engineering', label: 'IT & Engineering' },
-                      { key: 'Human Resources', label: 'Human Resources' },
-                      { key: 'Operations', label: 'Operations' },
-                      { key: 'Finance', label: 'Finance' },
-                    ].map((opt) => (
-                      <TouchableOpacity
-                        key={opt.key}
-                        onPress={() => {
-                          setSelectedDept(opt.key);
-                          setDeptDropdownOpen(false);
-                        }}
-                        style={{
-                          paddingVertical: 9,
-                          paddingHorizontal: 12,
-                          borderBottomWidth: 1,
-                          borderBottomColor: theme.borderColor,
-                          backgroundColor:
-                            selectedDept === opt.key ? theme.activeNavBg : 'transparent',
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            color:
-                              selectedDept === opt.key ? theme.primaryBlue : theme.textDark,
-                            fontWeight: selectedDept === opt.key ? '700' : '400',
-                          }}
-                        >
-                          {opt.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </View>
-
-              {/* Status Pembayaran Dropdown */}
-              <View style={{ position: 'relative' }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setStatusDropdownOpen(!statusDropdownOpen);
-                    setPeriodDropdownOpen(false);
-                    setDeptDropdownOpen(false);
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    borderWidth: 1,
-                    borderColor: theme.borderColor,
-                    borderRadius: 6,
-                    backgroundColor: theme.cardBg,
-                    minWidth: 170,
-                  }}
-                >
-                  <Text style={{ fontSize: 14, color: theme.textDark }}>
-                    {selectedStatus === 'pending'
-                      ? 'Pending'
-                      : selectedStatus === 'paid'
-                      ? 'Paid (Lunas)'
-                      : 'Status Pembayaran'}
-                  </Text>
-                  <ChevronDown size={14} color={theme.textMuted} />
-                </TouchableOpacity>
-
-                {statusDropdownOpen && (
                   <View
                     style={{
                       position: 'absolute',
@@ -688,8 +974,97 @@ export default function PayrollScreen() {
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.1,
                       shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      zIndex: 10000,
+                      elevation: 10,
+                    }}
+                  >
+                    {[
+                      { key: '', label: 'Semua Divisi' },
+                      { key: 'IT & Engineering', label: 'IT & Engineering' },
+                      { key: 'Human Resources', label: 'Human Resources' },
+                      { key: 'Operations', label: 'Operations' },
+                      { key: 'Finance', label: 'Finance' },
+                    ].map((opt) => (
+                      <TouchableOpacity
+                        key={opt.key}
+                        onPress={() => {
+                          setSelectedDept(opt.key);
+                          setDeptDropdownOpen(false);
+                        }}
+                        style={{
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          borderBottomWidth: 1,
+                          borderBottomColor: theme.borderColor,
+                          backgroundColor:
+                            selectedDept === opt.key ? theme.activeNavBg : 'transparent',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: selectedDept === opt.key ? theme.primaryBlue : theme.textDark,
+                            fontWeight: selectedDept === opt.key ? '700' : '400',
+                          }}
+                        >
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* Status Pembayaran Dropdown */}
+              <View style={{ position: 'relative', zIndex: statusDropdownOpen ? 9996 : 20 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setStatusDropdownOpen(!statusDropdownOpen);
+                    setUserDropdownOpen(false);
+                    setMonthDropdownOpen(false);
+                    setYearDropdownOpen(false);
+                    setDeptDropdownOpen(false);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderWidth: 1,
+                    borderColor: theme.borderColor,
+                    borderRadius: 6,
+                    backgroundColor: theme.cardBg,
+                    minWidth: 140,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: theme.textDark }}>
+                    {selectedStatus === 'pending'
+                      ? 'Pending'
+                      : selectedStatus === 'paid'
+                      ? 'Paid (Lunas)'
+                      : 'Semua Status'}
+                  </Text>
+                  <ChevronDown size={14} color={theme.textMuted} />
+                </TouchableOpacity>
+
+                {statusDropdownOpen && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: 42,
+                      left: 0,
+                      width: 150,
+                      backgroundColor: theme.cardBg,
+                      borderWidth: 1,
+                      borderColor: theme.borderColor,
+                      borderRadius: 6,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 8,
+                      zIndex: 10000,
+                      elevation: 10,
                     }}
                   >
                     {[
@@ -704,7 +1079,7 @@ export default function PayrollScreen() {
                           setStatusDropdownOpen(false);
                         }}
                         style={{
-                          paddingVertical: 9,
+                          paddingVertical: 8,
                           paddingHorizontal: 12,
                           borderBottomWidth: 1,
                           borderBottomColor: theme.borderColor,
@@ -714,11 +1089,8 @@ export default function PayrollScreen() {
                       >
                         <Text
                           style={{
-                            fontSize: 13,
-                            color:
-                              selectedStatus === opt.key
-                                ? theme.primaryBlue
-                                : theme.textDark,
+                            fontSize: 12,
+                            color: selectedStatus === opt.key ? theme.primaryBlue : theme.textDark,
                             fontWeight: selectedStatus === opt.key ? '700' : '400',
                           }}
                         >
@@ -729,6 +1101,27 @@ export default function PayrollScreen() {
                   </View>
                 )}
               </View>
+
+              {/* Refresh / Terapkan Button */}
+              <TouchableOpacity
+                onPress={fetchBackendPayroll}
+                style={{
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 6,
+                  backgroundColor: theme.subtleBg,
+                  borderWidth: 1,
+                  borderColor: theme.borderColor,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                <RefreshCw size={13} color={theme.primaryBlue} />
+                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.primaryBlue }}>
+                  Terapkan
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Action Buttons: Export Excel & Generate Payroll */}
@@ -1713,73 +2106,138 @@ export default function PayrollScreen() {
                     </TouchableOpacity>
                   </View>
 
-                  <View style={{ marginTop: 14, gap: 12 }}>
+                  <View style={{ marginTop: 14, gap: 14 }}>
+                    {/* Target Karyawan */}
                     <View>
                       <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textMuted, marginBottom: 6 }}>
-                        Pilih Periode Penggajian:
+                        Pilih Karyawan Sasaran:
                       </Text>
-                      {['September 2026', 'Agustus 2026', 'Juli 2026'].map((per) => (
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 4 }}>
                         <TouchableOpacity
-                          key={per}
-                          onPress={() => setGeneratePeriod(per)}
+                          onPress={() => setGenerateTargetUserId('ALL')}
                           style={{
-                            padding: 10,
+                            paddingVertical: 7,
+                            paddingHorizontal: 12,
                             borderRadius: 8,
                             borderWidth: 1,
-                            borderColor:
-                              generatePeriod === per ? theme.primaryBlue : theme.borderColor,
-                            backgroundColor:
-                              generatePeriod === per ? theme.activeNavBg : 'transparent',
-                            marginBottom: 6,
+                            borderColor: generateTargetUserId === 'ALL' ? theme.primaryBlue : theme.borderColor,
+                            backgroundColor: generateTargetUserId === 'ALL' ? theme.activeNavBg : 'transparent',
+                            marginRight: 8,
                           }}
                         >
                           <Text
                             style={{
-                              fontSize: 13,
-                              fontWeight: generatePeriod === per ? '700' : '500',
-                              color:
-                                generatePeriod === per ? theme.primaryBlue : theme.textDark,
+                              fontSize: 12,
+                              fontWeight: generateTargetUserId === 'ALL' ? '700' : '500',
+                              color: generateTargetUserId === 'ALL' ? theme.primaryBlue : theme.textDark,
                             }}
                           >
-                            {per}
+                            Semua Karyawan ({employees.length})
                           </Text>
                         </TouchableOpacity>
-                      ))}
-                    </View>
-
-                    <View>
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textMuted, marginBottom: 6 }}>
-                        Departemen Sasaran:
-                      </Text>
-                      {['Semua Departemen', 'IT & Engineering', 'Human Resources', 'Operations'].map(
-                        (dept) => (
+                        {employees.map((emp) => (
                           <TouchableOpacity
-                            key={dept}
-                            onPress={() => setGenerateDept(dept)}
+                            key={emp.id}
+                            onPress={() => setGenerateTargetUserId(String(emp.id))}
                             style={{
-                              padding: 10,
+                              paddingVertical: 7,
+                              paddingHorizontal: 12,
                               borderRadius: 8,
                               borderWidth: 1,
-                              borderColor:
-                                generateDept === dept ? theme.primaryBlue : theme.borderColor,
-                              backgroundColor:
-                                generateDept === dept ? theme.activeNavBg : 'transparent',
-                              marginBottom: 6,
+                              borderColor: generateTargetUserId === String(emp.id) ? theme.primaryBlue : theme.borderColor,
+                              backgroundColor: generateTargetUserId === String(emp.id) ? theme.activeNavBg : 'transparent',
+                              marginRight: 8,
                             }}
                           >
                             <Text
                               style={{
-                                fontSize: 13,
-                                fontWeight: generateDept === dept ? '700' : '500',
-                                color:
-                                generateDept === dept ? theme.primaryBlue : theme.textDark,
+                                fontSize: 12,
+                                fontWeight: generateTargetUserId === String(emp.id) ? '700' : '500',
+                                color: generateTargetUserId === String(emp.id) ? theme.primaryBlue : theme.textDark,
                               }}
                             >
-                              {dept}
+                              {emp.name}
                             </Text>
                           </TouchableOpacity>
-                        )
-                      )}
+                        ))}
+                      </ScrollView>
+                    </View>
+
+                    {/* Rentang Periode Penggajian */}
+                    <View>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textMuted, marginBottom: 6 }}>
+                        Rentang Periode Penggajian:
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 11, color: theme.textMuted, marginBottom: 3 }}>Mulai (YYYY-MM-DD):</Text>
+                          <TextInput
+                            placeholder="2026-09-01"
+                            placeholderTextColor={theme.placeholder}
+                            value={generateStartDate}
+                            onChangeText={setGenerateStartDate}
+                            style={{
+                              paddingVertical: 8,
+                              paddingHorizontal: 10,
+                              borderRadius: 6,
+                              borderWidth: 1,
+                              borderColor: theme.borderColor,
+                              backgroundColor: theme.cardBg,
+                              fontSize: 13,
+                              color: theme.textDark,
+                              outlineStyle: 'none',
+                            } as any}
+                          />
+                        </View>
+                        <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 16 }}>s/d</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 11, color: theme.textMuted, marginBottom: 3 }}>Selesai (YYYY-MM-DD):</Text>
+                          <TextInput
+                            placeholder="2026-09-30"
+                            placeholderTextColor={theme.placeholder}
+                            value={generateEndDate}
+                            onChangeText={setGenerateEndDate}
+                            style={{
+                              paddingVertical: 8,
+                              paddingHorizontal: 10,
+                              borderRadius: 6,
+                              borderWidth: 1,
+                              borderColor: theme.borderColor,
+                              backgroundColor: theme.cardBg,
+                              fontSize: 13,
+                              color: theme.textDark,
+                              outlineStyle: 'none',
+                            } as any}
+                          />
+                        </View>
+                      </View>
+
+                      {/* Preset Cepat Periode */}
+                      <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                        {[
+                          { label: 'September 2026', start: '2026-09-01', end: '2026-09-30' },
+                          { label: 'Oktober 2026', start: '2026-10-01', end: '2026-10-31' },
+                          { label: 'Agustus 2026', start: '2026-08-01', end: '2026-08-31' },
+                        ].map((preset) => (
+                          <TouchableOpacity
+                            key={preset.label}
+                            onPress={() => {
+                              setGenerateStartDate(preset.start);
+                              setGenerateEndDate(preset.end);
+                            }}
+                            style={{
+                              paddingVertical: 4,
+                              paddingHorizontal: 8,
+                              borderRadius: 4,
+                              borderWidth: 1,
+                              borderColor: theme.borderColor,
+                              backgroundColor: theme.subtleBg,
+                            }}
+                          >
+                            <Text style={{ fontSize: 11, color: theme.textMuted }}>{preset.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
                     </View>
                   </View>
 

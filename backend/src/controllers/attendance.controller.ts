@@ -156,12 +156,20 @@ function getAllowedWorkLocations(user: any, config: any): WorkLocation[] {
   return companyLocation ? [companyLocation] : [];
 }
 
+// Toleransi deviasi akurasi GPS HP (minimal 30 meter untuk mengakomodasi ponsel dengan GPS yang kurang akurat)
+const GPS_INACCURACY_TOLERANCE_METERS = 30;
+
 function isWithinAnyAllowedLocation(
   latitude: number,
   longitude: number,
   locations: WorkLocation[],
+  accuracyMargin: number = 0,
 ) {
-  let nearest: {distance: number; radius: number} | null = null;
+  let nearest: {distance: number; radius: number; effectiveRadius: number} | null = null;
+  const tolerance = Math.max(
+    GPS_INACCURACY_TOLERANCE_METERS,
+    Number(accuracyMargin) > 0 ? Math.min(Number(accuracyMargin), 60) : 0,
+  );
 
   for (const location of locations) {
     const distance = getDistanceFromLatLonInM(
@@ -171,12 +179,17 @@ function isWithinAnyAllowedLocation(
       location.longitude,
     );
 
-    if (distance <= location.radius) {
-      return {allowed: true, nearest: {distance, radius: location.radius}};
+    const effectiveRadius = location.radius + tolerance;
+
+    if (distance <= effectiveRadius) {
+      return {
+        allowed: true,
+        nearest: {distance, radius: location.radius, effectiveRadius},
+      };
     }
 
     if (!nearest || distance < nearest.distance) {
-      nearest = {distance, radius: location.radius};
+      nearest = {distance, radius: location.radius, effectiveRadius};
     }
   }
 
@@ -190,7 +203,7 @@ export const clockIn = async (req: Request, res: Response) => {
   try {
     const prisma = req.prisma!;
     const userId = req.user!.id;
-    const {status, latitude, longitude, faceVerified, lateReason} = req.body;
+    const {status, latitude, longitude, faceVerified, lateReason, accuracy} = req.body;
     const photo = req.file ? `/uploads/${req.file.filename}` : null;
 
     // Check if user has face registered
@@ -264,6 +277,7 @@ export const clockIn = async (req: Request, res: Response) => {
         currentLatitude,
         currentLongitude,
         allowedLocations,
+        accuracy ? parseFloat(accuracy) : 0,
       );
 
       if (!validation.allowed) {
@@ -272,7 +286,7 @@ export const clockIn = async (req: Request, res: Response) => {
           validation.nearest?.radius ?? allowedLocations[0].radius;
         return res.status(400).json({
           success: false,
-          message: `Absen ditolak: Anda berada di luar semua radius lokasi kerja. Jarak terdekat ${Math.round(nearestDistance)} meter, batas maksimal ${nearestRadius} meter.`,
+          message: `Absen ditolak: Anda berada di luar radius lokasi kerja terdekat. Jarak Anda ${Math.round(nearestDistance)} meter, batas maksimal ${nearestRadius} meter (toleransi akurasi GPS ${GPS_INACCURACY_TOLERANCE_METERS}m).`,
         });
       }
     }
@@ -841,7 +855,7 @@ export const clockOut = async (req: Request, res: Response) => {
   try {
     const prisma = req.prisma!;
     const userId = req.user!.id;
-    const {faceVerified, latitude, longitude} = req.body;
+    const {faceVerified, latitude, longitude, accuracy} = req.body;
     const photo = req.file ? req.file.filename : null;
 
     // Check if user has face registered
@@ -895,6 +909,7 @@ export const clockOut = async (req: Request, res: Response) => {
         currentLatitude,
         currentLongitude,
         allowedLocations,
+        accuracy ? parseFloat(accuracy) : 0,
       );
 
       if (!validation.allowed) {
@@ -903,7 +918,7 @@ export const clockOut = async (req: Request, res: Response) => {
           validation.nearest?.radius ?? allowedLocations[0].radius;
         return res.status(400).json({
           success: false,
-          message: `Pulang ditolak: Anda berada di luar semua radius lokasi kerja. Jarak terdekat ${Math.round(nearestDistance)} meter, batas maksimal ${nearestRadius} meter.`,
+          message: `Pulang ditolak: Anda berada di luar radius lokasi kerja terdekat. Jarak Anda ${Math.round(nearestDistance)} meter, batas maksimal ${nearestRadius} meter (toleransi akurasi GPS ${GPS_INACCURACY_TOLERANCE_METERS}m).`,
         });
       }
     }
@@ -972,19 +987,37 @@ export const getHistory = async (req: Request, res: Response) => {
   try {
     const prisma = req.prisma!;
     const userId = req.user!.id;
-    const {page = 1, limit = 20} = req.query;
+    const {page = 1, limit = 50, month, year, startDate, endDate} = req.query;
+
+    const where: any = {userId};
+
+    if (startDate && endDate) {
+      where.date = {
+        gte: new Date(String(startDate)),
+        lte: new Date(String(endDate)),
+      };
+    } else if (month && year) {
+      const m = Number(month) - 1;
+      const y = Number(year);
+      const start = new Date(Date.UTC(y, m, 1));
+      const end = new Date(Date.UTC(m === 11 ? y + 1 : y, m === 11 ? 0 : m + 1, 1));
+      where.date = {
+        gte: start,
+        lt: end,
+      };
+    }
 
     const skip = (Number(page) - 1) * Number(limit);
 
     const [history, total] = await Promise.all([
       prisma.attendance.findMany({
-        where: {userId},
+        where,
         orderBy: {date: "desc"},
         include: {breaks: true},
         skip,
         take: Number(limit),
       }),
-      prisma.attendance.count({where: {userId}}),
+      prisma.attendance.count({where}),
     ]);
 
     res.json({
@@ -1166,12 +1199,24 @@ export const getStatistics = async (req: Request, res: Response) => {
 export const getAllTodayAttendance = async (req: Request, res: Response) => {
   try {
     const prisma = req.prisma!;
+    const {date} = req.query;
 
-    const now = new Date();
-    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    let targetDate: Date;
+    if (date && typeof date === "string") {
+      const parts = date.split("-").map(Number);
+      if (parts.length === 3) {
+        targetDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+      } else {
+        const d = new Date(date);
+        targetDate = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      }
+    } else {
+      const now = new Date();
+      targetDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    }
 
     const attendances = await prisma.attendance.findMany({
-      where: {date: today},
+      where: {date: targetDate},
       include: {
         user: {
           select: {
@@ -1179,6 +1224,10 @@ export const getAllTodayAttendance = async (req: Request, res: Response) => {
             name: true,
             email: true,
             role: true,
+            department: true,
+            position: true,
+            employeeId: true,
+            photo: true,
           },
         },
         breaks: true,
@@ -1189,6 +1238,7 @@ export const getAllTodayAttendance = async (req: Request, res: Response) => {
     res.json({
       success: true,
       data: attendances,
+      date: targetDate.toISOString().split("T")[0],
     });
   } catch (error) {
     console.error("Get all today attendance error:", error);
