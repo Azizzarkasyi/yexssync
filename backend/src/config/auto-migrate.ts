@@ -170,7 +170,9 @@ export async function autoMigrateTenants() {
           ADD COLUMN IF NOT EXISTS "workDays" VARCHAR(10) DEFAULT '6',
           ADD COLUMN IF NOT EXISTS "requireGps" BOOLEAN DEFAULT true,
           ADD COLUMN IF NOT EXISTS "requireSelfie" BOOLEAN DEFAULT true,
-          ADD COLUMN IF NOT EXISTS "rejectOutsideShift" BOOLEAN DEFAULT false`,
+          ADD COLUMN IF NOT EXISTS "rejectOutsideShift" BOOLEAN DEFAULT false,
+          ADD COLUMN IF NOT EXISTS "shifts" JSONB,
+          ADD COLUMN IF NOT EXISTS "departments" JSONB`,
         )
         .catch(() => {});
 

@@ -58,6 +58,8 @@ export const updateConfig = async (req: Request, res: Response) => {
       longitude,
       allowedRadiusMeters,
       radius,
+      shifts,
+      departments,
     } = req.body;
 
     const resolvedOfficeLatitude = officeLatitude !== undefined ? parseFloat(officeLatitude) : (latitude !== undefined ? parseFloat(latitude) : undefined);
@@ -87,6 +89,8 @@ export const updateConfig = async (req: Request, res: Response) => {
           officeLatitude: resolvedOfficeLatitude,
           officeLongitude: resolvedOfficeLongitude,
           allowedRadiusMeters: resolvedRadius ?? 50,
+          shifts: shifts !== undefined ? shifts : undefined,
+          departments: departments !== undefined ? departments : undefined,
         },
       });
     } else {
@@ -110,6 +114,8 @@ export const updateConfig = async (req: Request, res: Response) => {
           ...(resolvedOfficeLatitude !== undefined && { officeLatitude: resolvedOfficeLatitude }),
           ...(resolvedOfficeLongitude !== undefined && { officeLongitude: resolvedOfficeLongitude }),
           ...(resolvedRadius !== undefined && { allowedRadiusMeters: resolvedRadius }),
+          ...(shifts !== undefined && { shifts }),
+          ...(departments !== undefined && { departments }),
         },
       });
     }

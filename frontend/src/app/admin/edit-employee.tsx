@@ -10,7 +10,7 @@ import api from '@/lib/api';
 import { 
   User, Mail, Lock, Shield, Banknote, Clock, MapPin, Save, X, 
   Info, Plus, Trash2, Building2, Phone, Calendar, CreditCard, 
-  Compass, Map, Eye, EyeOff 
+  Compass, Map, Eye, EyeOff, ChevronDown 
 } from 'lucide-react-native';
 import { LocationMapPicker, LocationPickerResult } from '@/components/LocationMapPicker';
 
@@ -21,15 +21,14 @@ export interface WorkLocationItem {
   radius: string;
 }
 
-const SHIFT_PRESETS = [
-  { id: 'REGULAR', label: 'Normal (08:00 - 17:00)', start: '08:00', end: '17:00' },
-  { id: 'OFFICE_9_5', label: 'Kantor (09:00 - 17:00)', start: '09:00', end: '17:00' },
-  { id: 'SHIFT_PAGI', label: 'Shift Pagi (07:00 - 15:00)', start: '07:00', end: '15:00' },
-  { id: 'SHIFT_SIANG', label: 'Shift Siang (14:00 - 22:00)', start: '14:00', end: '22:00' },
-  { id: 'SHIFT_MALAM', label: 'Shift Malam (22:00 - 06:00)', start: '22:00', end: '06:00' },
-  { id: 'MULTI_SHIFT', label: 'Rotasi Shift (3 Shift)', start: '07:00, 14:00, 22:00', end: '15:00' },
-  { id: 'FLEX', label: 'Fleksibel (FLEX)', start: 'FLEX', end: 'FLEX' },
-];
+interface ShiftOption {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  days?: string;
+  breakMinutes?: number;
+}
 
 export default function EditEmployeeScreen() {
   const { width } = useWindowDimensions();
@@ -39,6 +38,12 @@ export default function EditEmployeeScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [workLocations, setWorkLocations] = useState<WorkLocationItem[]>([]);
+
+  // Shift & Department Options from Config (Default Kosong)
+  const [availableShifts, setAvailableShifts] = useState<ShiftOption[]>([]);
+  const [selectedShiftId, setSelectedShiftId] = useState<string>('');
+  const [shiftDropdownOpen, setShiftDropdownOpen] = useState(false);
+  const [deptList, setDeptList] = useState<string[]>([]);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -146,6 +151,30 @@ export default function EditEmployeeScreen() {
   };
 
   useEffect(() => {
+    // Load shifts & departments from /config
+    api.get('/config')
+      .then((res) => {
+        if (res.data?.success && res.data.data) {
+          const cfg = res.data.data;
+          let loadedShifts: ShiftOption[] = [];
+          if (cfg.shifts) {
+            const parsed = typeof cfg.shifts === 'string' ? JSON.parse(cfg.shifts) : cfg.shifts;
+            if (Array.isArray(parsed)) {
+              loadedShifts = parsed;
+              setAvailableShifts(parsed);
+            }
+          }
+          if (cfg.departments) {
+            const parsedDepts = typeof cfg.departments === 'string' ? JSON.parse(cfg.departments) : cfg.departments;
+            if (Array.isArray(parsedDepts)) {
+              const names = parsedDepts.map((d: any) => d.name).filter(Boolean);
+              setDeptList(names);
+            }
+          }
+        }
+      })
+      .catch(() => {});
+
     if (id) {
       fetchUser();
     }
@@ -172,13 +201,25 @@ export default function EditEmployeeScreen() {
           salaryType: u.salaryType || 'MONTHLY',
           salary: u.salary?.toString() || '0',
           latePenalty: u.latePenalty?.toString() || '0',
-          startWorkTime: u.startWorkTime || '09:00',
-          endWorkTime: u.endWorkTime || '17:00',
+          startWorkTime: u.startWorkTime || '',
+          endWorkTime: u.endWorkTime || '',
           maxBreakMinutes: u.maxBreakMinutes?.toString() || '60',
           workLatitude: u.workLatitude?.toString() || '',
           workLongitude: u.workLongitude?.toString() || '',
           workRadius: u.workRadius?.toString() || '50'
         });
+
+        // Match initial shift if available
+        if (u.startWorkTime) {
+          const matching = availableShifts.find((s) => s.startTime === u.startWorkTime && s.endTime === u.endWorkTime);
+          if (matching) {
+            setSelectedShiftId(matching.id);
+          } else {
+            setSelectedShiftId('CUSTOM');
+          }
+        } else {
+          setSelectedShiftId('');
+        }
 
         if (Array.isArray(u.workLocations)) {
           setWorkLocations(
@@ -390,6 +431,21 @@ export default function EditEmployeeScreen() {
                   value={formData.department}
                   onChangeText={(val) => setFormData({ ...formData, department: val })}
                 />
+                {deptList.length > 0 && (
+                  <View className="flex-row flex-wrap gap-1 mt-1.5 ml-1">
+                    {deptList.map((dName) => (
+                      <TouchableOpacity
+                        key={dName}
+                        onPress={() => setFormData({ ...formData, department: dName })}
+                        className={`px-2 py-0.5 rounded-md border ${formData.department === dName ? 'bg-indigo-100 border-indigo-400 dark:bg-indigo-900/40' : 'bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}
+                      >
+                        <Text className={`text-[10px] ${formData.department === dName ? 'text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-600 dark:text-slate-300'}`}>
+                          {dName}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </View>
               <View className="flex-1 min-w-[240px]">
                 <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Jabatan / Posisi</Text>
@@ -503,26 +559,98 @@ export default function EditEmployeeScreen() {
             <Text className="text-lg font-bold text-slate-900 dark:text-white">Waktu & Istirahat</Text>
           </View>
           <View className="p-6">
-            <View className="mb-4">
+            {/* Shift Kerja Dropdown */}
+            <View className="mb-4 relative z-50">
               <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">
-                Pilih Preset Shift Cepat:
+                Pilih Shift Kerja:
               </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {SHIFT_PRESETS.map((preset) => {
-                  const isCurrent = formData.startWorkTime === preset.start && formData.endWorkTime === preset.end;
-                  return (
+              <TouchableOpacity
+                onPress={() => setShiftDropdownOpen(!shiftDropdownOpen)}
+                className={`flex-row items-center justify-between px-4 py-3 rounded-2xl border ${selectedShiftId ? 'border-purple-400 bg-purple-50/50 dark:bg-purple-900/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'}`}
+              >
+                <View className="flex-row items-center gap-2 flex-1">
+                  <Clock size={16} className={selectedShiftId ? "text-purple-600 dark:text-purple-400" : "text-slate-400"} />
+                  <Text numberOfLines={1} className={`text-sm ${selectedShiftId ? "text-purple-700 dark:text-purple-300 font-semibold" : "text-slate-700 dark:text-slate-300"}`}>
+                    {selectedShiftId
+                      ? (selectedShiftId === 'CUSTOM'
+                          ? 'Kustom / Jam Mandiri'
+                          : availableShifts.find((s) => s.id === selectedShiftId)
+                            ? `${availableShifts.find((s) => s.id === selectedShiftId)?.name} (${availableShifts.find((s) => s.id === selectedShiftId)?.startTime} - ${availableShifts.find((s) => s.id === selectedShiftId)?.endTime})`
+                            : 'Pilih Shift Kerja')
+                      : 'Pilih Shift Kerja (Kosong / Jam Standar Perusahaan)'}
+                  </Text>
+                </View>
+                <ChevronDown size={14} className="text-slate-400" />
+              </TouchableOpacity>
+
+              {shiftDropdownOpen && (
+                <View className="absolute top-16 left-0 right-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden max-h-60">
+                  <ScrollView nestedScrollEnabled style={{ maxHeight: 220 }}>
+                    {/* Option Kosong */}
                     <TouchableOpacity
-                      key={preset.id}
-                      onPress={() => setFormData({ ...formData, startWorkTime: preset.start, endWorkTime: preset.end })}
-                      className={`px-3 py-1.5 rounded-xl border ${isCurrent ? 'bg-purple-100 border-purple-400 dark:bg-purple-900/40 dark:border-purple-600' : 'bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}
+                      onPress={() => {
+                        setSelectedShiftId('');
+                        setShiftDropdownOpen(false);
+                      }}
+                      className={`p-3 border-b border-slate-100 dark:border-slate-800 ${!selectedShiftId ? 'bg-purple-50 dark:bg-purple-900/30' : ''}`}
                     >
-                      <Text className={`text-xs font-semibold ${isCurrent ? 'text-purple-700 dark:text-purple-300' : 'text-slate-700 dark:text-slate-300'}`}>
-                        {preset.label}
+                      <Text className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        (Kosong / Jam Standar Perusahaan)
+                      </Text>
+                      <Text className="text-xs text-slate-400">
+                        Gunakan jam kantor umum tanpa shift khusus
                       </Text>
                     </TouchableOpacity>
-                  );
-                })}
-              </View>
+
+                    {/* Shifts from Config */}
+                    {availableShifts.map((shift) => (
+                      <TouchableOpacity
+                        key={shift.id}
+                        onPress={() => {
+                          setSelectedShiftId(shift.id);
+                          setFormData({
+                            ...formData,
+                            startWorkTime: shift.startTime,
+                            endWorkTime: shift.endTime,
+                            maxBreakMinutes: String(shift.breakMinutes || 60),
+                          });
+                          setShiftDropdownOpen(false);
+                        }}
+                        className={`p-3 border-b border-slate-100 dark:border-slate-800 ${selectedShiftId === shift.id ? 'bg-purple-50 dark:bg-purple-900/30' : ''}`}
+                      >
+                        <Text className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                          {shift.name} ({shift.startTime} - {shift.endTime})
+                        </Text>
+                        <Text className="text-xs text-slate-400">
+                          {shift.days || 'Senin - Sabtu'} • Istirahat {shift.breakMinutes || 60}m
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+
+                    {/* Option Custom */}
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedShiftId('CUSTOM');
+                        setShiftDropdownOpen(false);
+                      }}
+                      className={`p-3 ${selectedShiftId === 'CUSTOM' ? 'bg-purple-50 dark:bg-purple-900/30' : ''}`}
+                    >
+                      <Text className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        (Kustom / Jam Mandiri)
+                      </Text>
+                      <Text className="text-xs text-slate-400">
+                        Atur jam masuk & jam pulang sendiri di bawah
+                      </Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </View>
+              )}
+
+              {availableShifts.length === 0 && (
+                <Text className="text-[11px] text-slate-400 mt-1 ml-1">
+                  * Belum ada daftar shift di Pengaturan Admin. Anda bisa mengaturnya di menu Pengaturan &gt; Jam Kerja &amp; Shift.
+                </Text>
+              )}
             </View>
 
             <View className="flex-row gap-4 mb-2 flex-wrap">

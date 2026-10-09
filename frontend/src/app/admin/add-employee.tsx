@@ -82,32 +82,39 @@ export default function AddEmployeeScreen() {
   const [position, setPosition] = useState('');
   const [jobType, setJobType] = useState('fulltime');
 
-  // Form States - Pengaturan Jam Kerja & Shift
-  const [startWorkTime, setStartWorkTime] = useState('08:00');
-  const [endWorkTime, setEndWorkTime] = useState('17:00');
+  interface ShiftOption {
+    id: string;
+    name: string;
+    startTime: string;
+    endTime: string;
+    days?: string;
+    breakMinutes?: number;
+  }
+
+  // Form States - Pengaturan Jam Kerja & Shift (Default Kosong)
+  const [availableShifts, setAvailableShifts] = useState<ShiftOption[]>([]);
+  const [selectedShiftId, setSelectedShiftId] = useState<string>(''); // Default KOSONG
+  const [shiftDropdownOpen, setShiftDropdownOpen] = useState(false);
+  const [startWorkTime, setStartWorkTime] = useState('');
+  const [endWorkTime, setEndWorkTime] = useState('');
   const [maxBreakMinutes, setMaxBreakMinutes] = useState('60');
-  const [selectedShiftPreset, setSelectedShiftPreset] = useState('REGULAR');
 
-  const SHIFT_PRESETS = [
-    { id: 'REGULAR', label: 'Normal (08:00 - 17:00)', start: '08:00', end: '17:00', desc: 'Standar 8 Jam Kerja' },
-    { id: 'OFFICE_9_5', label: 'Kantor (09:00 - 17:00)', start: '09:00', end: '17:00', desc: 'Jadwal 9 to 5' },
-    { id: 'SHIFT_PAGI', label: 'Shift Pagi (07:00 - 15:00)', start: '07:00', end: '15:00', desc: 'Shift Pagi' },
-    { id: 'SHIFT_SIANG', label: 'Shift Siang (14:00 - 22:00)', start: '14:00', end: '22:00', desc: 'Shift Sore / Siang' },
-    { id: 'SHIFT_MALAM', label: 'Shift Malam (22:00 - 06:00)', start: '22:00', end: '06:00', desc: 'Shift Malam' },
-    { id: 'MULTI_SHIFT', label: 'Rotasi Shift (3 Shift)', start: '07:00, 14:00, 22:00', end: '15:00', desc: 'Rotasi shift otomatis' },
-    { id: 'FLEX', label: 'Fleksibel (FLEX)', start: 'FLEX', end: 'FLEX', desc: 'Tanpa denda terlambat' },
-    { id: 'CUSTOM', label: 'Kustom Waktu', start: '', end: '', desc: 'Tentukan jam sendiri' },
-  ];
-
-  const applyShiftPreset = (preset: typeof SHIFT_PRESETS[0]) => {
-    setSelectedShiftPreset(preset.id);
-    if (preset.id !== 'CUSTOM') {
-      setStartWorkTime(preset.start);
-      setEndWorkTime(preset.end);
+  const applySelectedShift = (shiftId: string) => {
+    setSelectedShiftId(shiftId);
+    setShiftDropdownOpen(false);
+    if (!shiftId || shiftId === 'CUSTOM') {
+      // Don't auto-fill or leave as custom
+      return;
+    }
+    const found = availableShifts.find((s) => s.id === shiftId);
+    if (found) {
+      setStartWorkTime(found.startTime);
+      setEndWorkTime(found.endTime);
+      if (found.breakMinutes) setMaxBreakMinutes(String(found.breakMinutes));
     }
   };
 
-  // Load custom departments & calculate employee ID on mount
+  // Load custom departments & shifts from /config on mount
   useEffect(() => {
     let savedDepts: string[] = [];
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -117,6 +124,28 @@ export default function AddEmployeeScreen() {
       } catch {}
     }
 
+    // Load company config for shifts & departments
+    api.get('/config')
+      .then((res) => {
+        if (res.data?.success && res.data.data) {
+          const cfg = res.data.data;
+          if (cfg.shifts) {
+            const parsedShifts = typeof cfg.shifts === 'string' ? JSON.parse(cfg.shifts) : cfg.shifts;
+            if (Array.isArray(parsedShifts)) {
+              setAvailableShifts(parsedShifts);
+            }
+          }
+          if (cfg.departments) {
+            const parsedDepts = typeof cfg.departments === 'string' ? JSON.parse(cfg.departments) : cfg.departments;
+            if (Array.isArray(parsedDepts)) {
+              const deptNames = parsedDepts.map((d: any) => d.name).filter(Boolean);
+              setDepartmentList((prev) => Array.from(new Set([...deptNames, ...prev])));
+            }
+          }
+        }
+      })
+      .catch(() => {});
+
     api.get('/users')
       .then((res) => {
         if (res.data?.data && Array.isArray(res.data.data)) {
@@ -124,7 +153,7 @@ export default function AddEmployeeScreen() {
             .map((u: any) => u.department)
             .filter((d: any) => typeof d === 'string' && d.trim().length > 0);
           const merged = Array.from(new Set([...savedDepts, ...userDepts]));
-          setDepartmentList(merged);
+          setDepartmentList((prev) => Array.from(new Set([...prev, ...merged])));
           setEmployeeId(`EMP-${new Date().getFullYear()}-${String(res.data.data.length + 1).padStart(3, '0')}`);
         } else {
           setDepartmentList(savedDepts);
@@ -1071,42 +1100,135 @@ export default function AddEmployeeScreen() {
               </View>
             </View>
 
-            {/* Shift Preset Chips */}
-            <View style={{ marginBottom: 16 }}>
+            {/* Shift Kerja Dropdown */}
+            <View style={{ marginBottom: 20, position: 'relative', zIndex: shiftDropdownOpen ? 9999 : 40 }}>
               <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark, marginBottom: 8 }}>
-                Pilihan Preset Shift:
+                Shift Kerja:
               </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {SHIFT_PRESETS.map((preset) => {
-                  const isSelected = selectedShiftPreset === preset.id;
-                  return (
+              <TouchableOpacity
+                onPress={() => setShiftDropdownOpen(!shiftDropdownOpen)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: 12,
+                  paddingHorizontal: 15,
+                  borderWidth: 1,
+                  borderColor: selectedShiftId ? theme.primaryBlue : theme.borderColor,
+                  borderRadius: 8,
+                  backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <Clock size={16} color={selectedShiftId ? theme.primaryBlue : theme.textMuted} />
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontSize: 14,
+                      color: selectedShiftId ? theme.primaryBlue : theme.textDark,
+                      fontWeight: selectedShiftId ? '600' : '400',
+                    }}
+                  >
+                    {selectedShiftId
+                      ? (selectedShiftId === 'CUSTOM'
+                          ? 'Kustom / Jam Mandiri'
+                          : availableShifts.find((s) => s.id === selectedShiftId)
+                            ? `${availableShifts.find((s) => s.id === selectedShiftId)?.name} (${availableShifts.find((s) => s.id === selectedShiftId)?.startTime} - ${availableShifts.find((s) => s.id === selectedShiftId)?.endTime})`
+                            : 'Pilih Shift Kerja')
+                      : 'Pilih Shift Kerja (Kosong / Jam Standar Perusahaan)'}
+                  </Text>
+                </View>
+                <ChevronDown size={14} color={theme.textMuted} />
+              </TouchableOpacity>
+
+              {shiftDropdownOpen && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 75,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: theme.cardBg,
+                    borderWidth: 1,
+                    borderColor: theme.borderColor,
+                    borderRadius: 8,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 12,
+                    zIndex: 10000,
+                    elevation: 10,
+                    maxHeight: 250,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <ScrollView style={{ maxHeight: 240 }} nestedScrollEnabled>
+                    {/* Option 1: Kosong / Standar */}
                     <TouchableOpacity
-                      key={preset.id}
-                      onPress={() => applyShiftPreset(preset)}
+                      onPress={() => applySelectedShift('')}
                       style={{
-                        paddingVertical: 7,
-                        paddingHorizontal: 12,
-                        borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: isSelected ? theme.primaryBlue : theme.borderColor,
-                        backgroundColor: isSelected
-                          ? (theme.isDark ? '#1e3a8a' : '#eff6ff')
-                          : (theme.isDark ? '#1e293b' : '#f8fafc'),
+                        paddingVertical: 10,
+                        paddingHorizontal: 15,
+                        borderBottomWidth: 1,
+                        borderBottomColor: theme.borderColor,
+                        backgroundColor: !selectedShiftId ? theme.activeNavBg : 'transparent',
                       }}
                     >
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: isSelected ? '700' : '500',
-                          color: isSelected ? theme.primaryBlue : theme.textDark,
-                        }}
-                      >
-                        {preset.label}
+                      <Text style={{ fontSize: 13, color: !selectedShiftId ? theme.primaryBlue : theme.textDark, fontWeight: !selectedShiftId ? '700' : '400' }}>
+                        (Kosong / Jam Standar Perusahaan)
+                      </Text>
+                      <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                        Tidak mengikat shift spesifik, gunakan jam standar
                       </Text>
                     </TouchableOpacity>
-                  );
-                })}
-              </View>
+
+                    {/* Available Shifts from Config */}
+                    {availableShifts.map((shift) => (
+                      <TouchableOpacity
+                        key={shift.id}
+                        onPress={() => applySelectedShift(shift.id)}
+                        style={{
+                          paddingVertical: 10,
+                          paddingHorizontal: 15,
+                          borderBottomWidth: 1,
+                          borderBottomColor: theme.borderColor,
+                          backgroundColor: selectedShiftId === shift.id ? theme.activeNavBg : 'transparent',
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, color: selectedShiftId === shift.id ? theme.primaryBlue : theme.textDark, fontWeight: selectedShiftId === shift.id ? '700' : '500' }}>
+                          {shift.name} ({shift.startTime} - {shift.endTime})
+                        </Text>
+                        <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                          {shift.days || 'Senin - Sabtu'} • Istirahat {shift.breakMinutes || 60}m
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+
+                    {/* Option: Kustom / Manual */}
+                    <TouchableOpacity
+                      onPress={() => applySelectedShift('CUSTOM')}
+                      style={{
+                        paddingVertical: 10,
+                        paddingHorizontal: 15,
+                        backgroundColor: selectedShiftId === 'CUSTOM' ? theme.activeNavBg : 'transparent',
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, color: selectedShiftId === 'CUSTOM' ? theme.primaryBlue : theme.textDark, fontWeight: selectedShiftId === 'CUSTOM' ? '700' : '400' }}>
+                        (Kustom / Jam Mandiri)
+                      </Text>
+                      <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                        Atur jam masuk dan pulang manual di bawah
+                      </Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </View>
+              )}
+
+              {availableShifts.length === 0 && (
+                <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
+                  * Belum ada daftar shift di Pengaturan Admin. Anda bisa mengaturnya di menu Pengaturan Perusahaan &gt; Jam Kerja &amp; Shift.
+                </Text>
+              )}
             </View>
 
             {/* Work Time Inputs */}
@@ -1121,7 +1243,7 @@ export default function AddEmployeeScreen() {
                   value={startWorkTime}
                   onChangeText={(val) => {
                     setStartWorkTime(val);
-                    setSelectedShiftPreset('CUSTOM');
+                    setSelectedShiftId('CUSTOM');
                   }}
                   style={{
                     paddingVertical: 12,
@@ -1150,7 +1272,7 @@ export default function AddEmployeeScreen() {
                   value={endWorkTime}
                   onChangeText={(val) => {
                     setEndWorkTime(val);
-                    setSelectedShiftPreset('CUSTOM');
+                    setSelectedShiftId('CUSTOM');
                   }}
                   style={{
                     paddingVertical: 12,

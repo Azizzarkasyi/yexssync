@@ -128,6 +128,8 @@ model CompanyConfig {
   officeLatitude         Float?
   officeLongitude        Float?
   allowedRadiusMeters    Int      @default(50)
+  shifts                 Json?
+  departments            Json?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 }
