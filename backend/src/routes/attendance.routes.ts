@@ -6,6 +6,7 @@ import {
   clockOut,
   getHistory,
   getTodayAttendance,
+  getWorkLocations,
   getStatistics,
   getAllTodayAttendance,
   getAttendanceReport,
@@ -56,6 +57,7 @@ router.post("/clock-out", authenticate, upload.single("photo"), clockOut);
 router.post("/leave", authenticate, upload.single("photo"), requestLeave);
 router.post("/:id/correction", authenticate, requestAttendanceCorrection);
 router.get("/today", authenticate, getTodayAttendance);
+router.get("/work-locations", authenticate, getWorkLocations);
 router.get("/history", authenticate, getHistory);
 router.get("/statistics", authenticate, getStatistics);
 

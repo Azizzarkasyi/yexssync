@@ -87,38 +87,52 @@ function normalizeWorkLocation(
 function getAllowedWorkLocations(user: any, config: any): WorkLocation[] {
   const defaultRadius = config?.allowedRadiusMeters ?? 50;
 
-  // 1. Check per-user custom work locations array (multi-location support)
-  if (user?.workLocations && Array.isArray(user.workLocations) && user.workLocations.length > 0) {
-    const userLocations = user.workLocations
-      .map((loc: any) => normalizeWorkLocation(loc, defaultRadius))
-      .filter((loc: WorkLocation | null): loc is WorkLocation => loc !== null);
-    if (userLocations.length > 0) {
-      return userLocations;
+  // If user explicitly has overrideLocation === false, ignore user custom locations and use company office
+  const canUseUserLocations = user?.overrideLocation !== false;
+
+  if (canUseUserLocations) {
+    // 1. Check per-user custom work locations array (multi-location support)
+    let rawLocations = user?.workLocations;
+    if (typeof rawLocations === "string") {
+      try {
+        rawLocations = JSON.parse(rawLocations);
+      } catch {
+        rawLocations = null;
+      }
+    }
+
+    if (rawLocations && Array.isArray(rawLocations) && rawLocations.length > 0) {
+      const userLocations = rawLocations
+        .map((loc: any) => normalizeWorkLocation(loc, defaultRadius))
+        .filter((loc: WorkLocation | null): loc is WorkLocation => loc !== null);
+      if (userLocations.length > 0) {
+        return userLocations;
+      }
+    }
+
+    // 2. Check per-user single custom work location
+    if (
+      user?.workLatitude !== null &&
+      user?.workLatitude !== undefined &&
+      user?.workLongitude !== null &&
+      user?.workLongitude !== undefined
+    ) {
+      const singleLoc = normalizeWorkLocation(
+        {
+          latitude: user.workLatitude,
+          longitude: user.workLongitude,
+          radius: user.workRadius,
+          name: user.locationName || "Lokasi Kustom",
+        },
+        defaultRadius,
+      );
+      if (singleLoc) {
+        return [singleLoc];
+      }
     }
   }
 
-  // 2. Check per-user single custom work location
-  if (
-    user?.workLatitude !== null &&
-    user?.workLatitude !== undefined &&
-    user?.workLongitude !== null &&
-    user?.workLongitude !== undefined
-  ) {
-    const singleLoc = normalizeWorkLocation(
-      {
-        latitude: user.workLatitude,
-        longitude: user.workLongitude,
-        radius: user.workRadius,
-        name: user.locationName,
-      },
-      defaultRadius,
-    );
-    if (singleLoc) {
-      return [singleLoc];
-    }
-  }
-
-  // 2. Fallback: use company-wide office location
+  // 3. Fallback: use company-wide office location
   const hasCompanyLocation =
     config?.officeLatitude !== null &&
     config?.officeLatitude !== undefined &&
@@ -134,6 +148,7 @@ function getAllowedWorkLocations(user: any, config: any): WorkLocation[] {
       latitude: config.officeLatitude,
       longitude: config.officeLongitude,
       radius: config.allowedRadiusMeters,
+      name: config?.companyName || "Kantor Perusahaan",
     },
     defaultRadius,
   );
@@ -1002,20 +1017,78 @@ export const getTodayAttendance = async (req: Request, res: Response) => {
     const now = new Date();
     const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
-    const attendance = await prisma.attendance.findFirst({
-      where: {
-        userId,
-        date: today,
-      },
-      include: {breaks: true},
-    });
+    const [attendance, user, config] = await Promise.all([
+      prisma.attendance.findFirst({
+        where: {
+          userId,
+          date: today,
+        },
+        include: {breaks: true},
+      }),
+      prisma.user.findUnique({
+        where: {id: userId},
+      }),
+      prisma.companyConfig.findFirst(),
+    ]);
+
+    const allowedLocations = getAllowedWorkLocations(user, config);
 
     res.json({
       success: true,
       data: attendance,
+      workLocations: {
+        allowedLocations,
+        companyName: config?.companyName || "Perusahaan",
+        requireGps: Boolean(config?.requireGps ?? true),
+        hasLocationRestriction: allowedLocations.length > 0,
+        defaultRadius: config?.allowedRadiusMeters ?? 50,
+      },
     });
   } catch (error) {
     console.error("Get today attendance error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+/**
+ * Get work locations allowed for current user
+ */
+export const getWorkLocations = async (req: Request, res: Response) => {
+  try {
+    const prisma = req.prisma!;
+    const userId = req.user!.id;
+
+    const [user, config] = await Promise.all([
+      prisma.user.findUnique({
+        where: {id: userId},
+      }),
+      prisma.companyConfig.findFirst(),
+    ]);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const allowedLocations = getAllowedWorkLocations(user, config);
+
+    res.json({
+      success: true,
+      data: {
+        allowedLocations,
+        companyName: config?.companyName || "Perusahaan",
+        requireGps: Boolean(config?.requireGps ?? true),
+        hasLocationRestriction: allowedLocations.length > 0,
+        defaultRadius: config?.allowedRadiusMeters ?? 50,
+      },
+    });
+  } catch (error) {
+    console.error("Get work locations error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -89,18 +89,32 @@ export default function UserHomeScreen() {
   const [faceModalVisible, setFaceModalVisible] = useState(false);
   const [pendingAction, setPendingAction] = useState<'clockIn' | 'clockOut' | null>(null);
 
+  type AllowedWorkLocation = {
+    latitude: number;
+    longitude: number;
+    radius: number;
+    name?: string;
+  };
+
+  const [allowedLocations, setAllowedLocations] = useState<AllowedWorkLocation[]>([]);
+  const [hasLocationRestriction, setHasLocationRestriction] = useState<boolean>(true);
+  const allowedLocationsRef = useRef<AllowedWorkLocation[]>([]);
+  const hasRestrictionRef = useRef<boolean>(true);
+
   const [location, setLocation] = useState<{
     latitude: number;
     longitude: number;
     address: string;
     inRadius: boolean;
     distanceText: string;
+    hasGps: boolean;
   }>({
-    latitude: -6.2088,
-    longitude: 106.8456,
-    address: 'Gedung YexsSync HQ, Lantai 3',
-    inRadius: true,
-    distanceText: '15m dari titik kantor (Valid)',
+    latitude: 0,
+    longitude: 0,
+    address: 'Mendeteksi lokasi...',
+    inRadius: false,
+    distanceText: 'Menghubungkan ke GPS...',
+    hasGps: false,
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -108,57 +122,152 @@ export default function UserHomeScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
 
+  const getDistanceFromLatLonInMeters = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 1000); // Distance in meters
+  };
+
+  const evaluateLocation = (
+    latitude: number,
+    longitude: number,
+    addressName: string,
+    locationsToUse: AllowedWorkLocation[],
+    hasRestriction: boolean,
+    hasGps: boolean = true,
+  ) => {
+    if (!hasGps) {
+      return {
+        latitude,
+        longitude,
+        address: addressName,
+        inRadius: false,
+        distanceText: 'Akses GPS tidak tersedia',
+        hasGps: false,
+      };
+    }
+
+    if (!hasRestriction || locationsToUse.length === 0) {
+      return {
+        latitude,
+        longitude,
+        address: addressName,
+        inRadius: true,
+        distanceText: 'Bebas Lokasi (Tanpa Batas Radius)',
+        hasGps: true,
+      };
+    }
+
+    let nearestLoc: AllowedWorkLocation = locationsToUse[0];
+    let nearestDistance = getDistanceFromLatLonInMeters(
+      latitude,
+      longitude,
+      nearestLoc.latitude,
+      nearestLoc.longitude,
+    );
+
+    for (let i = 1; i < locationsToUse.length; i++) {
+      const loc = locationsToUse[i];
+      const dist = getDistanceFromLatLonInMeters(
+        latitude,
+        longitude,
+        loc.latitude,
+        loc.longitude,
+      );
+      if (dist < nearestDistance) {
+        nearestDistance = dist;
+        nearestLoc = loc;
+      }
+    }
+
+    const inRadius = nearestDistance <= nearestLoc.radius;
+    const locName = nearestLoc.name || 'titik kantor';
+    const distanceText = `${nearestDistance}m dari ${locName} (Maks ${nearestLoc.radius}m)`;
+
+    return {
+      latitude,
+      longitude,
+      address: addressName,
+      inRadius,
+      distanceText,
+      hasGps: true,
+    };
+  };
+
   useEffect(() => {
     fetchData();
     detectLocation();
     scheduleShiftReminder('08:00');
   }, []);
 
-  const detectLocation = async () => {
+  const detectLocation = async (customAllowedLocs?: AllowedWorkLocation[]) => {
     setIsLocating(true);
+    const locs = customAllowedLocs || allowedLocationsRef.current;
+    const restriction = hasRestrictionRef.current;
+
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({
+      if (status !== 'granted') {
+        setLocation({
+          latitude: 0,
+          longitude: 0,
+          address: 'Izin lokasi (GPS) ditolak',
+          inRadius: false,
+          distanceText: 'Harap aktifkan izin lokasi di pengaturan',
+          hasGps: false,
+        });
+        return;
+      }
+
+      let loc;
+      try {
+        loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+      } catch {
+        loc = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
-        const { latitude, longitude } = loc.coords;
-
-        let addressName = 'Area Perkantoran';
-        try {
-          const geoList = await Location.reverseGeocodeAsync({ latitude, longitude });
-          if (geoList && geoList.length > 0) {
-            const g = geoList[0];
-            const parts = [g.name, g.street, g.subregion || g.city].filter(Boolean);
-            if (parts.length > 0) addressName = parts.join(', ');
-          }
-        } catch (e) {
-          addressName = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-        }
-
-        setLocation({
-          latitude,
-          longitude,
-          address: addressName,
-          inRadius: true,
-          distanceText: '15m dari titik kantor (Valid)',
-        });
-      } else {
-        setLocation({
-          latitude: -6.2088,
-          longitude: 106.8456,
-          address: 'Gedung YexsSync HQ, Lantai 3',
-          inRadius: true,
-          distanceText: '15m dari titik kantor (Valid)',
-        });
       }
+
+      const { latitude, longitude } = loc.coords;
+
+      let addressName = 'Area Perkantoran';
+      try {
+        const geoList = await Location.reverseGeocodeAsync({ latitude, longitude });
+        if (geoList && geoList.length > 0) {
+          const g = geoList[0];
+          const parts = [g.name, g.street, g.subregion || g.city].filter(Boolean);
+          if (parts.length > 0) addressName = parts.join(', ');
+        }
+      } catch (e) {
+        addressName = `Koordinat: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+      }
+
+      const evaluated = evaluateLocation(latitude, longitude, addressName, locs, restriction, true);
+      setLocation(evaluated);
     } catch (err) {
+      console.warn('GPS detection error:', err);
       setLocation({
-        latitude: -6.2088,
-        longitude: 106.8456,
-        address: 'Gedung YexsSync HQ, Lantai 3',
-        inRadius: true,
-        distanceText: '15m dari titik kantor (Valid)',
+        latitude: 0,
+        longitude: 0,
+        address: 'Gagal mendeteksi sinyal GPS',
+        inRadius: false,
+        distanceText: 'Pastikan GPS perangkat Anda aktif',
+        hasGps: false,
       });
     } finally {
       setIsLocating(false);
@@ -176,6 +285,22 @@ export default function UserHomeScreen() {
 
       if (todayRes.data?.success) {
         setAttendanceToday(todayRes.data.data);
+      }
+      if (todayRes.data?.workLocations) {
+        const locs: AllowedWorkLocation[] = todayRes.data.workLocations.allowedLocations || [];
+        const restriction: boolean = todayRes.data.workLocations.hasLocationRestriction ?? (locs.length > 0);
+        setAllowedLocations(locs);
+        allowedLocationsRef.current = locs;
+        setHasLocationRestriction(restriction);
+        hasRestrictionRef.current = restriction;
+
+        // Re-evaluate if we already got GPS coordinates
+        setLocation(prev => {
+          if (prev.hasGps && prev.latitude !== 0 && prev.longitude !== 0) {
+            return evaluateLocation(prev.latitude, prev.longitude, prev.address, locs, restriction, true);
+          }
+          return prev;
+        });
       }
       if (historyRes.data?.success && Array.isArray(historyRes.data.data)) {
         setHistory(historyRes.data.data);
@@ -236,6 +361,28 @@ export default function UserHomeScreen() {
       Alert.alert('Sudah Presensi', `Anda sudah melakukan presensi masuk hari ini pada pukul ${formatTime(attendanceToday.clockIn)} WIB.`);
       return;
     }
+    if (hasLocationRestriction && allowedLocations.length > 0 && !location.hasGps) {
+      Alert.alert(
+        'Lokasi Belum Terdeteksi',
+        'Sistem belum mendapatkan titik koordinat GPS Anda. Silakan klik tombol perbarui lokasi di kartu lokasi.',
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Perbarui Lokasi', onPress: () => detectLocation() },
+        ]
+      );
+      return;
+    }
+    if (hasLocationRestriction && allowedLocations.length > 0 && !location.inRadius) {
+      Alert.alert(
+        'Di Luar Radius Kantor',
+        `Anda saat ini berada di luar radius presensi kantor:\n\n📍 ${location.distanceText}\n\nPastikan Anda sudah berada di lokasi kerja sebelum melakukan presensi masuk. Ingin memperbarui lokasi GPS sekarang?`,
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Perbarui Lokasi', onPress: () => detectLocation() },
+        ]
+      );
+      return;
+    }
     if (APP_ENV.BIOMETRICS.ENABLE_FACE_RECOGNITION) {
       setPendingAction('clockIn');
       setFaceModalVisible(true);
@@ -250,8 +397,8 @@ export default function UserHomeScreen() {
       const res = await api.post('/attendance/clock-in', {
         status: 'PRESENT',
         faceVerified: true,
-        latitude: location.latitude,
-        longitude: location.longitude,
+        latitude: location.hasGps ? location.latitude : null,
+        longitude: location.hasGps ? location.longitude : null,
         ...(photoUri ? { photo: photoUri } : {}),
       });
       if (res.data?.success) {
@@ -279,6 +426,28 @@ export default function UserHomeScreen() {
       Alert.alert('Sudah Presensi Pulang', `Anda sudah melakukan presensi pulang hari ini pada pukul ${formatTime(attendanceToday.clockOut)} WIB.`);
       return;
     }
+    if (hasLocationRestriction && allowedLocations.length > 0 && !location.hasGps) {
+      Alert.alert(
+        'Lokasi Belum Terdeteksi',
+        'Sistem belum mendapatkan titik koordinat GPS Anda. Silakan klik tombol perbarui lokasi di kartu lokasi.',
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Perbarui Lokasi', onPress: () => detectLocation() },
+        ]
+      );
+      return;
+    }
+    if (hasLocationRestriction && allowedLocations.length > 0 && !location.inRadius) {
+      Alert.alert(
+        'Di Luar Radius Kantor',
+        `Anda saat ini berada di luar radius presensi kantor:\n\n📍 ${location.distanceText}\n\nPastikan Anda sudah berada di lokasi kerja sebelum melakukan presensi pulang. Ingin memperbarui lokasi GPS sekarang?`,
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Perbarui Lokasi', onPress: () => detectLocation() },
+        ]
+      );
+      return;
+    }
     if (APP_ENV.BIOMETRICS.ENABLE_FACE_RECOGNITION) {
       setPendingAction('clockOut');
       setFaceModalVisible(true);
@@ -292,8 +461,8 @@ export default function UserHomeScreen() {
       setIsSubmitting(true);
       const res = await api.post('/attendance/clock-out', {
         faceVerified: true,
-        latitude: location.latitude,
-        longitude: location.longitude,
+        latitude: location.hasGps ? location.latitude : null,
+        longitude: location.hasGps ? location.longitude : null,
         ...(photoUri ? { photo: photoUri } : {}),
       });
       if (res.data?.success) {
@@ -483,32 +652,140 @@ export default function UserHomeScreen() {
                 <MapPin size={18} color="#2a75d3" strokeWidth={2.5} />
                 <Text className="text-[14px] font-bold text-[#222222] dark:text-white">Lokasi Presensi Anda</Text>
               </View>
-              <View className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e6f6eb] dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-800/40">
-                <View className="w-2 h-2 rounded-full bg-[#28a745]" />
-                <Text className="text-[11px] font-semibold text-[#28a745] dark:text-emerald-400">{location.inRadius ? 'Dalam Jangkauan' : 'Di Luar Radius'}</Text>
+              {/* Dynamic Status Badge */}
+              <View className={`flex-row items-center gap-1.5 px-2.5 py-1 rounded-full border ${
+                isLocating
+                  ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200/50 dark:border-blue-800/40'
+                  : !location.hasGps
+                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200/50 dark:border-amber-800/40'
+                  : !hasLocationRestriction || allowedLocations.length === 0
+                  ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200/50 dark:border-sky-800/40'
+                  : location.inRadius
+                  ? 'bg-[#e6f6eb] dark:bg-emerald-950/40 border-emerald-200/50 dark:border-emerald-800/40'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200/50 dark:border-rose-800/40'
+              }`}>
+                <View className={`w-2 h-2 rounded-full ${
+                  isLocating
+                    ? 'bg-blue-500'
+                    : !location.hasGps
+                    ? 'bg-amber-500'
+                    : !hasLocationRestriction || allowedLocations.length === 0
+                    ? 'bg-sky-500'
+                    : location.inRadius
+                    ? 'bg-[#28a745]'
+                    : 'bg-rose-500'
+                }`} />
+                <Text className={`text-[11px] font-semibold ${
+                  isLocating
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : !location.hasGps
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : !hasLocationRestriction || allowedLocations.length === 0
+                    ? 'text-sky-600 dark:text-sky-400'
+                    : location.inRadius
+                    ? 'text-[#28a745] dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {isLocating
+                    ? 'Mencari GPS...'
+                    : !location.hasGps
+                    ? 'GPS Belum Aktif'
+                    : !hasLocationRestriction || allowedLocations.length === 0
+                    ? 'Bebas Lokasi'
+                    : location.inRadius
+                    ? 'Dalam Jangkauan'
+                    : 'Di Luar Radius'}
+                </Text>
               </View>
             </View>
-            <View className="h-[95px] w-full rounded-[12px] overflow-hidden relative my-2 bg-slate-100 dark:bg-slate-800 border border-[#eef1f6] dark:border-slate-700/60 justify-center items-center">
+
+            {/* Radar / Pin Map Visual */}
+            <View className={`h-[95px] w-full rounded-[12px] overflow-hidden relative my-2 border justify-center items-center ${
+              !location.hasGps
+                ? 'bg-slate-100 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700/60'
+                : !hasLocationRestriction || allowedLocations.length === 0
+                ? 'bg-sky-50/50 dark:bg-sky-950/20 border-sky-100 dark:border-sky-900/40'
+                : location.inRadius
+                ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/40'
+                : 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/40'
+            }`}>
+              {/* Radar Grid Lines */}
               <View className="absolute inset-0 opacity-20">
                 <View className="absolute top-1/2 left-0 right-0 h-[6px] bg-slate-400 -translate-y-1" />
                 <View className="absolute left-1/3 top-0 bottom-0 w-[6px] bg-slate-400" />
                 <View className="absolute left-2/3 top-0 bottom-0 w-[6px] bg-slate-400" />
               </View>
-              <View className="w-20 h-20 rounded-full border border-blue-400/30 bg-blue-500/10 items-center justify-center">
-                <View className="w-12 h-12 rounded-full border border-blue-500/40 bg-blue-500/20 items-center justify-center">
-                  <View className="w-7 h-7 rounded-full bg-[#2a75d3] items-center justify-center shadow-lg shadow-blue-500/50">
+
+              {/* Concentric Circles */}
+              <View className={`w-20 h-20 rounded-full border items-center justify-center ${
+                !location.hasGps
+                  ? 'border-slate-300/40 bg-slate-400/10'
+                  : !hasLocationRestriction || allowedLocations.length === 0
+                  ? 'border-sky-400/30 bg-sky-500/10'
+                  : location.inRadius
+                  ? 'border-emerald-400/30 bg-emerald-500/10'
+                  : 'border-rose-400/30 bg-rose-500/10'
+              }`}>
+                <View className={`w-12 h-12 rounded-full border items-center justify-center ${
+                  !location.hasGps
+                    ? 'border-slate-400/40 bg-slate-400/20'
+                    : !hasLocationRestriction || allowedLocations.length === 0
+                    ? 'border-sky-500/40 bg-sky-500/20'
+                    : location.inRadius
+                    ? 'border-emerald-500/40 bg-emerald-500/20'
+                    : 'border-rose-500/40 bg-rose-500/20'
+                }`}>
+                  <View className={`w-7 h-7 rounded-full items-center justify-center shadow-lg ${
+                    !location.hasGps
+                      ? 'bg-slate-500 shadow-slate-500/50'
+                      : !hasLocationRestriction || allowedLocations.length === 0
+                      ? 'bg-sky-600 shadow-sky-500/50'
+                      : location.inRadius
+                      ? 'bg-[#28a745] shadow-emerald-500/50'
+                      : 'bg-rose-600 shadow-rose-500/50'
+                  }`}>
                     <Navigation size={13} color="#ffffff" strokeWidth={2.5} />
                   </View>
                 </View>
               </View>
+
+              {/* Distance Pill Overlay */}
+              <View className="absolute bottom-2 px-2.5 py-0.5 rounded-full bg-white/90 dark:bg-slate-900/90 shadow-sm border border-slate-200/60 dark:border-slate-700/60">
+                <Text className={`text-[10px] font-bold ${
+                  !location.hasGps
+                    ? 'text-slate-600 dark:text-slate-400'
+                    : !hasLocationRestriction || allowedLocations.length === 0
+                    ? 'text-sky-600 dark:text-sky-400'
+                    : location.inRadius
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {isLocating ? 'Memindai...' : location.distanceText}
+                </Text>
+              </View>
             </View>
+
+            {/* Address & Refresh Controls */}
             <View className="flex-row justify-between items-center pt-2">
               <View className="flex-1 pr-3">
                 <Text className="text-[13px] font-semibold text-[#222222] dark:text-white" numberOfLines={1}>{location.address}</Text>
-                <Text className="text-[11px] text-[#777777] dark:text-slate-400 mt-0.5">Lat: {location.latitude.toFixed(5)}, Long: {location.longitude.toFixed(5)} • {location.distanceText}</Text>
+                <Text className="text-[11px] text-[#777777] dark:text-slate-400 mt-0.5">
+                  {location.hasGps && location.latitude !== 0
+                    ? `Lat: ${location.latitude.toFixed(5)}, Long: ${location.longitude.toFixed(5)}`
+                    : 'Koordinat GPS belum didapatkan'}
+                </Text>
               </View>
-              <TouchableOpacity activeOpacity={0.7} onPress={detectLocation} disabled={isLocating} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center border border-slate-200 dark:border-slate-700">
-                <RotateCw size={15} color="#2a75d3" className={isLocating ? 'opacity-50' : ''} />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => detectLocation()}
+                disabled={isLocating}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center border border-slate-200 dark:border-slate-700"
+              >
+                {isLocating ? (
+                  <ActivityIndicator size="small" color="#2a75d3" />
+                ) : (
+                  <RotateCw size={15} color="#2a75d3" />
+                )}
               </TouchableOpacity>
             </View>
           </View>
