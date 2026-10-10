@@ -206,16 +206,10 @@ export default function UserHomeScreen() {
       }
     }
 
-    // Toleransi deviasi akurasi GPS smartphone (+30 meter toleransi untuk ponsel kurang akurat)
-    const GPS_TOLERANCE_METERS = 30;
-    const effectiveRadius = nearestLoc.radius + GPS_TOLERANCE_METERS;
-    const inRadius = nearestDistance <= effectiveRadius;
+    // Hanya gunakan radius murni kantor tanpa toleransi tambahan
+    const inRadius = nearestDistance <= nearestLoc.radius;
     const locName = nearestLoc.name || 'titik kantor';
-    const distanceText = inRadius
-      ? nearestDistance <= nearestLoc.radius
-        ? `${nearestDistance}m dari ${locName} (Maks ${nearestLoc.radius}m)`
-        : `${nearestDistance}m dari ${locName} (Toleransi GPS Aktif)`
-      : `${nearestDistance}m dari ${locName} (Maks ${nearestLoc.radius}m)`;
+    const distanceText = `${nearestDistance}m dari ${locName} (Maks ${nearestLoc.radius}m)`;
 
     return {
       latitude,

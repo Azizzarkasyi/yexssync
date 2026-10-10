@@ -156,20 +156,12 @@ function getAllowedWorkLocations(user: any, config: any): WorkLocation[] {
   return companyLocation ? [companyLocation] : [];
 }
 
-// Toleransi deviasi akurasi GPS HP (minimal 30 meter untuk mengakomodasi ponsel dengan GPS yang kurang akurat)
-const GPS_INACCURACY_TOLERANCE_METERS = 30;
-
 function isWithinAnyAllowedLocation(
   latitude: number,
   longitude: number,
   locations: WorkLocation[],
-  accuracyMargin: number = 0,
 ) {
-  let nearest: {distance: number; radius: number; effectiveRadius: number} | null = null;
-  const tolerance = Math.max(
-    GPS_INACCURACY_TOLERANCE_METERS,
-    Number(accuracyMargin) > 0 ? Math.min(Number(accuracyMargin), 80) : 0,
-  );
+  let nearest: {distance: number; radius: number} | null = null;
 
   for (const location of locations) {
     const distance = getDistanceFromLatLonInM(
@@ -179,17 +171,15 @@ function isWithinAnyAllowedLocation(
       location.longitude,
     );
 
-    const effectiveRadius = location.radius + tolerance;
-
-    if (distance <= effectiveRadius) {
+    if (distance <= location.radius) {
       return {
         allowed: true,
-        nearest: {distance, radius: location.radius, effectiveRadius},
+        nearest: {distance, radius: location.radius},
       };
     }
 
     if (!nearest || distance < nearest.distance) {
-      nearest = {distance, radius: location.radius, effectiveRadius};
+      nearest = {distance, radius: location.radius};
     }
   }
 
@@ -277,7 +267,6 @@ export const clockIn = async (req: Request, res: Response) => {
         currentLatitude,
         currentLongitude,
         allowedLocations,
-        accuracy ? parseFloat(accuracy) : 0,
       );
 
       if (!validation.allowed) {
@@ -286,7 +275,7 @@ export const clockIn = async (req: Request, res: Response) => {
           validation.nearest?.radius ?? allowedLocations[0].radius;
         return res.status(400).json({
           success: false,
-          message: `Absen ditolak: Anda berada di luar radius lokasi kerja terdekat. Jarak Anda ${Math.round(nearestDistance)} meter, batas maksimal ${nearestRadius} meter (toleransi akurasi GPS ${GPS_INACCURACY_TOLERANCE_METERS}m).`,
+          message: `Absen ditolak: Anda berada di luar radius lokasi kerja terdekat. Jarak Anda ${Math.round(nearestDistance)} meter, batas maksimal ${nearestRadius} meter.`,
         });
       }
     }
@@ -909,7 +898,6 @@ export const clockOut = async (req: Request, res: Response) => {
         currentLatitude,
         currentLongitude,
         allowedLocations,
-        accuracy ? parseFloat(accuracy) : 0,
       );
 
       if (!validation.allowed) {
@@ -918,7 +906,7 @@ export const clockOut = async (req: Request, res: Response) => {
           validation.nearest?.radius ?? allowedLocations[0].radius;
         return res.status(400).json({
           success: false,
-          message: `Pulang ditolak: Anda berada di luar radius lokasi kerja terdekat. Jarak Anda ${Math.round(nearestDistance)} meter, batas maksimal ${nearestRadius} meter (toleransi akurasi GPS ${GPS_INACCURACY_TOLERANCE_METERS}m).`,
+          message: `Pulang ditolak: Anda berada di luar radius lokasi kerja terdekat. Jarak Anda ${Math.round(nearestDistance)} meter, batas maksimal ${nearestRadius} meter.`,
         });
       }
     }
