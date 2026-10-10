@@ -168,7 +168,7 @@ function isWithinAnyAllowedLocation(
   let nearest: {distance: number; radius: number; effectiveRadius: number} | null = null;
   const tolerance = Math.max(
     GPS_INACCURACY_TOLERANCE_METERS,
-    Number(accuracyMargin) > 0 ? Math.min(Number(accuracyMargin), 60) : 0,
+    Number(accuracyMargin) > 0 ? Math.min(Number(accuracyMargin), 80) : 0,
   );
 
   for (const location of locations) {

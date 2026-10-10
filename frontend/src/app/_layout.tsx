@@ -23,6 +23,8 @@ import { ErrorProvider } from '@/context/ErrorContext';
 import { VersionUpdateChecker } from '@/components/VersionUpdateChecker';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { RouteGuard } from '@/components/RouteGuard';
+import { GlobalModalProvider } from '@/context/GlobalModalContext';
+import { GlobalModal } from '@/components/GlobalModal';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -57,12 +59,15 @@ export default function RootLayout() {
         <AnimatedSplashOverlay />
         <VersionUpdateChecker />
         <ErrorProvider>
-          <AuthProvider>
-            <RouteGuard>
-              <Stack screenOptions={{ headerShown: false }} />
-              <PWAInstallPrompt />
-            </RouteGuard>
-          </AuthProvider>
+          <GlobalModalProvider>
+            <AuthProvider>
+              <RouteGuard>
+                <Stack screenOptions={{ headerShown: false }} />
+                <PWAInstallPrompt />
+                <GlobalModal />
+              </RouteGuard>
+            </AuthProvider>
+          </GlobalModalProvider>
         </ErrorProvider>
       </ThemeProvider>
     </SafeAreaProvider>

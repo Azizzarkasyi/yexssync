@@ -41,12 +41,28 @@ import {
   notifyClockOutSuccess,
 } from '@/lib/notifications';
 import UserAvatar from '@/components/UserAvatar';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export default function UserHomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { user, logout } = useContext(AuthContext);
+  const {
+    showModal,
+    hideModal,
+    showSuccess,
+    showError,
+    showWarning,
+    showInfo,
+    showConfirm,
+    showLocationRadar,
+    updateRadarData,
+  } = useGlobalModal();
+
+  const locationWatchSubRef = useRef<any>(null);
+  const locationIntervalRef = useRef<any>(null);
+  const isContinuousSearchingRef = useRef<boolean>(false);
 
   const handleLogout = async () => {
     const doLogout = async () => {
@@ -58,22 +74,14 @@ export default function UserHomeScreen() {
       router.replace('/');
     };
 
-    if (Platform.OS === 'web') {
-      const confirmed = typeof window !== 'undefined' ? window.confirm('Apakah Anda yakin ingin keluar dari aplikasi?') : true;
-      if (confirmed) {
-        await doLogout();
-      }
-      return;
-    }
-
-    Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin keluar dari aplikasi?', [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Keluar',
-        style: 'destructive',
-        onPress: doLogout,
-      },
-    ]);
+    showConfirm({
+      title: 'Konfirmasi Keluar',
+      message: 'Apakah Anda yakin ingin keluar dari akun dan aplikasi?',
+      confirmText: 'Ya, Keluar',
+      cancelText: 'Batal',
+      variant: 'danger',
+      onConfirm: doLogout,
+    });
   };
 
   const [attendanceToday, setAttendanceToday] = useState<any>(null);
@@ -224,7 +232,216 @@ export default function UserHomeScreen() {
     fetchData();
     detectLocation();
     scheduleShiftReminder('08:00');
+
+    return () => {
+      stopContinuousLocationSearch();
+    };
   }, []);
+
+  const stopContinuousLocationSearch = () => {
+    isContinuousSearchingRef.current = false;
+    if (locationWatchSubRef.current) {
+      try {
+        locationWatchSubRef.current.remove();
+      } catch {}
+      locationWatchSubRef.current = null;
+    }
+    if (locationIntervalRef.current) {
+      clearInterval(locationIntervalRef.current);
+      locationIntervalRef.current = null;
+    }
+  };
+
+  const startContinuousLocationSearch = async (
+    targetAction?: 'clockIn' | 'clockOut',
+    manualTrigger: boolean = true
+  ) => {
+    stopContinuousLocationSearch();
+    isContinuousSearchingRef.current = true;
+    setIsLocating(true);
+
+    const locs = allowedLocationsRef.current;
+    const restriction = hasRestrictionRef.current;
+
+    let targetOfficeName = 'Kantor Perusahaan';
+    let targetRadius = 50;
+    if (locs.length > 0) {
+      targetOfficeName = locs[0].name || 'Kantor Utama';
+      targetRadius = locs[0].radius;
+    }
+
+    if (manualTrigger || targetAction) {
+      showLocationRadar({
+        title: targetAction ? 'Mengunci Lokasi Presensi' : 'Mencari Radius Kantor Terdekat',
+        message: 'Mohon tunggu sejenak, sistem sedang mencari dan mengunci koordinat GPS terdekat sampai masuk radius absensi.',
+        officeName: targetOfficeName,
+        maxRadius: targetRadius,
+        initialDistance: null,
+        onCancel: () => {
+          stopContinuousLocationSearch();
+          setIsLocating(false);
+        },
+      });
+    }
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        stopContinuousLocationSearch();
+        setIsLocating(false);
+        hideModal();
+        showError('Izin Lokasi Ditolak', 'Harap izinkan akses lokasi (GPS) pada pengaturan browser/perangkat Anda agar dapat melakukan presensi.');
+        return;
+      }
+
+      let attempts = 0;
+      let minDistanceAchieved = Infinity;
+
+      const handleNewCoords = async (coords: { latitude: number; longitude: number; accuracy?: number | null }) => {
+        if (!isContinuousSearchingRef.current) return;
+        attempts++;
+
+        const { latitude, longitude, accuracy } = coords;
+        let addressName = location.address || 'Area Perkantoran';
+        if (attempts === 1 || attempts % 4 === 0) {
+          try {
+            const geoList = await Location.reverseGeocodeAsync({ latitude, longitude });
+            if (geoList && geoList.length > 0) {
+              const g = geoList[0];
+              const parts = [g.name, g.street, g.subregion || g.city].filter(Boolean);
+              if (parts.length > 0) addressName = parts.join(', ');
+            }
+          } catch {}
+        }
+
+        const evaluated = evaluateLocation(latitude, longitude, addressName, locs, restriction, true, accuracy || 0);
+        setLocation(evaluated);
+
+        let currentDist: number | null = null;
+        let matchedOffice = targetOfficeName;
+        let matchedRadius = targetRadius;
+
+        if (locs.length > 0) {
+          let closest = locs[0];
+          let closestDist = getDistanceFromLatLonInMeters(latitude, longitude, closest.latitude, closest.longitude);
+          for (let i = 1; i < locs.length; i++) {
+            const d = getDistanceFromLatLonInMeters(latitude, longitude, locs[i].latitude, locs[i].longitude);
+            if (d < closestDist) {
+              closestDist = d;
+              closest = locs[i];
+            }
+          }
+          currentDist = closestDist;
+          matchedOffice = closest.name || 'Kantor Perusahaan';
+          matchedRadius = closest.radius;
+
+          if (closestDist < minDistanceAchieved) {
+            minDistanceAchieved = closestDist;
+          }
+        }
+
+        // Update popup radar status real-time
+        updateRadarData({
+          officeName: matchedOffice,
+          currentDistance: currentDist,
+          maxRadius: matchedRadius,
+          isLocked: evaluated.inRadius,
+          accuracy: accuracy || undefined,
+          statusText: evaluated.inRadius
+            ? '✓ Posisi terkunci dalam radius kantor! Menyiapkan absensi...'
+            : `Mencari titik terdekat... Jarak saat ini: ${currentDist ?? '?'}m (Maks ${matchedRadius}m)`,
+        });
+
+        // JIKA SUDAH MASUK RADIUS (SUKSES TERKUNCI!)
+        if (evaluated.inRadius) {
+          stopContinuousLocationSearch();
+          setIsLocating(false);
+
+          // Berikan jeda sejenak agar user melihat efek visual sukses di popup
+          setTimeout(() => {
+            hideModal();
+
+            if (targetAction === 'clockIn') {
+              if (APP_ENV.BIOMETRICS.ENABLE_FACE_RECOGNITION) {
+                setPendingAction('clockIn');
+                setFaceModalVisible(true);
+              } else {
+                executeClockIn();
+              }
+            } else if (targetAction === 'clockOut') {
+              if (APP_ENV.BIOMETRICS.ENABLE_FACE_RECOGNITION) {
+                setPendingAction('clockOut');
+                setFaceModalVisible(true);
+              } else {
+                executeClockOut();
+              }
+            } else if (manualTrigger) {
+              showSuccess(
+                'Lokasi Berhasil Terkunci!',
+                `Posisi Anda berada ${currentDist ?? 0}m dari ${matchedOffice}. Anda telah berada di dalam radius absensi.`
+              );
+            }
+          }, 700);
+        }
+      };
+
+      // 1. Ambil posisi awal segera
+      try {
+        const quickPos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        await handleNewCoords(quickPos.coords);
+      } catch {
+        const balPos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        await handleNewCoords(balPos.coords);
+      }
+
+      // 2. Pasang watchPositionAsync untuk mendengarkan perubahan koordinat GPS secara real-time
+      try {
+        const sub = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Highest,
+            distanceInterval: 1,
+            timeInterval: 1000,
+          },
+          (locResult) => {
+            handleNewCoords(locResult.coords);
+          }
+        );
+        locationWatchSubRef.current = sub;
+      } catch (e) {
+        console.warn('watchPositionAsync fallback:', e);
+      }
+
+      // 3. Fallback active polling berulang tiap 1.4 detik untuk menjamin update terus-menerus
+      locationIntervalRef.current = setInterval(async () => {
+        if (!isContinuousSearchingRef.current) return;
+        try {
+          const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+          await handleNewCoords(fresh.coords);
+        } catch {}
+      }, 1400);
+
+      // 4. Timeout 35 detik jika sinyal GPS benar-benar tidak mencapai radius kantor
+      setTimeout(() => {
+        if (isContinuousSearchingRef.current) {
+          stopContinuousLocationSearch();
+          setIsLocating(false);
+          hideModal();
+
+          const distNote = minDistanceAchieved < Infinity ? `\n\nJarak terdekat yang terdeteksi: ${minDistanceAchieved} meter (Maks ${targetRadius}m).` : '';
+          showWarning(
+            'Di Luar Radius Kantor',
+            `Sistem telah memindai sinyal GPS terdekat, namun posisi Anda masih berada di luar jangkauan absensi.${distNote}\n\nPastikan Anda sudah berada di lokasi kerja sebelum melakukan presensi.`
+          );
+        }
+      }, 35000);
+    } catch (err) {
+      console.warn('GPS continuous search error:', err);
+      stopContinuousLocationSearch();
+      setIsLocating(false);
+      hideModal();
+      showError('Gagal Mendeteksi GPS', 'Pastikan GPS dan izin lokasi aktif pada perangkat Anda.');
+    }
+  };
 
   const detectLocation = async (customAllowedLocs?: AllowedWorkLocation[]) => {
     setIsLocating(true);
@@ -373,31 +590,20 @@ export default function UserHomeScreen() {
 
   const handleClockIn = async () => {
     if (attendanceToday?.clockIn) {
-      Alert.alert('Sudah Presensi', `Anda sudah melakukan presensi masuk hari ini pada pukul ${formatTime(attendanceToday.clockIn)} WIB.`);
-      return;
-    }
-    if (hasLocationRestriction && allowedLocations.length > 0 && !location.hasGps) {
-      Alert.alert(
-        'Lokasi Belum Terdeteksi',
-        'Sistem belum mendapatkan titik koordinat GPS Anda. Silakan klik tombol perbarui lokasi di kartu lokasi.',
-        [
-          { text: 'Batal', style: 'cancel' },
-          { text: 'Perbarui Lokasi', onPress: () => detectLocation() },
-        ]
+      showInfo(
+        'Sudah Presensi Masuk',
+        `Anda sudah melakukan presensi masuk hari ini pada pukul ${formatTime(attendanceToday.clockIn)} WIB.`
       );
       return;
     }
-    if (hasLocationRestriction && allowedLocations.length > 0 && !location.inRadius) {
-      Alert.alert(
-        'Di Luar Radius Kantor',
-        `Anda saat ini berada di luar radius presensi kantor:\n\n📍 ${location.distanceText}\n\nPastikan Anda sudah berada di lokasi kerja sebelum melakukan presensi masuk. Ingin memperbarui lokasi GPS sekarang?`,
-        [
-          { text: 'Batal', style: 'cancel' },
-          { text: 'Perbarui Lokasi', onPress: () => detectLocation() },
-        ]
-      );
+
+    // Jika ada batasan lokasi dan belum berada dalam radius kantor terdekat
+    if (hasLocationRestriction && allowedLocations.length > 0 && (!location.hasGps || !location.inRadius)) {
+      // Otomatis mencari radius terdekat terus sampai dapat!
+      startContinuousLocationSearch('clockIn');
       return;
     }
+
     if (APP_ENV.BIOMETRICS.ENABLE_FACE_RECOGNITION) {
       setPendingAction('clockIn');
       setFaceModalVisible(true);
@@ -418,15 +624,19 @@ export default function UserHomeScreen() {
         ...(photoUri ? { photo: photoUri } : {}),
       });
       if (res.data?.success) {
-        notifyClockInSuccess(formatTime(new Date().toISOString()), location.address);
-        Alert.alert('Sukses', 'Presensi masuk berhasil dicatat!');
+        const timeNow = formatTime(new Date().toISOString());
+        notifyClockInSuccess(timeNow, location.address);
+        showSuccess(
+          'Presensi Masuk Berhasil!',
+          `Presensi masuk Anda telah tercatat pada pukul ${timeNow} WIB di ${location.address || 'lokasi kantor'}. Selamat bekerja!`
+        );
         fetchData();
       } else {
-        Alert.alert('Info', res.data?.message || 'Gagal melakukan presensi masuk');
+        showWarning('Perhatian', res.data?.message || 'Gagal melakukan presensi masuk.');
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Gagal melakukan presensi masuk.';
-      Alert.alert('Presensi Masuk', msg);
+      const msg = err.response?.data?.message || 'Gagal melakukan presensi masuk. Silakan coba kembali.';
+      showError('Gagal Presensi Masuk', msg);
     } finally {
       setIsSubmitting(false);
       setPendingAction(null);
@@ -435,35 +645,24 @@ export default function UserHomeScreen() {
 
   const handleClockOut = async () => {
     if (!attendanceToday?.clockIn) {
-      Alert.alert('Perhatian', 'Anda belum melakukan presensi masuk hari ini.');
+      showWarning('Belum Presensi Masuk', 'Anda harus melakukan presensi masuk terlebih dahulu sebelum presensi pulang.');
       return;
     }
     if (attendanceToday?.clockOut) {
-      Alert.alert('Sudah Presensi Pulang', `Anda sudah melakukan presensi pulang hari ini pada pukul ${formatTime(attendanceToday.clockOut)} WIB.`);
-      return;
-    }
-    if (hasLocationRestriction && allowedLocations.length > 0 && !location.hasGps) {
-      Alert.alert(
-        'Lokasi Belum Terdeteksi',
-        'Sistem belum mendapatkan titik koordinat GPS Anda. Silakan klik tombol perbarui lokasi di kartu lokasi.',
-        [
-          { text: 'Batal', style: 'cancel' },
-          { text: 'Perbarui Lokasi', onPress: () => detectLocation() },
-        ]
+      showInfo(
+        'Sudah Presensi Pulang',
+        `Anda sudah melakukan presensi pulang hari ini pada pukul ${formatTime(attendanceToday.clockOut)} WIB.`
       );
       return;
     }
-    if (hasLocationRestriction && allowedLocations.length > 0 && !location.inRadius) {
-      Alert.alert(
-        'Di Luar Radius Kantor',
-        `Anda saat ini berada di luar radius presensi kantor:\n\n📍 ${location.distanceText}\n\nPastikan Anda sudah berada di lokasi kerja sebelum melakukan presensi pulang. Ingin memperbarui lokasi GPS sekarang?`,
-        [
-          { text: 'Batal', style: 'cancel' },
-          { text: 'Perbarui Lokasi', onPress: () => detectLocation() },
-        ]
-      );
+
+    // Jika ada batasan lokasi dan belum berada dalam radius kantor terdekat
+    if (hasLocationRestriction && allowedLocations.length > 0 && (!location.hasGps || !location.inRadius)) {
+      // Otomatis mencari radius terdekat terus sampai dapat!
+      startContinuousLocationSearch('clockOut');
       return;
     }
+
     if (APP_ENV.BIOMETRICS.ENABLE_FACE_RECOGNITION) {
       setPendingAction('clockOut');
       setFaceModalVisible(true);
@@ -483,15 +682,19 @@ export default function UserHomeScreen() {
         ...(photoUri ? { photo: photoUri } : {}),
       });
       if (res.data?.success) {
-        notifyClockOutSuccess(formatTime(new Date().toISOString()));
-        Alert.alert('Sukses', 'Presensi pulang berhasil dicatat!');
+        const timeNow = formatTime(new Date().toISOString());
+        notifyClockOutSuccess(timeNow);
+        showSuccess(
+          'Presensi Pulang Berhasil!',
+          `Presensi pulang Anda telah dicatat pada pukul ${timeNow} WIB. Terima kasih atas dedikasi dan kerja keras Anda hari ini!`
+        );
         fetchData();
       } else {
-        Alert.alert('Info', res.data?.message || 'Gagal melakukan presensi pulang');
+        showWarning('Perhatian', res.data?.message || 'Gagal melakukan presensi pulang.');
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Gagal melakukan presensi pulang.';
-      Alert.alert('Presensi Pulang', msg);
+      const msg = err.response?.data?.message || 'Gagal melakukan presensi pulang. Silakan coba kembali.';
+      showError('Gagal Presensi Pulang', msg);
     } finally {
       setIsSubmitting(false);
       setPendingAction(null);
@@ -500,70 +703,72 @@ export default function UserHomeScreen() {
 
   const handleStartBreak = async () => {
     if (!attendanceToday?.clockIn) {
-      Alert.alert('Perhatian', 'Anda harus melakukan presensi masuk terlebih dahulu sebelum istirahat.');
+      showWarning('Perhatian', 'Anda harus melakukan presensi masuk terlebih dahulu sebelum istirahat.');
       return;
     }
     if (attendanceToday?.clockOut) {
-      Alert.alert('Perhatian', 'Anda sudah melakukan presensi pulang.');
+      showWarning('Perhatian', 'Anda sudah melakukan presensi pulang hari ini.');
       return;
     }
     if (breakData?.activeBreak) {
-      Alert.alert('Perhatian', 'Sesi istirahat Anda sedang berlangsung.');
+      showInfo('Sesi Istirahat Aktif', 'Sesi istirahat Anda saat ini sedang berlangsung.');
       return;
     }
-    Alert.alert('Mulai Istirahat', 'Apakah Anda ingin memulai waktu istirahat sekarang?', [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Ya, Mulai',
-        onPress: async () => {
-          try {
-            setIsSubmitting(true);
-            const res = await api.post('/breaks/start', { faceVerified: true });
-            if (res.data?.success) {
-              Alert.alert('Sukses', 'Waktu istirahat Anda telah dimulai!');
-              fetchData();
-            } else {
-              Alert.alert('Info', res.data?.message || 'Gagal memulai istirahat');
-            }
-          } catch (err: any) {
-            const msg = err.response?.data?.message || 'Gagal memulai istirahat.';
-            Alert.alert('Mulai Istirahat', msg);
-          } finally {
-            setIsSubmitting(false);
+
+    showConfirm({
+      title: 'Mulai Istirahat',
+      message: 'Apakah Anda yakin ingin memulai sesi istirahat sekarang?',
+      confirmText: 'Ya, Mulai',
+      cancelText: 'Batal',
+      onConfirm: async () => {
+        try {
+          setIsSubmitting(true);
+          const res = await api.post('/breaks/start', { faceVerified: true });
+          if (res.data?.success) {
+            showSuccess('Waktu Istirahat Dimulai', 'Sesi istirahat Anda telah aktif. Manfaatkan waktu istirahat Anda dengan baik.');
+            fetchData();
+          } else {
+            showWarning('Info', res.data?.message || 'Gagal memulai istirahat.');
           }
-        },
+        } catch (err: any) {
+          const msg = err.response?.data?.message || 'Gagal memulai istirahat.';
+          showError('Mulai Istirahat', msg);
+        } finally {
+          setIsSubmitting(false);
+        }
       },
-    ]);
+    });
   };
 
   const handleEndBreak = async () => {
     if (!breakData?.activeBreak) {
-      Alert.alert('Perhatian', 'Tidak ada sesi istirahat yang sedang berjalan.');
+      showWarning('Perhatian', 'Tidak ada sesi istirahat yang sedang berjalan.');
       return;
     }
-    Alert.alert('Selesai Istirahat', 'Apakah Anda ingin menyelesaikan waktu istirahat sekarang?', [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Ya, Selesai',
-        onPress: async () => {
-          try {
-            setIsSubmitting(true);
-            const res = await api.post('/breaks/end', { faceVerified: true });
-            if (res.data?.success) {
-              Alert.alert('Sukses', 'Sesi istirahat selesai, selamat kembali bekerja!');
-              fetchData();
-            } else {
-              Alert.alert('Info', res.data?.message || 'Gagal menyelesaikan istirahat');
-            }
-          } catch (err: any) {
-            const msg = err.response?.data?.message || 'Gagal menyelesaikan istirahat.';
-            Alert.alert('Selesai Istirahat', msg);
-          } finally {
-            setIsSubmitting(false);
+
+    showConfirm({
+      title: 'Selesai Istirahat',
+      message: 'Apakah Anda ingin menyelesaikan sesi istirahat sekarang dan kembali bekerja?',
+      confirmText: 'Ya, Selesai',
+      cancelText: 'Batal',
+      onConfirm: async () => {
+        try {
+          setIsSubmitting(true);
+          const res = await api.post('/breaks/end', { faceVerified: true });
+          if (res.data?.success) {
+            showSuccess('Sesi Istirahat Selesai', 'Anda telah kembali aktif bekerja. Selamat melanjutkan tugas Anda!');
+            fetchData();
+          } else {
+            showWarning('Info', res.data?.message || 'Gagal menyelesaikan istirahat.');
           }
-        },
+        } catch (err: any) {
+          const msg = err.response?.data?.message || 'Gagal menyelesaikan istirahat.';
+          showError('Selesai Istirahat', msg);
+        } finally {
+          setIsSubmitting(false);
+        }
       },
-    ]);
+    });
   };
 
   const userName = user?.name ? user.name.split(' ')[0] : 'Karyawan';
@@ -624,7 +829,7 @@ export default function UserHomeScreen() {
             <Text className="text-[18px] font-bold text-[#2a75d3] tracking-tight">YEXSSYNC</Text>
           </View>
           <View className="flex-row items-center gap-3">
-            <TouchableOpacity activeOpacity={0.7} onPress={() => Alert.alert('Notifikasi', 'Tidak ada notifikasi baru.')}>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => showInfo('Notifikasi', 'Tidak ada notifikasi baru untuk Anda saat ini.')}>
               <Bell size={20} color={isDark ? '#cbd5e1' : '#222222'} />
             </TouchableOpacity>
             <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/user/profile')}>
@@ -794,7 +999,7 @@ export default function UserHomeScreen() {
               </View>
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => detectLocation()}
+                onPress={() => startContinuousLocationSearch(undefined, true)}
                 disabled={isLocating}
                 className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center border border-slate-200 dark:border-slate-700"
               >
