@@ -142,6 +142,14 @@ export default function AddEmployeeScreen() {
               setDepartmentList((prev) => Array.from(new Set([...deptNames, ...prev])));
             }
           }
+          if (cfg.officeLatitude && cfg.officeLongitude) {
+            setCompanyOffice({
+              latitude: Number(cfg.officeLatitude),
+              longitude: Number(cfg.officeLongitude),
+              radius: Number(cfg.allowedRadiusMeters) || 50,
+              name: cfg.companyName || 'Kantor Perusahaan',
+            });
+          }
         }
       })
       .catch(() => {});
@@ -211,12 +219,37 @@ export default function AddEmployeeScreen() {
     setSalaryTypeDropdownOpen(false);
   };
 
-  // Form States - Geofencing Lokasi Kerja
-  const [overrideLocation, setOverrideLocation] = useState(true);
-  const [latitude, setLatitude] = useState('-6.200000');
-  const [longitude, setLongitude] = useState('106.816666');
+  const [companyOffice, setCompanyOffice] = useState<{
+    latitude: number;
+    longitude: number;
+    radius: number;
+    name: string;
+  } | null>(null);
+
+  // Form States - Geofencing Lokasi Kerja (Default Kosong / Mengikuti Kantor)
+  const [overrideLocation, setOverrideLocation] = useState(false);
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [radius, setRadius] = useState('50');
-  const [locationName, setLocationName] = useState('Kantor Utama');
+  const [locationName, setLocationName] = useState('');
+
+  const toggleOverrideLocation = () => {
+    const nextVal = !overrideLocation;
+    setOverrideLocation(nextVal);
+    if (nextVal && !latitude && !longitude) {
+      if (companyOffice) {
+        setLatitude(companyOffice.latitude.toFixed(6));
+        setLongitude(companyOffice.longitude.toFixed(6));
+        setRadius(String(companyOffice.radius || 50));
+        setLocationName(companyOffice.name || 'Lokasi Khusus Karyawan');
+      } else {
+        setLatitude('-6.208800');
+        setLongitude('106.845600');
+        setRadius('50');
+        setLocationName('Lokasi Khusus Karyawan');
+      }
+    }
+  };
 
   // Multi-Location Branches State
   const [extraLocations, setExtraLocations] = useState<ExtraWorkLocation[]>([]);
@@ -385,6 +418,11 @@ export default function AddEmployeeScreen() {
 
       const jobLabel = jobTypeOptions.find((j) => j.value === jobType)?.label || jobType;
 
+      const hasCustomLoc =
+        overrideLocation &&
+        ((latitude.trim() !== '' && longitude.trim() !== '' && !isNaN(parseFloat(latitude)) && !isNaN(parseFloat(longitude))) ||
+          extraLocations.some((l) => l.latitude.trim() !== '' && l.longitude.trim() !== ''));
+
       const payload = {
         name: name.trim(),
         nik: nik.trim(),
@@ -403,25 +441,31 @@ export default function AddEmployeeScreen() {
         maxBreakMinutes: parseInt(maxBreakMinutes, 10) || 60,
         bankName,
         bankAccountNumber,
-        overrideLocation,
-        latitude: overrideLocation ? parseFloat(latitude) : null,
-        longitude: overrideLocation ? parseFloat(longitude) : null,
-        radius: overrideLocation ? parseFloat(radius) : 50,
-        locationName: locationName.trim() || 'Kantor Utama',
-        workLocations: overrideLocation
+        overrideLocation: hasCustomLoc,
+        latitude: hasCustomLoc && latitude.trim() !== '' ? parseFloat(latitude) : null,
+        longitude: hasCustomLoc && longitude.trim() !== '' ? parseFloat(longitude) : null,
+        radius: hasCustomLoc && radius ? parseFloat(radius) : null,
+        locationName: hasCustomLoc ? (locationName.trim() || 'Lokasi Khusus Karyawan') : null,
+        workLocations: hasCustomLoc
           ? [
-              {
-                name: locationName.trim() || 'Kantor Utama',
-                latitude: parseFloat(latitude) || -6.2088,
-                longitude: parseFloat(longitude) || 106.8456,
-                radius: parseFloat(radius) || 50,
-              },
-              ...extraLocations.map((loc, i) => ({
-                name: loc.name.trim() || `Cabang ${i + 1}`,
-                latitude: parseFloat(loc.latitude) || -6.2088,
-                longitude: parseFloat(loc.longitude) || 106.8456,
-                radius: parseFloat(loc.radius) || 50,
-              })),
+              ...(latitude.trim() !== '' && longitude.trim() !== ''
+                ? [
+                    {
+                      name: locationName.trim() || 'Titik Karyawan',
+                      latitude: parseFloat(latitude),
+                      longitude: parseFloat(longitude),
+                      radius: parseFloat(radius) || 50,
+                    },
+                  ]
+                : []),
+              ...extraLocations
+                .filter((loc) => loc.latitude.trim() !== '' && loc.longitude.trim() !== '')
+                .map((loc, i) => ({
+                  name: loc.name.trim() || `Cabang ${i + 1}`,
+                  latitude: parseFloat(loc.latitude),
+                  longitude: parseFloat(loc.longitude),
+                  radius: parseFloat(loc.radius) || 50,
+                })),
             ]
           : null,
         avatar: photoUri || null,
@@ -1340,7 +1384,7 @@ export default function AddEmployeeScreen() {
 
             {/* Checkbox Override Location */}
             <TouchableOpacity
-              onPress={() => setOverrideLocation(!overrideLocation)}
+              onPress={toggleOverrideLocation}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -1362,10 +1406,50 @@ export default function AddEmployeeScreen() {
               >
                 {overrideLocation && <Check size={14} color="#ffffff" />}
               </View>
-              <Text style={{ fontSize: 14, color: theme.textDark }}>
+              <Text style={{ fontSize: 14, color: theme.textDark, fontWeight: overrideLocation ? '600' : '400' }}>
                 Gunakan lokasi khusus untuk pegawai ini (mengabaikan lokasi default kantor)
               </Text>
             </TouchableOpacity>
+
+            {/* Informasi jika menggunakan lokasi default kantor */}
+            {!overrideLocation && (
+              <View
+                style={{
+                  padding: 16,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: theme.borderColor,
+                  backgroundColor: theme.isDark ? '#1e293b' : '#f8fafc',
+                  marginBottom: 25,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 10,
+                    backgroundColor: theme.primaryBlue + '15',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MapPin size={20} color={theme.primaryBlue} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: theme.textDark }}>
+                    Mengikuti Lokasi Standar Kantor
+                  </Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                    {companyOffice
+                      ? `Presensi karyawan ini otomatis mengikuti ${companyOffice.name} (Radius ${companyOffice.radius}m). Centang pilihan di atas jika ingin menambahkan lokasi khusus.`
+                      : 'Presensi karyawan ini otomatis mengikuti lokasi kantor perusahaan. Centang pilihan di atas jika ingin menambahkan lokasi khusus.'}
+                  </Text>
+                </View>
+              </View>
+            )}
 
             {/* Custom Location Box & Inputs */}
             {overrideLocation && (

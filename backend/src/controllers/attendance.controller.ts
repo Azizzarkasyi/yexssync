@@ -87,11 +87,12 @@ function normalizeWorkLocation(
 function getAllowedWorkLocations(user: any, config: any): WorkLocation[] {
   const defaultRadius = config?.allowedRadiusMeters ?? 50;
 
-  // If user explicitly has overrideLocation === false, ignore user custom locations and use company office
-  const canUseUserLocations = user?.overrideLocation !== false;
+  // PRIORITAS 1: Cek lokasi yang ditambahkan di karyawan saat menambahkan/mengatur user
+  // Hanya gunakan jika overrideLocation bukan false dan data lokasi valid
+  const isCustomAllowed = user?.overrideLocation !== false;
 
-  if (canUseUserLocations) {
-    // 1. Check per-user custom work locations array (multi-location support)
+  if (isCustomAllowed) {
+    // 1. Cek per-user multi work locations array (cabang / titik khusus)
     let rawLocations = user?.workLocations;
     if (typeof rawLocations === "string") {
       try {
@@ -110,19 +111,23 @@ function getAllowedWorkLocations(user: any, config: any): WorkLocation[] {
       }
     }
 
-    // 2. Check per-user single custom work location
+    // 2. Cek per-user single custom work location
     if (
       user?.workLatitude !== null &&
       user?.workLatitude !== undefined &&
+      user?.workLatitude !== "" &&
       user?.workLongitude !== null &&
-      user?.workLongitude !== undefined
+      user?.workLongitude !== undefined &&
+      user?.workLongitude !== "" &&
+      Number.isFinite(Number(user.workLatitude)) &&
+      Number.isFinite(Number(user.workLongitude))
     ) {
       const singleLoc = normalizeWorkLocation(
         {
           latitude: user.workLatitude,
           longitude: user.workLongitude,
           radius: user.workRadius,
-          name: user.locationName || "Lokasi Kustom",
+          name: user.locationName || "Lokasi Karyawan",
         },
         defaultRadius,
       );
@@ -132,12 +137,14 @@ function getAllowedWorkLocations(user: any, config: any): WorkLocation[] {
     }
   }
 
-  // 3. Fallback: use company-wide office location
+  // PRIORITAS 2: Kalau lokasi di karyawan kosong, baru ikut lokasi kantor perusahaan
   const hasCompanyLocation =
     config?.officeLatitude !== null &&
     config?.officeLatitude !== undefined &&
     config?.officeLongitude !== null &&
-    config?.officeLongitude !== undefined;
+    config?.officeLongitude !== undefined &&
+    Number.isFinite(Number(config.officeLatitude)) &&
+    Number.isFinite(Number(config.officeLongitude));
 
   if (!hasCompanyLocation) {
     return [];

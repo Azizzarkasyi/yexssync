@@ -508,24 +508,30 @@ export const createUser = async (req: Request, res: Response) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-    const parsedWorkLocations = parseWorkLocations(workLocations, 50);
+    const isOverride = overrideLocation === true || overrideLocation === "true";
+    const parsedWorkLocations = isOverride ? parseWorkLocations(workLocations, 50) : null;
     const primaryLocation = resolvePrimaryWorkLocation(parsedWorkLocations);
     const inputLat = workLatitude !== undefined ? workLatitude : latitude;
     const inputLng = workLongitude !== undefined ? workLongitude : longitude;
     const inputRad = workRadius !== undefined ? workRadius : radius;
 
     const resolvedWorkLatitude =
-      inputLat !== undefined
+      isOverride && inputLat !== undefined && inputLat !== null && inputLat !== ""
         ? parseFloat(inputLat)
-        : (primaryLocation?.latitude ?? null);
+        : (isOverride ? (primaryLocation?.latitude ?? null) : null);
     const resolvedWorkLongitude =
-      inputLng !== undefined
+      isOverride && inputLng !== undefined && inputLng !== null && inputLng !== ""
         ? parseFloat(inputLng)
-        : (primaryLocation?.longitude ?? null);
+        : (isOverride ? (primaryLocation?.longitude ?? null) : null);
     const resolvedWorkRadius =
-      inputRad !== undefined
+      isOverride && inputRad !== undefined && inputRad !== null && inputRad !== ""
         ? parseInt(inputRad, 10)
-        : (primaryLocation?.radius ?? null);
+        : (isOverride ? (primaryLocation?.radius ?? null) : null);
+
+    const hasAnyCustomLocation =
+      isOverride &&
+      ((Number.isFinite(resolvedWorkLatitude as number) && Number.isFinite(resolvedWorkLongitude as number)) ||
+        (parsedWorkLocations !== null && parsedWorkLocations.length > 0));
 
     const user = await prisma.user.create({
       data: {
@@ -537,18 +543,18 @@ export const createUser = async (req: Request, res: Response) => {
         salary: salary ? parseFloat(salary) : 0,
         startWorkTime: startWorkTime || "09:00",
         endWorkTime: endWorkTime || "17:00",
-        workLatitude: Number.isFinite(resolvedWorkLatitude as number)
+        workLatitude: hasAnyCustomLocation && Number.isFinite(resolvedWorkLatitude as number)
           ? resolvedWorkLatitude
           : null,
-        workLongitude: Number.isFinite(resolvedWorkLongitude as number)
+        workLongitude: hasAnyCustomLocation && Number.isFinite(resolvedWorkLongitude as number)
           ? resolvedWorkLongitude
           : null,
-        workRadius: Number.isFinite(resolvedWorkRadius as number)
+        workRadius: hasAnyCustomLocation && Number.isFinite(resolvedWorkRadius as number)
           ? resolvedWorkRadius
           : null,
-        overrideLocation: overrideLocation === true || overrideLocation === "true",
-        locationName: locationName || null,
-        ...(parsedWorkLocations ? {workLocations: parsedWorkLocations} : {}),
+        overrideLocation: hasAnyCustomLocation,
+        locationName: hasAnyCustomLocation ? (locationName || null) : null,
+        ...(hasAnyCustomLocation && parsedWorkLocations ? {workLocations: parsedWorkLocations} : {}),
         latePenalty: latePenalty ? parseFloat(latePenalty) : 0,
         maxBreakMinutes: maxBreakMinutes !== undefined && maxBreakMinutes !== "" ? parseInt(maxBreakMinutes, 10) : null,
         employeeId: employeeId || null,
@@ -653,31 +659,33 @@ export const updateUser = async (req: Request, res: Response) => {
       longitude,
       radius,
     } = req.body;
-    const parsedWorkLocations = parseWorkLocations(workLocations, 50);
+    const isOverride = overrideLocation === true || overrideLocation === "true";
+    const parsedWorkLocations = isOverride ? parseWorkLocations(workLocations, 50) : null;
     const primaryLocation = resolvePrimaryWorkLocation(parsedWorkLocations);
     const inputLat = workLatitude !== undefined ? workLatitude : latitude;
     const inputLng = workLongitude !== undefined ? workLongitude : longitude;
     const inputRad = workRadius !== undefined ? workRadius : radius;
 
     const resolvedWorkLatitude =
-      inputLat !== undefined
-        ? inputLat === null
-          ? null
-          : parseFloat(inputLat)
-        : primaryLocation?.latitude;
+      isOverride && inputLat !== undefined && inputLat !== null && inputLat !== ""
+        ? parseFloat(inputLat)
+        : (isOverride ? (primaryLocation?.latitude ?? null) : null);
     const resolvedWorkLongitude =
-      inputLng !== undefined
-        ? inputLng === null
-          ? null
-          : parseFloat(inputLng)
-        : primaryLocation?.longitude;
+      isOverride && inputLng !== undefined && inputLng !== null && inputLng !== ""
+        ? parseFloat(inputLng)
+        : (isOverride ? (primaryLocation?.longitude ?? null) : null);
     const resolvedWorkRadius =
-      inputRad !== undefined
-        ? inputRad === null
-          ? null
-          : parseInt(inputRad, 10)
-        : primaryLocation?.radius;
+      isOverride && inputRad !== undefined && inputRad !== null && inputRad !== ""
+        ? parseInt(inputRad, 10)
+        : (isOverride ? (primaryLocation?.radius ?? null) : null);
+
+    const hasAnyCustomLocation =
+      isOverride &&
+      ((Number.isFinite(resolvedWorkLatitude as number) && Number.isFinite(resolvedWorkLongitude as number)) ||
+        (parsedWorkLocations !== null && parsedWorkLocations.length > 0));
+
     const shouldUpdateLocationFields =
+      overrideLocation !== undefined ||
       workLocations !== undefined ||
       inputLat !== undefined ||
       inputLng !== undefined ||
@@ -698,33 +706,28 @@ export const updateUser = async (req: Request, res: Response) => {
           latePenalty: parseFloat(latePenalty),
         }),
         ...(isActive !== undefined && {isActive}),
-        ...(overrideLocation !== undefined && {overrideLocation: overrideLocation === true || overrideLocation === "true"}),
-        ...(locationName !== undefined && {locationName: locationName || null}),
         ...(shouldUpdateLocationFields
           ? {
+              overrideLocation: hasAnyCustomLocation,
               workLatitude:
-                resolvedWorkLatitude !== undefined &&
-                resolvedWorkLatitude !== null &&
-                Number.isFinite(Number(resolvedWorkLatitude))
+                hasAnyCustomLocation && Number.isFinite(Number(resolvedWorkLatitude))
                   ? Number(resolvedWorkLatitude)
                   : null,
               workLongitude:
-                resolvedWorkLongitude !== undefined &&
-                resolvedWorkLongitude !== null &&
-                Number.isFinite(Number(resolvedWorkLongitude))
+                hasAnyCustomLocation && Number.isFinite(Number(resolvedWorkLongitude))
                   ? Number(resolvedWorkLongitude)
                   : null,
               workRadius:
-                resolvedWorkRadius !== undefined &&
-                resolvedWorkRadius !== null &&
-                Number.isFinite(Number(resolvedWorkRadius))
+                hasAnyCustomLocation && Number.isFinite(Number(resolvedWorkRadius))
                   ? Number(resolvedWorkRadius)
                   : null,
+              workLocations:
+                hasAnyCustomLocation && parsedWorkLocations
+                  ? parsedWorkLocations
+                  : Prisma.DbNull,
+              locationName: hasAnyCustomLocation ? (locationName || null) : null,
             }
           : {}),
-        ...(workLocations !== undefined && {
-          workLocations: parsedWorkLocations ?? Prisma.DbNull,
-        }),
         ...(maxBreakMinutes !== undefined && {
           maxBreakMinutes: maxBreakMinutes === null || maxBreakMinutes === "" ? null : parseInt(maxBreakMinutes, 10)
         }),

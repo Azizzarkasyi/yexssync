@@ -249,7 +249,7 @@ export default function EditEmployeeScreen() {
     setIsSubmitting(true);
     try {
       const parsedLocations = workLocations
-        .filter((loc) => loc.latitude && loc.longitude)
+        .filter((loc) => loc.latitude?.trim() && loc.longitude?.trim() && !isNaN(parseFloat(loc.latitude)) && !isNaN(parseFloat(loc.longitude)))
         .map((loc) => ({
           ...(loc.name ? { name: loc.name } : {}),
           latitude: parseFloat(loc.latitude),
@@ -257,17 +257,26 @@ export default function EditEmployeeScreen() {
           radius: parseInt(loc.radius) || 50,
         }));
 
+      const hasCustomLocation =
+        Boolean(
+          formData.workLatitude?.trim() &&
+          formData.workLongitude?.trim() &&
+          !isNaN(parseFloat(formData.workLatitude)) &&
+          !isNaN(parseFloat(formData.workLongitude))
+        ) || parsedLocations.length > 0;
+
       const payload: any = {
         ...formData,
         salary: parseFloat(formData.salary) || 0,
         latePenalty: parseFloat(formData.latePenalty) || 0,
         maxBreakMinutes: parseInt(formData.maxBreakMinutes) || 60,
-        workLatitude: formData.workLatitude ? parseFloat(formData.workLatitude) : null,
-        workLongitude: formData.workLongitude ? parseFloat(formData.workLongitude) : null,
-        workRadius: parseInt(formData.workRadius) || 50,
+        overrideLocation: hasCustomLocation,
+        workLatitude: hasCustomLocation && formData.workLatitude?.trim() ? parseFloat(formData.workLatitude) : null,
+        workLongitude: hasCustomLocation && formData.workLongitude?.trim() ? parseFloat(formData.workLongitude) : null,
+        workRadius: hasCustomLocation && formData.workRadius ? parseInt(formData.workRadius) : null,
         joinDate: formData.joinDate ? new Date(formData.joinDate).toISOString() : null,
         bankAccountHolder: formData.bankAccountHolder || formData.name,
-        workLocations: parsedLocations,
+        workLocations: hasCustomLocation && parsedLocations.length > 0 ? parsedLocations : null,
       };
 
       if (!formData.password) {
@@ -698,17 +707,62 @@ export default function EditEmployeeScreen() {
                 <Text className="text-xs text-slate-500">Tentukan titik kantor utama dan cabang presensi.</Text>
               </View>
             </View>
-            <TouchableOpacity
-              onPress={openMapForPrimary}
-              className="px-3 py-1.5 bg-[#2a75d3] hover:bg-[#1f5ca8] rounded-xl flex-row items-center shadow-sm"
-            >
-              <Compass size={14} color="#ffffff" className="mr-1" />
-              <Text className="text-xs font-bold text-white">📍 Buka Peta</Text>
-            </TouchableOpacity>
+            <View className="flex-row items-center gap-2">
+              {(formData.workLatitude || formData.workLongitude || workLocations.length > 0) && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setFormData({
+                      ...formData,
+                      workLatitude: '',
+                      workLongitude: '',
+                      workRadius: '50',
+                    });
+                    setWorkLocations([]);
+                    Alert.alert('Info', 'Lokasi khusus dikosongkan. Karyawan akan otomatis mengikuti lokasi kantor perusahaan.');
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-xl flex-row items-center"
+                >
+                  <Text className="text-xs font-semibold text-slate-600 dark:text-slate-300">Kosongkan (Ikut Kantor)</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onPress={openMapForPrimary}
+                className="px-3 py-1.5 bg-[#2a75d3] hover:bg-[#1f5ca8] rounded-xl flex-row items-center shadow-sm"
+              >
+                <Compass size={14} color="#ffffff" className="mr-1" />
+                <Text className="text-xs font-bold text-white">📍 Buka Peta</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <View className="p-6">
+            {!formData.workLatitude && !formData.workLongitude && workLocations.length === 0 ? (
+              <View className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 mb-4 flex-row items-center gap-3">
+                <MapPin size={18} color="#2563eb" />
+                <View className="flex-1">
+                  <Text className="text-xs font-bold text-blue-900 dark:text-blue-200">
+                    Mengikuti Lokasi Standar Kantor
+                  </Text>
+                  <Text className="text-[11px] text-blue-700 dark:text-blue-300">
+                    Lokasi khusus kosong. Presensi karyawan ini otomatis mengikuti koordinat dan radius kantor perusahaan.
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <View className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-4 flex-row items-center gap-3">
+                <MapPin size={18} color="#d97706" />
+                <View className="flex-1">
+                  <Text className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                    Lokasi Khusus Karyawan Aktif
+                  </Text>
+                  <Text className="text-[11px] text-amber-700 dark:text-amber-300">
+                    Karyawan ini memiliki lokasi kerja khusus yang diprioritaskan di atas lokasi kantor perusahaan.
+                  </Text>
+                </View>
+              </View>
+            )}
+
             <Text className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider mb-3">
-              Titik Kantor Utama
+              Titik Kantor Utama / Khusus
             </Text>
             <View className="flex-row gap-4 mb-4 flex-wrap">
               <View className="flex-1 min-w-[140px]">
