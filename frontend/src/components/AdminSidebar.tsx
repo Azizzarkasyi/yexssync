@@ -13,6 +13,7 @@ import {
   FileText,
   FileSignature,
   Settings,
+  CreditCard,
   LogOut,
   X,
 } from 'lucide-react-native';
@@ -34,6 +35,7 @@ export const ADMIN_NAV_ITEMS = [
   { label: 'Izin/Cuti', icon: Mail, path: '/admin/approvals' },
   { label: 'Manajemen Tugas', icon: ListChecks, path: '/admin/tasks' },
   { label: 'Penggajian', icon: Banknote, path: '/admin/payroll' },
+  { label: 'Langganan & Tagihan', icon: CreditCard, path: '/admin/billing' },
   { label: 'Pengaturan & Profil', icon: Settings, path: '/admin/profile' },
   { label: 'Laporan & Koreksi', icon: FileSignature, path: '/admin/reports' },
 ];

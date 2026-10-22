@@ -36,11 +36,15 @@ import {
   AlertCircle,
   Shield,
   Briefcase,
+  CreditCard,
+  ShieldAlert,
+  UploadCloud,
 } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
 import AdminTopHeader from '@/components/AdminTopHeader';
 import UserAvatar from '@/components/UserAvatar';
+import TenantPaymentModal from '@/components/TenantPaymentModal';
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
 
@@ -57,6 +61,14 @@ export default function AdminDashboardScreen() {
   // Notification Modal State
   const [showNotifications, setShowNotifications] = useState(false);
 
+  // Billing and Payment Modal State
+  const [billingInfo, setBillingInfo] = useState<{
+    hasUnpaidBilling: boolean;
+    billing: any;
+    subscriptionStatus: any;
+  } | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
   // Stats State initialized cleanly (populated from real API)
   const [stats, setStats] = useState({
     totalEmployees: 0,
@@ -72,7 +84,25 @@ export default function AdminDashboardScreen() {
 
   useEffect(() => {
     fetchStats();
+    fetchBillingStatus();
   }, []);
+
+  const fetchBillingStatus = async () => {
+    try {
+      const res = await api.get('/config/billing');
+      if (res.data?.success && res.data.data) {
+        const data = res.data.data;
+        setBillingInfo(data);
+        const sub = data.subscriptionStatus;
+        // Otomatis munculkan popup notifikasi jika ada tagihan tertunggak (terutama jika masuk masa tenggat atau terblokir)
+        if (data.hasUnpaidBilling && (sub?.isInGracePeriod || sub?.isBlocked)) {
+          setShowPaymentModal(true);
+        }
+      }
+    } catch {
+      // Quiet fallback
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -92,6 +122,7 @@ export default function AdminDashboardScreen() {
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchStats();
+    fetchBillingStatus();
   };
 
   const formatTime = (timeStr?: string | null) => {
@@ -203,6 +234,136 @@ export default function AdminDashboardScreen() {
               </TouchableOpacity>
             }
           />
+
+          {/* ======================================================== */}
+          {/* BANNER NOTIFIKASI TAGIHAN & PEMBAYARAN KANTOR            */}
+          {/* ======================================================== */}
+          {billingInfo?.hasUnpaidBilling && (
+            <View
+              style={{
+                backgroundColor: billingInfo.subscriptionStatus?.isBlocked
+                  ? '#fef2f2'
+                  : billingInfo.subscriptionStatus?.isInGracePeriod
+                  ? '#fffbeb'
+                  : '#f0f9ff',
+                borderWidth: 1,
+                borderColor: billingInfo.subscriptionStatus?.isBlocked
+                  ? '#fecaca'
+                  : billingInfo.subscriptionStatus?.isInGracePeriod
+                  ? '#fef3c7'
+                  : '#e0f2fe',
+                borderRadius: 14,
+                padding: 16,
+                marginBottom: 20,
+                flexDirection: isDesktop ? 'row' : 'column',
+                justifyContent: 'space-between',
+                alignItems: isDesktop ? 'center' : 'flex-start',
+                gap: 12,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    backgroundColor: billingInfo.subscriptionStatus?.isBlocked
+                      ? '#fee2e2'
+                      : billingInfo.subscriptionStatus?.isInGracePeriod
+                      ? '#fef3c7'
+                      : '#e0f2fe',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  {billingInfo.subscriptionStatus?.isBlocked ? (
+                    <ShieldAlert size={24} color="#dc2626" />
+                  ) : billingInfo.subscriptionStatus?.isInGracePeriod ? (
+                    <Clock size={24} color="#d97706" />
+                  ) : (
+                    <CreditCard size={24} color="#0284c7" />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '700',
+                      color: billingInfo.subscriptionStatus?.isBlocked
+                        ? '#991b1b'
+                        : billingInfo.subscriptionStatus?.isInGracePeriod
+                        ? '#92400e'
+                        : '#0369a1',
+                    }}
+                  >
+                    {billingInfo.subscriptionStatus?.isBlocked
+                      ? 'Layanan Presensi Karyawan Ditangguhkan!'
+                      : billingInfo.subscriptionStatus?.isInGracePeriod
+                      ? `Peringatan Masa Tenggat: Sisa ${billingInfo.subscriptionStatus?.daysLeftInGrace ?? 0} Hari Lagi!`
+                      : `Tagihan Langganan Bulan ${billingInfo.billing?.month}/${billingInfo.billing?.year} Tersedia`}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: billingInfo.subscriptionStatus?.isBlocked
+                        ? '#b91c1c'
+                        : billingInfo.subscriptionStatus?.isInGracePeriod
+                        ? '#b45309'
+                        : '#0284c7',
+                      marginTop: 2,
+                      lineHeight: 17,
+                    }}
+                  >
+                    {billingInfo.subscriptionStatus?.isBlocked
+                      ? 'Tagihan telah melewati batas masa tenggat pembayaran. Seluruh karyawan kantor saat ini tidak dapat melakukan presensi. Segera lakukan pembayaran dan upload bukti transfer.'
+                      : billingInfo.subscriptionStatus?.isInGracePeriod
+                      ? `Tagihan telah jatuh tempo. Lakukan pembayaran sebesar Rp ${(billingInfo.billing?.amount || 0).toLocaleString('id-ID')} sebelum masa tenggat habis agar absensi tidak terblokir.`
+                      : `Total tagihan Rp ${(billingInfo.billing?.amount || 0).toLocaleString('id-ID')} untuk ${billingInfo.billing?.userCount || 0} karyawan aktif. Silakan lakukan transfer dan upload bukti bayar.`}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TouchableOpacity
+                  onPress={() => setShowPaymentModal(true)}
+                  style={{
+                    backgroundColor: billingInfo.subscriptionStatus?.isBlocked
+                      ? '#dc2626'
+                      : billingInfo.subscriptionStatus?.isInGracePeriod
+                      ? '#d97706'
+                      : theme.primaryBlue,
+                    paddingVertical: 10,
+                    paddingHorizontal: 16,
+                    borderRadius: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <UploadCloud size={15} color="#ffffff" />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>
+                    {billingInfo.billing?.paymentProof ? 'Lihat / Ganti Bukti Transfer' : 'Bayar Sekarang & Upload Bukti'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => router.push('/admin/billing' as any)}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    borderWidth: 1,
+                    borderColor: theme.borderColor,
+                    paddingVertical: 10,
+                    paddingHorizontal: 14,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
+                    Rincian Tagihan
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           {/* ======================================================== */}
           {/* SUMMARY CARDS (4 METRICS)                                */}
@@ -676,6 +837,13 @@ export default function AdminDashboardScreen() {
           </View>
         </ScrollView>
       </View>
+
+      {/* Modal Popup Pembayaran & Upload Bukti Tagihan */}
+      <TenantPaymentModal
+        visible={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onPaymentUploaded={fetchBillingStatus}
+      />
     </View>
   );
 }
