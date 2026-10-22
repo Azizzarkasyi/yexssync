@@ -242,16 +242,16 @@ export default function AdminDashboardScreen() {
             <View
               style={{
                 backgroundColor: billingInfo.subscriptionStatus?.isBlocked
-                  ? '#fef2f2'
+                  ? (theme.isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2')
                   : billingInfo.subscriptionStatus?.isInGracePeriod
-                  ? '#fffbeb'
-                  : '#f0f9ff',
+                  ? (theme.isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb')
+                  : (theme.isDark ? 'rgba(59, 130, 246, 0.15)' : '#f0f9ff'),
                 borderWidth: 1,
                 borderColor: billingInfo.subscriptionStatus?.isBlocked
-                  ? '#fecaca'
+                  ? (theme.isDark ? 'rgba(239, 68, 68, 0.4)' : '#fecaca')
                   : billingInfo.subscriptionStatus?.isInGracePeriod
-                  ? '#fef3c7'
-                  : '#e0f2fe',
+                  ? (theme.isDark ? 'rgba(245, 158, 11, 0.4)' : '#fef3c7')
+                  : (theme.isDark ? 'rgba(59, 130, 246, 0.4)' : '#e0f2fe'),
                 borderRadius: 14,
                 padding: 16,
                 marginBottom: 20,
@@ -268,20 +268,20 @@ export default function AdminDashboardScreen() {
                     height: 44,
                     borderRadius: 10,
                     backgroundColor: billingInfo.subscriptionStatus?.isBlocked
-                      ? '#fee2e2'
+                      ? (theme.isDark ? 'rgba(239, 68, 68, 0.25)' : '#fee2e2')
                       : billingInfo.subscriptionStatus?.isInGracePeriod
-                      ? '#fef3c7'
-                      : '#e0f2fe',
+                      ? (theme.isDark ? 'rgba(245, 158, 11, 0.25)' : '#fef3c7')
+                      : (theme.isDark ? 'rgba(59, 130, 246, 0.25)' : '#e0f2fe'),
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}
                 >
                   {billingInfo.subscriptionStatus?.isBlocked ? (
-                    <ShieldAlert size={24} color="#dc2626" />
+                    <ShieldAlert size={24} color={theme.isDark ? '#f87171' : '#dc2626'} />
                   ) : billingInfo.subscriptionStatus?.isInGracePeriod ? (
-                    <Clock size={24} color="#d97706" />
+                    <Clock size={24} color={theme.isDark ? '#fbbf24' : '#d97706'} />
                   ) : (
-                    <CreditCard size={24} color="#0284c7" />
+                    <CreditCard size={24} color={theme.primaryBlue} />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
@@ -290,10 +290,10 @@ export default function AdminDashboardScreen() {
                       fontSize: 14,
                       fontWeight: '700',
                       color: billingInfo.subscriptionStatus?.isBlocked
-                        ? '#991b1b'
+                        ? (theme.isDark ? '#fca5a5' : '#991b1b')
                         : billingInfo.subscriptionStatus?.isInGracePeriod
-                        ? '#92400e'
-                        : '#0369a1',
+                        ? (theme.isDark ? '#fcd34d' : '#92400e')
+                        : (theme.isDark ? '#93c5fd' : '#0369a1'),
                     }}
                   >
                     {billingInfo.subscriptionStatus?.isBlocked
@@ -306,10 +306,10 @@ export default function AdminDashboardScreen() {
                     style={{
                       fontSize: 12,
                       color: billingInfo.subscriptionStatus?.isBlocked
-                        ? '#b91c1c'
+                        ? (theme.isDark ? '#f87171' : '#b91c1c')
                         : billingInfo.subscriptionStatus?.isInGracePeriod
-                        ? '#b45309'
-                        : '#0284c7',
+                        ? (theme.isDark ? '#fbbf24' : '#b45309')
+                        : (theme.isDark ? '#60a5fa' : '#0284c7'),
                       marginTop: 2,
                       lineHeight: 17,
                     }}
@@ -349,7 +349,7 @@ export default function AdminDashboardScreen() {
                 <TouchableOpacity
                   onPress={() => router.push('/admin/billing' as any)}
                   style={{
-                    backgroundColor: '#ffffff',
+                    backgroundColor: theme.cardBg,
                     borderWidth: 1,
                     borderColor: theme.borderColor,
                     paddingVertical: 10,

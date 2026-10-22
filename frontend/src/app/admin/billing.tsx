@@ -281,37 +281,70 @@ export default function AdminBillingScreen() {
               <View style={{ flex: 1.2, gap: 16 }}>
                 {/* Banner Status */}
                 {isBlocked ? (
-                  <View style={{ backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <ShieldAlert size={26} color="#dc2626" />
+                  <View
+                    style={{
+                      backgroundColor: theme.isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
+                      borderWidth: 1,
+                      borderColor: theme.isDark ? 'rgba(239, 68, 68, 0.4)' : '#fecaca',
+                      borderRadius: 14,
+                      padding: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
+                    <ShieldAlert size={26} color={theme.isDark ? '#f87171' : '#dc2626'} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#991b1b' }}>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: theme.isDark ? '#fca5a5' : '#991b1b' }}>
                         Layanan Presensi Ditangguhkan
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#b91c1c', marginTop: 2, lineHeight: 18 }}>
+                      <Text style={{ fontSize: 12, color: theme.isDark ? '#f87171' : '#b91c1c', marginTop: 2, lineHeight: 18 }}>
                         Tagihan telah melewati batas masa tenggat pembayaran. Akses absensi seluruh karyawan saat ini dinonaktifkan sementara sampai pembayaran diverifikasi.
                       </Text>
                     </View>
                   </View>
                 ) : isInGrace ? (
-                  <View style={{ backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fef3c7', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <Clock size={26} color="#d97706" />
+                  <View
+                    style={{
+                      backgroundColor: theme.isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
+                      borderWidth: 1,
+                      borderColor: theme.isDark ? 'rgba(245, 158, 11, 0.4)' : '#fef3c7',
+                      borderRadius: 14,
+                      padding: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
+                    <Clock size={26} color={theme.isDark ? '#fbbf24' : '#d97706'} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#92400e' }}>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: theme.isDark ? '#fcd34d' : '#92400e' }}>
                         Peringatan Masa Tenggat: Sisa {daysLeft} Hari Lagi
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#b45309', marginTop: 2, lineHeight: 18 }}>
+                      <Text style={{ fontSize: 12, color: theme.isDark ? '#fbbf24' : '#b45309', marginTop: 2, lineHeight: 18 }}>
                         Harap segera lakukan transfer pembayaran sebelum batas toleransi berakhir agar presensi karyawan tidak terblokir otomatis.
                       </Text>
                     </View>
                   </View>
                 ) : (
-                  <View style={{ backgroundColor: '#f0f9ff', borderWidth: 1, borderColor: '#e0f2fe', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <CreditCard size={24} color="#0284c7" />
+                  <View
+                    style={{
+                      backgroundColor: theme.isDark ? 'rgba(59, 130, 246, 0.15)' : '#f0f9ff',
+                      borderWidth: 1,
+                      borderColor: theme.isDark ? 'rgba(59, 130, 246, 0.4)' : '#e0f2fe',
+                      borderRadius: 14,
+                      padding: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
+                    <CreditCard size={24} color={theme.primaryBlue} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#0369a1' }}>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: theme.isDark ? '#93c5fd' : '#0369a1' }}>
                         Tagihan Bulan {billing.month}/{billing.year} Menunggu Pembayaran
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#0284c7', marginTop: 2 }}>
+                      <Text style={{ fontSize: 12, color: theme.isDark ? '#60a5fa' : '#0284c7', marginTop: 2 }}>
                         Jatuh tempo pada {formatDateIndo(billing.dueDate || subStatus?.dueDate)}.
                       </Text>
                     </View>
@@ -341,7 +374,7 @@ export default function AdminBillingScreen() {
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
                     <Text style={{ fontSize: 13, color: theme.textMuted }}>Batas Akhir Toleransi (Masa Tenggat):</Text>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: isBlocked ? '#dc2626' : theme.textDark }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: isBlocked ? (theme.isDark ? '#f87171' : '#dc2626') : theme.textDark }}>
                       {formatDateIndo(subStatus?.deadlineDate)}
                     </Text>
                   </View>
@@ -370,19 +403,40 @@ export default function AdminBillingScreen() {
                   </View>
 
                   {bank?.bankAccount && (
-                    <View style={{ backgroundColor: '#e0f2fe', padding: 14, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View
+                      style={{
+                        backgroundColor: theme.isDark ? 'rgba(59, 130, 246, 0.15)' : '#e0f2fe',
+                        borderWidth: 1,
+                        borderColor: theme.isDark ? 'rgba(59, 130, 246, 0.3)' : '#bae6fd',
+                        padding: 14,
+                        borderRadius: 10,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
                       <View>
-                        <Text style={{ fontSize: 11, color: '#0369a1', fontWeight: '500' }}>Nomor Rekening Tujuan:</Text>
-                        <Text style={{ fontSize: 18, fontWeight: '800', color: '#0284c7', fontFamily: 'monospace', letterSpacing: 1 }}>
+                        <Text style={{ fontSize: 11, color: theme.isDark ? '#93c5fd' : '#0369a1', fontWeight: '500' }}>Nomor Rekening Tujuan:</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '800', color: theme.isDark ? '#38bdf8' : '#0284c7', fontFamily: 'monospace', letterSpacing: 1 }}>
                           {bank.bankAccount}
                         </Text>
                       </View>
                       <TouchableOpacity
                         onPress={() => handleCopyAccount(bank.bankAccount!)}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#ffffff', borderRadius: 8, borderWidth: 1, borderColor: '#bae6fd' }}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          backgroundColor: theme.isDark ? theme.cardBg : '#ffffff',
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: theme.isDark ? theme.borderColor : '#bae6fd',
+                        }}
                       >
-                        {copied ? <Check size={15} color="#16a34a" /> : <Copy size={15} color="#0284c7" />}
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: copied ? '#16a34a' : '#0284c7' }}>
+                        {copied ? <Check size={15} color="#16a34a" /> : <Copy size={15} color={theme.primaryBlue} />}
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: copied ? '#16a34a' : theme.primaryBlue }}>
                           {copied ? 'Tersalin' : 'Salin Rekening'}
                         </Text>
                       </TouchableOpacity>
@@ -415,24 +469,34 @@ export default function AdminBillingScreen() {
                       </Text>
                       <Image
                         source={{ uri: billing.paymentProof.startsWith('http') ? billing.paymentProof : `${api.defaults.baseURL?.replace('/api', '')}${billing.paymentProof}` }}
-                        style={{ width: '100%', height: 180, borderRadius: 8, resizeMode: 'contain', backgroundColor: '#e2e8f0' }}
+                        style={{ width: '100%', height: 180, borderRadius: 8, resizeMode: 'contain', backgroundColor: theme.isDark ? '#0f172a' : '#e2e8f0' }}
                       />
                     </View>
                   )}
 
                   {/* Picker */}
                   {selectedImage ? (
-                    <View style={{ borderRadius: 10, borderWidth: 1, borderColor: theme.primaryBlue, padding: 10, backgroundColor: '#f0f9ff', marginBottom: 12 }}>
+                    <View style={{ borderRadius: 10, borderWidth: 1, borderColor: theme.primaryBlue, padding: 10, backgroundColor: theme.subtleBg, marginBottom: 12 }}>
                       <Image
                         source={{ uri: selectedImage.uri }}
                         style={{ width: '100%', height: 180, borderRadius: 8, resizeMode: 'contain', marginBottom: 10 }}
                       />
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 12, color: '#0369a1', flex: 1 }} numberOfLines={1}>
+                        <Text style={{ fontSize: 12, color: theme.isDark ? '#93c5fd' : '#0369a1', flex: 1 }} numberOfLines={1}>
                           {selectedImage.name || 'Foto terpilih'}
                         </Text>
-                        <TouchableOpacity onPress={pickImage} style={{ paddingVertical: 5, paddingHorizontal: 10, backgroundColor: '#ffffff', borderRadius: 6, borderWidth: 1, borderColor: '#bae6fd' }}>
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#0284c7' }}>Ganti Foto</Text>
+                        <TouchableOpacity
+                          onPress={pickImage}
+                          style={{
+                            paddingVertical: 5,
+                            paddingHorizontal: 10,
+                            backgroundColor: theme.isDark ? theme.cardBg : '#ffffff',
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: theme.borderColor,
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: theme.primaryBlue }}>Ganti Foto</Text>
                         </TouchableOpacity>
                       </View>
                     </View>

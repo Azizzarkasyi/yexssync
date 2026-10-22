@@ -635,6 +635,9 @@ export async function getAllBillings(req: Request, res: Response) {
         billingDueDay: defaultDueDay,
         blockAttendanceOnOverdue: shouldBlock,
         costPerUser: superAdmin?.costPerUser ?? 10000,
+        bankName: superAdmin?.bankName || '',
+        bankAccount: superAdmin?.bankAccount || '',
+        bankAccountName: superAdmin?.bankAccountName || '',
       },
     });
   } catch (error: any) {

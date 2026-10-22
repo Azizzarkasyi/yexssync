@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   Modal,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import {
   Layers,
@@ -40,6 +41,7 @@ import { AuthContext } from '@/context/AuthContext';
 import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
 import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
+import api from '@/lib/api';
 
 type SettingsTab = 'general' | 'payment' | 'smtp' | 'security' | 'backup';
 
@@ -75,13 +77,60 @@ export default function SuperAdminSettingsScreen() {
   const [storageProvider, setStorageProvider] = useState<'local' | 'aws' | 'gcp'>('local');
   const [maxUploadSize, setMaxUploadSize] = useState<'2' | '5' | '10'>('5');
 
-  // Tab 2: Payment Gateway
+  // Tab 2: Payment Gateway & Rekening Bank
   const [paymentProvider, setPaymentProvider] = useState<'midtrans' | 'xendit'>('midtrans');
   const [paymentEnvironment, setPaymentEnvironment] = useState<'sandbox' | 'production'>('production');
   const [merchantId, setMerchantId] = useState('G-984210398');
   const [clientKey, setClientKey] = useState('Mid-client-881293049182');
   const [serverKey, setServerKey] = useState('Mid-server-xxxxxxxxxxxxxxxx');
   const [showServerKey, setShowServerKey] = useState(false);
+
+  // Rekening Bank Transfer Resmi SuperAdmin
+  const [bankName, setBankName] = useState('');
+  const [bankAccount, setBankAccount] = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
+  const [isLoadingBank, setIsLoadingBank] = useState(false);
+  const [isSavingBank, setIsSavingBank] = useState(false);
+
+  useEffect(() => {
+    const fetchBillingSettings = async () => {
+      setIsLoadingBank(true);
+      try {
+        const res = await api.get('/super-admin/billing-settings');
+        if (res.data?.success && res.data.data) {
+          setBankName(res.data.data.bankName || '');
+          setBankAccount(res.data.data.bankAccount || '');
+          setBankAccountName(res.data.data.bankAccountName || '');
+        }
+      } catch (err) {
+        console.warn('Failed to load bank settings in settings screen:', err);
+      } finally {
+        setIsLoadingBank(false);
+      }
+    };
+    fetchBillingSettings();
+  }, []);
+
+  const handleSaveBankDetails = async () => {
+    setIsSavingBank(true);
+    try {
+      const res = await api.put('/super-admin/billing-settings', {
+        bankName,
+        bankAccount,
+        bankAccountName,
+      });
+      if (res.data?.success) {
+        setSaveSuccessMessage('Rekening Bank Resmi SuperAdmin berhasil disimpan dan disinkronkan ke seluruh sistem!');
+        setTimeout(() => setSaveSuccessMessage(null), 3500);
+      }
+    } catch (err: any) {
+      if (Platform.OS === 'web') {
+        window.alert('Gagal menyimpan rekening bank: ' + (err.response?.data?.message || err.message));
+      }
+    } finally {
+      setIsSavingBank(false);
+    }
+  };
 
   // Tab 3: SMTP & Email
   const [smtpHost, setSmtpHost] = useState('smtp.sendgrid.net');
@@ -698,148 +747,100 @@ export default function SuperAdminSettingsScreen() {
               </>
             )}
 
-            {/* TAB 2: PAYMENT GATEWAY */}
+            {/* TAB 2: PAYMENT GATEWAY & REKENING BANK */}
             {activeTab === 'payment' && (
-              <View
-                style={{
-                  backgroundColor: theme.cardBg,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  padding: 25,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 6,
-                  elevation: 2,
-                }}
-              >
-                <View style={{ marginBottom: 20, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: theme.border }}>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text, marginBottom: 5 }}>
-                    Integrasi Payment Gateway
-                  </Text>
-                  <Text style={{ fontSize: 13, color: theme.textMuted }}>
-                    Konfigurasi kunci API dan callback webhook untuk pemrosesan langganan tenant secara otomatis.
-                  </Text>
-                </View>
+              <>
+                {/* Panel 1: Rekening Bank Resmi SuperAdmin */}
+                <View
+                  style={{
+                    backgroundColor: theme.cardBg,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    padding: 25,
+                    marginBottom: 25,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 6,
+                    elevation: 2,
+                  }}
+                >
+                  <View style={{ marginBottom: 20, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flex: 1, paddingRight: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <Building2 size={20} color={theme.accent} />
+                        <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text }}>
+                          Rekening Bank Resmi SuperAdmin (Tujuan Transfer)
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 13, color: theme.textMuted }}>
+                        Data rekening bank ini akan otomatis dimuat dan ditampilkan kepada seluruh Admin Tenant saat mereka melihat tagihan langganan bulanan aplikasi.
+                      </Text>
+                    </View>
+                    {isLoadingBank && <ActivityIndicator size="small" color={theme.accent} />}
+                  </View>
 
-                <View style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 20 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
-                      Penyedia Gateway
-                    </Text>
-                    <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
-                      {[
-                        { key: 'midtrans', label: 'Midtrans Snap' },
-                        { key: 'xendit', label: 'Xendit Invoice' },
-                      ].map((gw) => (
-                        <TouchableOpacity
-                          key={gw.key}
-                          onPress={() => setPaymentProvider(gw.key as any)}
-                          style={{
-                            flex: 1,
-                            padding: 10,
-                            borderRadius: 8,
-                            backgroundColor: paymentProvider === gw.key ? theme.accent : theme.subtleBg,
-                            borderWidth: 1,
-                            borderColor: paymentProvider === gw.key ? theme.accent : theme.border,
-                            alignItems: 'center',
-                            cursor: 'pointer',
-                          } as any}
-                        >
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: paymentProvider === gw.key ? '#fff' : theme.text }}>
-                            {gw.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
+                  <View style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 20 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
+                        Nama Bank
+                      </Text>
+                      <TextInput
+                        value={bankName}
+                        onChangeText={setBankName}
+                        placeholder="Contoh: Bank Central Asia (BCA)"
+                        placeholderTextColor={theme.placeholder}
+                        style={{
+                          width: '100%',
+                          paddingVertical: 10,
+                          paddingHorizontal: 15,
+                          borderWidth: 1,
+                          borderColor: theme.border,
+                          borderRadius: 8,
+                          fontSize: 14,
+                          color: theme.text,
+                          backgroundColor: theme.subtleBg,
+                        } as any}
+                      />
+                    </View>
+
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
+                        Nomor Rekening Bank
+                      </Text>
+                      <TextInput
+                        value={bankAccount}
+                        onChangeText={setBankAccount}
+                        keyboardType="numeric"
+                        placeholder="Contoh: 8830192831"
+                        placeholderTextColor={theme.placeholder}
+                        style={{
+                          width: '100%',
+                          paddingVertical: 10,
+                          paddingHorizontal: 15,
+                          borderWidth: 1,
+                          borderColor: theme.border,
+                          borderRadius: 8,
+                          fontSize: 14,
+                          color: theme.text,
+                          backgroundColor: theme.subtleBg,
+                        } as any}
+                      />
                     </View>
                   </View>
 
-                  <View style={{ flex: 1 }}>
+                  <View style={{ marginBottom: 20 }}>
                     <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
-                      Environment
+                      Atas Nama Pemilik Rekening
                     </Text>
-                    <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
-                      {[
-                        { key: 'sandbox', label: 'Sandbox (Testing)' },
-                        { key: 'production', label: 'Production (Live)' },
-                      ].map((env) => (
-                        <TouchableOpacity
-                          key={env.key}
-                          onPress={() => setPaymentEnvironment(env.key as any)}
-                          style={{
-                            flex: 1,
-                            padding: 10,
-                            borderRadius: 8,
-                            backgroundColor: paymentEnvironment === env.key ? theme.accent : theme.subtleBg,
-                            borderWidth: 1,
-                            borderColor: paymentEnvironment === env.key ? theme.accent : theme.border,
-                            alignItems: 'center',
-                            cursor: 'pointer',
-                          } as any}
-                        >
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: paymentEnvironment === env.key ? '#fff' : theme.text }}>
-                            {env.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                </View>
-
-                <View style={{ marginBottom: 20 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
-                    Merchant ID
-                  </Text>
-                  <TextInput
-                    value={merchantId}
-                    onChangeText={setMerchantId}
-                    style={{
-                      width: '100%',
-                      paddingVertical: 10,
-                      paddingHorizontal: 15,
-                      borderWidth: 1,
-                      borderColor: theme.border,
-                      borderRadius: 8,
-                      fontSize: 14,
-                      color: theme.text,
-                      backgroundColor: theme.subtleBg,
-                    } as any}
-                  />
-                </View>
-
-                <View style={{ marginBottom: 20 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
-                    Client Key (Public)
-                  </Text>
-                  <TextInput
-                    value={clientKey}
-                    onChangeText={setClientKey}
-                    style={{
-                      width: '100%',
-                      paddingVertical: 10,
-                      paddingHorizontal: 15,
-                      borderWidth: 1,
-                      borderColor: theme.border,
-                      borderRadius: 8,
-                      fontSize: 14,
-                      color: theme.text,
-                      backgroundColor: theme.subtleBg,
-                    } as any}
-                  />
-                </View>
-
-                <View style={{ marginBottom: 25 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
-                    Server Key (Private / Secret)
-                  </Text>
-                  <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
                     <TextInput
-                      secureTextEntry={!showServerKey}
-                      value={serverKey}
-                      onChangeText={setServerKey}
+                      value={bankAccountName}
+                      onChangeText={setBankAccountName}
+                      placeholder="Contoh: PT YexsSync Indonesia"
+                      placeholderTextColor={theme.placeholder}
                       style={{
-                        flex: 1,
+                        width: '100%',
                         paddingVertical: 10,
                         paddingHorizontal: 15,
                         borderWidth: 1,
@@ -850,58 +851,251 @@ export default function SuperAdminSettingsScreen() {
                         backgroundColor: theme.subtleBg,
                       } as any}
                     />
+                  </View>
+
+                  <View
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      justifyContent: 'flex-end',
+                      gap: 15,
+                      paddingTop: 15,
+                      borderTopWidth: 1,
+                      borderTopColor: theme.border,
+                    }}
+                  >
                     <TouchableOpacity
-                      onPress={() => setShowServerKey(!showServerKey)}
+                      onPress={handleSaveBankDetails}
+                      disabled={isSavingBank}
                       style={{
                         paddingVertical: 10,
-                        paddingHorizontal: 15,
+                        paddingHorizontal: 20,
                         borderRadius: 8,
-                        backgroundColor: theme.subtleBg,
-                        borderWidth: 1,
-                        borderColor: theme.border,
-                        justifyContent: 'center',
+                        backgroundColor: theme.accent,
+                        display: 'flex',
+                        flexDirection: 'row',
                         alignItems: 'center',
+                        gap: 8,
+                        opacity: isSavingBank ? 0.7 : 1,
                         cursor: 'pointer',
                       } as any}
                     >
-                      {showServerKey ? <EyeOff size={18} color={theme.textMuted} /> : <Eye size={18} color={theme.textMuted} />}
+                      {isSavingBank ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      ) : (
+                        <Save size={16} color="#ffffff" />
+                      )}
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }}>
+                        Simpan Rekening Bank
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
 
-                {/* Save button */}
+                {/* Panel 2: Integrasi Payment Gateway */}
                 <View
                   style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'flex-end',
-                    gap: 15,
-                    paddingTop: 20,
-                    borderTopWidth: 1,
-                    borderTopColor: theme.border,
+                    backgroundColor: theme.cardBg,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    padding: 25,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 6,
+                    elevation: 2,
                   }}
                 >
-                  <TouchableOpacity
-                    onPress={() => handleSave('Payment Gateway')}
+                  <View style={{ marginBottom: 20, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text, marginBottom: 5 }}>
+                      Integrasi Payment Gateway Otomatis
+                    </Text>
+                    <Text style={{ fontSize: 13, color: theme.textMuted }}>
+                      Konfigurasi kunci API dan callback webhook untuk pemrosesan langganan tenant secara otomatis.
+                    </Text>
+                  </View>
+
+                  <View style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 20 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
+                        Penyedia Gateway
+                      </Text>
+                      <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+                        {[
+                          { key: 'midtrans', label: 'Midtrans Snap' },
+                          { key: 'xendit', label: 'Xendit Invoice' },
+                        ].map((gw) => (
+                          <TouchableOpacity
+                            key={gw.key}
+                            onPress={() => setPaymentProvider(gw.key as any)}
+                            style={{
+                              flex: 1,
+                              padding: 10,
+                              borderRadius: 8,
+                              backgroundColor: paymentProvider === gw.key ? theme.accent : theme.subtleBg,
+                              borderWidth: 1,
+                              borderColor: paymentProvider === gw.key ? theme.accent : theme.border,
+                              alignItems: 'center',
+                              cursor: 'pointer',
+                            } as any}
+                          >
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: paymentProvider === gw.key ? '#fff' : theme.text }}>
+                              {gw.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
+                        Environment
+                      </Text>
+                      <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+                        {[
+                          { key: 'sandbox', label: 'Sandbox (Testing)' },
+                          { key: 'production', label: 'Production (Live)' },
+                        ].map((env) => (
+                          <TouchableOpacity
+                            key={env.key}
+                            onPress={() => setPaymentEnvironment(env.key as any)}
+                            style={{
+                              flex: 1,
+                              padding: 10,
+                              borderRadius: 8,
+                              backgroundColor: paymentEnvironment === env.key ? theme.accent : theme.subtleBg,
+                              borderWidth: 1,
+                              borderColor: paymentEnvironment === env.key ? theme.accent : theme.border,
+                              alignItems: 'center',
+                              cursor: 'pointer',
+                            } as any}
+                          >
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: paymentEnvironment === env.key ? '#fff' : theme.text }}>
+                              {env.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={{ marginBottom: 20 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
+                      Merchant ID
+                    </Text>
+                    <TextInput
+                      value={merchantId}
+                      onChangeText={setMerchantId}
+                      style={{
+                        width: '100%',
+                        paddingVertical: 10,
+                        paddingHorizontal: 15,
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        borderRadius: 8,
+                        fontSize: 14,
+                        color: theme.text,
+                        backgroundColor: theme.subtleBg,
+                      } as any}
+                    />
+                  </View>
+
+                  <View style={{ marginBottom: 20 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
+                      Client Key (Public)
+                    </Text>
+                    <TextInput
+                      value={clientKey}
+                      onChangeText={setClientKey}
+                      style={{
+                        width: '100%',
+                        paddingVertical: 10,
+                        paddingHorizontal: 15,
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        borderRadius: 8,
+                        fontSize: 14,
+                        color: theme.text,
+                        backgroundColor: theme.subtleBg,
+                      } as any}
+                    />
+                  </View>
+
+                  <View style={{ marginBottom: 25 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
+                      Server Key (Private / Secret)
+                    </Text>
+                    <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+                      <TextInput
+                        secureTextEntry={!showServerKey}
+                        value={serverKey}
+                        onChangeText={setServerKey}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 10,
+                          paddingHorizontal: 15,
+                          borderWidth: 1,
+                          borderColor: theme.border,
+                          borderRadius: 8,
+                          fontSize: 14,
+                          color: theme.text,
+                          backgroundColor: theme.subtleBg,
+                        } as any}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowServerKey(!showServerKey)}
+                        style={{
+                          paddingVertical: 10,
+                          paddingHorizontal: 15,
+                          borderRadius: 8,
+                          backgroundColor: theme.subtleBg,
+                          borderWidth: 1,
+                          borderColor: theme.border,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                        } as any}
+                      >
+                        {showServerKey ? <EyeOff size={18} color={theme.textMuted} /> : <Eye size={18} color={theme.textMuted} />}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Save button */}
+                  <View
                     style={{
-                      paddingVertical: 10,
-                      paddingHorizontal: 20,
-                      borderRadius: 8,
-                      backgroundColor: theme.accent,
                       display: 'flex',
                       flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      cursor: 'pointer',
-                    } as any}
+                      justifyContent: 'flex-end',
+                      gap: 15,
+                      paddingTop: 20,
+                      borderTopWidth: 1,
+                      borderTopColor: theme.border,
+                    }}
                   >
-                    <Save size={16} color="#ffffff" />
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }}>
-                      Simpan Pengaturan Pembayaran
-                    </Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleSave('Payment Gateway')}
+                      style={{
+                        paddingVertical: 10,
+                        paddingHorizontal: 20,
+                        borderRadius: 8,
+                        backgroundColor: theme.accent,
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                        cursor: 'pointer',
+                      } as any}
+                    >
+                      <Save size={16} color="#ffffff" />
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }}>
+                        Simpan Pengaturan Gateway
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
+              </>
             )}
 
             {/* TAB 3: SMTP & EMAIL */}

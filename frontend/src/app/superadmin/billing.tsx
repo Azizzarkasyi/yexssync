@@ -103,6 +103,9 @@ interface BillingSettings {
   billingDueDay: number;
   blockAttendanceOnOverdue: boolean;
   costPerUser: number;
+  bankName?: string;
+  bankAccount?: string;
+  bankAccountName?: string;
 }
 
 const DEFAULT_PLANS: PlanData[] = [
@@ -163,12 +166,18 @@ export default function SuperAdminBillingScreen() {
     billingDueDay: 1,
     blockAttendanceOnOverdue: true,
     costPerUser: 10000,
+    bankName: '',
+    bankAccount: '',
+    bankAccountName: '',
   });
   const [tempSettings, setTempSettings] = useState<BillingSettings>({
     defaultGracePeriodDays: 3,
     billingDueDay: 1,
     blockAttendanceOnOverdue: true,
     costPerUser: 10000,
+    bankName: '',
+    bankAccount: '',
+    bankAccountName: '',
   });
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -701,10 +710,13 @@ export default function SuperAdminBillingScreen() {
             </View>
             <View>
               <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>
-                Aturan Masa Tenggat & Penagihan Langganan
+                Aturan Masa Tenggat & Rekening Bank Resmi
               </Text>
               <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
                 Jatuh Tempo: Setiap tanggal <Text style={{ fontWeight: '700', color: theme.text }}>{billingSettings.billingDueDay}</Text> • Masa Tenggat Default: <Text style={{ fontWeight: '700', color: theme.text }}>{billingSettings.defaultGracePeriodDays} Hari</Text> • Blokir Absensi: <Text style={{ fontWeight: '700', color: billingSettings.blockAttendanceOnOverdue ? theme.dangerText : theme.textMuted }}>{billingSettings.blockAttendanceOnOverdue ? 'AKTIF (Otomatis)' : 'NONAKTIF'}</Text>
+              </Text>
+              <Text style={{ fontSize: 12, color: theme.accent, marginTop: 3, fontWeight: '600' }}>
+                🏦 Rekening Tujuan: {billingSettings.bankName ? `${billingSettings.bankName} - ${billingSettings.bankAccount} (a.n ${billingSettings.bankAccountName})` : 'Belum diatur (Klik Kustom Aturan & Rekening Bank)'}
               </Text>
             </View>
           </View>
@@ -727,7 +739,7 @@ export default function SuperAdminBillingScreen() {
             >
               <Settings size={15} color={theme.accent} />
               <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
-                Kustom Masa Tenggat
+                Kustom Aturan & Rekening Bank
               </Text>
             </TouchableOpacity>
 
@@ -1152,12 +1164,12 @@ export default function SuperAdminBillingScreen() {
       {/* Modal: Pengaturan Masa Tenggat & Penagihan (Global) */}
       <Modal visible={showSettingsModal} transparent animationType="fade" onRequestClose={() => setShowSettingsModal(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View style={{ backgroundColor: theme.cardBg, borderRadius: 16, width: '100%', maxWidth: 500, padding: 24, borderWidth: 1, borderColor: theme.border }}>
-            <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <View style={{ backgroundColor: theme.cardBg, borderRadius: 16, width: '100%', maxWidth: 520, maxHeight: '90%', padding: 24, borderWidth: 1, borderColor: theme.border }}>
+            <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Settings size={20} color={theme.accent} />
                 <Text style={{ fontSize: 17, fontWeight: '700', color: theme.text }}>
-                  Pengaturan Masa Tenggat & Penagihan
+                  Pengaturan Penagihan & Rekening Bank
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowSettingsModal(false)}>
@@ -1165,132 +1177,217 @@ export default function SuperAdminBillingScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={{ fontSize: 13, color: theme.textMuted, marginBottom: 18, lineHeight: 18 }}>
-              Kustomisasi tanggal jatuh tempo bulanan, jumlah hari toleransi masa tenggat pembayaran, dan sistem pemblokiran absensi seluruh karyawan saat lewat tenggat.
-            </Text>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }}>
+              <Text style={{ fontSize: 13, color: theme.textMuted, marginBottom: 16, lineHeight: 18 }}>
+                Kustomisasi tanggal jatuh tempo bulanan, masa tenggat toleransi, serta rekening bank resmi untuk transfer pembayaran langganan oleh tenant.
+              </Text>
 
-            <View style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* Tanggal Jatuh Tempo */}
-              <View>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
-                  Tanggal Jatuh Tempo Bulanan (Hari ke-n setiap bulan)
-                </Text>
-                <TextInput
-                  value={String(tempSettings.billingDueDay)}
-                  onChangeText={(val) => setTempSettings({ ...tempSettings, billingDueDay: parseInt(val, 10) || 1 })}
-                  keyboardType="numeric"
-                  placeholder="Contoh: 1 (tanggal 1 setiap bulan)"
-                  placeholderTextColor={theme.placeholder}
-                  style={{
-                    backgroundColor: theme.inputBg,
-                    borderWidth: 1,
-                    borderColor: theme.inputBorder,
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 9,
-                    fontSize: 14,
-                    color: theme.text,
-                  }}
-                />
-                <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
-                  Tagihan bulanan akan jatuh tempo pada tanggal ini.
-                </Text>
-              </View>
+              <View style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Tanggal Jatuh Tempo */}
+                <View>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
+                    Tanggal Jatuh Tempo Bulanan (Hari ke-n setiap bulan)
+                  </Text>
+                  <TextInput
+                    value={String(tempSettings.billingDueDay)}
+                    onChangeText={(val) => setTempSettings({ ...tempSettings, billingDueDay: parseInt(val, 10) || 1 })}
+                    keyboardType="numeric"
+                    placeholder="Contoh: 1 (tanggal 1 setiap bulan)"
+                    placeholderTextColor={theme.placeholder}
+                    style={{
+                      backgroundColor: theme.inputBg,
+                      borderWidth: 1,
+                      borderColor: theme.inputBorder,
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 9,
+                      fontSize: 14,
+                      color: theme.text,
+                    }}
+                  />
+                  <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
+                    Tagihan bulanan akan jatuh tempo pada tanggal ini.
+                  </Text>
+                </View>
 
-              {/* Masa Tenggat Default */}
-              <View>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
-                  Masa Tenggat Pembayaran Default (Hari)
-                </Text>
-                <TextInput
-                  value={String(tempSettings.defaultGracePeriodDays)}
-                  onChangeText={(val) => setTempSettings({ ...tempSettings, defaultGracePeriodDays: parseInt(val, 10) || 0 })}
-                  keyboardType="numeric"
-                  placeholder="Contoh: 3 hari"
-                  placeholderTextColor={theme.placeholder}
-                  style={{
-                    backgroundColor: theme.inputBg,
-                    borderWidth: 1,
-                    borderColor: theme.inputBorder,
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 9,
-                    fontSize: 14,
-                    color: theme.text,
-                  }}
-                />
-                <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
-                  Karyawan masih dapat absen selama masa tenggat ini dengan peringatan sisa hari.
-                </Text>
-              </View>
+                {/* Masa Tenggat Default */}
+                <View>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
+                    Masa Tenggat Pembayaran Default (Hari)
+                  </Text>
+                  <TextInput
+                    value={String(tempSettings.defaultGracePeriodDays)}
+                    onChangeText={(val) => setTempSettings({ ...tempSettings, defaultGracePeriodDays: parseInt(val, 10) || 0 })}
+                    keyboardType="numeric"
+                    placeholder="Contoh: 3 hari"
+                    placeholderTextColor={theme.placeholder}
+                    style={{
+                      backgroundColor: theme.inputBg,
+                      borderWidth: 1,
+                      borderColor: theme.inputBorder,
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 9,
+                      fontSize: 14,
+                      color: theme.text,
+                    }}
+                  />
+                  <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
+                    Karyawan masih dapat absen selama masa tenggat ini dengan peringatan sisa hari.
+                  </Text>
+                </View>
 
-              {/* Biaya per User */}
-              <View>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
-                  Biaya Langganan per Karyawan / Bulan (Rp)
-                </Text>
-                <TextInput
-                  value={String(tempSettings.costPerUser)}
-                  onChangeText={(val) => setTempSettings({ ...tempSettings, costPerUser: parseFloat(val) || 0 })}
-                  keyboardType="numeric"
-                  placeholder="Contoh: 10000"
-                  placeholderTextColor={theme.placeholder}
-                  style={{
-                    backgroundColor: theme.inputBg,
-                    borderWidth: 1,
-                    borderColor: theme.inputBorder,
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 9,
-                    fontSize: 14,
-                    color: theme.text,
-                  }}
-                />
-              </View>
+                {/* Biaya per User */}
+                <View>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
+                    Biaya Langganan per Karyawan / Bulan (Rp)
+                  </Text>
+                  <TextInput
+                    value={String(tempSettings.costPerUser)}
+                    onChangeText={(val) => setTempSettings({ ...tempSettings, costPerUser: parseFloat(val) || 0 })}
+                    keyboardType="numeric"
+                    placeholder="Contoh: 10000"
+                    placeholderTextColor={theme.placeholder}
+                    style={{
+                      backgroundColor: theme.inputBg,
+                      borderWidth: 1,
+                      borderColor: theme.inputBorder,
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 9,
+                      fontSize: 14,
+                      color: theme.text,
+                    }}
+                  />
+                </View>
 
-              {/* Toggle Blokir Absensi */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => setTempSettings({ ...tempSettings, blockAttendanceOnOverdue: !tempSettings.blockAttendanceOnOverdue })}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  backgroundColor: theme.subtleBg,
-                  padding: 12,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  marginTop: 6,
-                }}
-              >
-                <View
+                {/* Toggle Blokir Absensi */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setTempSettings({ ...tempSettings, blockAttendanceOnOverdue: !tempSettings.blockAttendanceOnOverdue })}
                   style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 6,
-                    backgroundColor: tempSettings.blockAttendanceOnOverdue ? theme.accent : 'transparent',
-                    borderWidth: 2,
-                    borderColor: tempSettings.blockAttendanceOnOverdue ? theme.accent : theme.border,
+                    display: 'flex',
+                    flexDirection: 'row',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    gap: 12,
+                    backgroundColor: theme.subtleBg,
+                    padding: 12,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    marginTop: 4,
                   }}
                 >
-                  {tempSettings.blockAttendanceOnOverdue && <Check size={14} color="#ffffff" strokeWidth={3} />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text }}>
-                    Blokir Seluruh Karyawan Saat Lewat Masa Tenggat
-                  </Text>
-                  <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>
-                    Jika diaktifkan, semua karyawan di perusahaan yang menunggak tidak akan bisa presensi masuk/pulang sampai tagihan dibayar.
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
+                  <View
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 6,
+                      backgroundColor: tempSettings.blockAttendanceOnOverdue ? theme.accent : 'transparent',
+                      borderWidth: 2,
+                      borderColor: tempSettings.blockAttendanceOnOverdue ? theme.accent : theme.border,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {tempSettings.blockAttendanceOnOverdue && <Check size={14} color="#ffffff" strokeWidth={3} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text }}>
+                      Blokir Seluruh Karyawan Saat Lewat Masa Tenggat
+                    </Text>
+                    <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>
+                      Jika diaktifkan, semua karyawan di perusahaan yang menunggak tidak akan bisa presensi masuk/pulang sampai tagihan dibayar.
+                    </Text>
+                  </View>
+                </TouchableOpacity>
 
-            <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
+                {/* Seksi Rekening Bank Transfer */}
+                <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 16, marginTop: 8 }}>
+                  <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <Building2 size={18} color={theme.accent} />
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>
+                      Rekening Bank Tujuan Pembayaran Resmi
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, marginBottom: 12, lineHeight: 16 }}>
+                    Informasi rekening ini akan ditampilkan langsung kepada Admin Tenant pada saat tagihan diterbitkan agar mereka dapat mentransfer dana ke rekening resmi Anda.
+                  </Text>
+
+                  {/* Nama Bank */}
+                  <View style={{ marginBottom: 10 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
+                      Nama Bank (Contoh: BCA, Mandiri, BRI, BNI)
+                    </Text>
+                    <TextInput
+                      value={tempSettings.bankName || ''}
+                      onChangeText={(val) => setTempSettings({ ...tempSettings, bankName: val })}
+                      placeholder="Contoh: Bank Central Asia (BCA)"
+                      placeholderTextColor={theme.placeholder}
+                      style={{
+                        backgroundColor: theme.inputBg,
+                        borderWidth: 1,
+                        borderColor: theme.inputBorder,
+                        borderRadius: 8,
+                        paddingHorizontal: 12,
+                        paddingVertical: 9,
+                        fontSize: 14,
+                        color: theme.text,
+                      }}
+                    />
+                  </View>
+
+                  {/* Nomor Rekening */}
+                  <View style={{ marginBottom: 10 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
+                      Nomor Rekening Bank
+                    </Text>
+                    <TextInput
+                      value={tempSettings.bankAccount || ''}
+                      onChangeText={(val) => setTempSettings({ ...tempSettings, bankAccount: val })}
+                      keyboardType="numeric"
+                      placeholder="Contoh: 8830192831"
+                      placeholderTextColor={theme.placeholder}
+                      style={{
+                        backgroundColor: theme.inputBg,
+                        borderWidth: 1,
+                        borderColor: theme.inputBorder,
+                        borderRadius: 8,
+                        paddingHorizontal: 12,
+                        paddingVertical: 9,
+                        fontSize: 14,
+                        color: theme.text,
+                      }}
+                    />
+                  </View>
+
+                  {/* Atas Nama Pemilik Rekening */}
+                  <View style={{ marginBottom: 4 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text, marginBottom: 6 }}>
+                      Atas Nama Pemilik Rekening
+                    </Text>
+                    <TextInput
+                      value={tempSettings.bankAccountName || ''}
+                      onChangeText={(val) => setTempSettings({ ...tempSettings, bankAccountName: val })}
+                      placeholder="Contoh: PT YexsSync Indonesia"
+                      placeholderTextColor={theme.placeholder}
+                      style={{
+                        backgroundColor: theme.inputBg,
+                        borderWidth: 1,
+                        borderColor: theme.inputBorder,
+                        borderRadius: 8,
+                        paddingHorizontal: 12,
+                        paddingVertical: 9,
+                        fontSize: 14,
+                        color: theme.text,
+                      }}
+                    />
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 18, borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 14 }}>
               <TouchableOpacity
                 onPress={() => setShowSettingsModal(false)}
                 style={{ paddingVertical: 9, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: theme.border }}
