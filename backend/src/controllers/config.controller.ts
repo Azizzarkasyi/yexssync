@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { getPublicPrisma } from '../prisma/tenant-prisma';
+import { getTenantSubscriptionStatus } from '../utils/subscription';
 
 /**
  * Get company config
@@ -141,26 +142,28 @@ export const getBillingStatus = async (req: Request, res: Response) => {
   try {
     const tenantId = req.tenantId!;
     const publicPrisma = getPublicPrisma();
-    
-    const unpaidBilling = await publicPrisma.subscriptionBilling.findFirst({
-      where: {
-        tenantId,
-        status: 'PENDING',
-      },
-      orderBy: [
-        { year: 'asc' },
-        { month: 'asc' }
-      ]
-    });
-    
-    // Get superadmin bank details
-    const superAdmin = await publicPrisma.superAdmin.findFirst();
+
+    const [subscriptionStatus, unpaidBilling, superAdmin] = await Promise.all([
+      getTenantSubscriptionStatus(tenantId),
+      publicPrisma.subscriptionBilling.findFirst({
+        where: {
+          tenantId,
+          status: 'PENDING',
+        },
+        orderBy: [
+          { year: 'asc' },
+          { month: 'asc' }
+        ]
+      }),
+      publicPrisma.superAdmin.findFirst()
+    ]);
 
     res.json({
       success: true,
       data: {
         hasUnpaidBilling: !!unpaidBilling,
         billing: unpaidBilling,
+        subscriptionStatus,
         bankDetails: superAdmin ? {
           bankName: superAdmin.bankName,
           bankAccount: superAdmin.bankAccount,

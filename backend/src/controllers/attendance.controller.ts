@@ -1,4 +1,5 @@
 import {Request, Response} from "express";
+import {getTenantSubscriptionStatus} from "../utils/subscription";
 
 function getDistanceFromLatLonInM(
   lat1: number,
@@ -203,6 +204,19 @@ export const clockIn = async (req: Request, res: Response) => {
     const {status, latitude, longitude, faceVerified, lateReason, accuracy} = req.body;
     const photo = req.file ? `/uploads/${req.file.filename}` : null;
 
+    // Check subscription / grace period block
+    if (req.tenantId) {
+      const subStatus = await getTenantSubscriptionStatus(req.tenantId);
+      if (subStatus.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          code: "ATTENDANCE_DISABLED",
+          message: "Akses presensi saat ini sedang dinonaktifkan sementara. Silakan hubungi administrator kantor untuk informasi lebih lanjut.",
+          isBlocked: true,
+        });
+      }
+    }
+
     // Check if user has face registered
     const user = await prisma.user.findUnique({
       where: {id: userId},
@@ -392,6 +406,19 @@ export const requestLeave = async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const {status, date, description, leaveType, leaveDuration} = req.body;
     const photo = req.file ? req.file.filename : null;
+
+    // Check subscription / grace period block
+    if (req.tenantId) {
+      const subStatus = await getTenantSubscriptionStatus(req.tenantId);
+      if (subStatus.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          code: "ATTENDANCE_DISABLED",
+          message: "Pengajuan izin saat ini sedang dinonaktifkan sementara. Silakan hubungi administrator kantor untuk informasi lebih lanjut.",
+          isBlocked: true,
+        });
+      }
+    }
 
     if (!["SICK", "LEAVE"].includes(status)) {
       return res.status(400).json({
@@ -854,6 +881,19 @@ export const clockOut = async (req: Request, res: Response) => {
     const {faceVerified, latitude, longitude, accuracy} = req.body;
     const photo = req.file ? req.file.filename : null;
 
+    // Check subscription / grace period block
+    if (req.tenantId) {
+      const subStatus = await getTenantSubscriptionStatus(req.tenantId);
+      if (subStatus.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          code: "ATTENDANCE_DISABLED",
+          message: "Akses presensi saat ini sedang dinonaktifkan sementara. Silakan hubungi administrator kantor untuk informasi lebih lanjut.",
+          isBlocked: true,
+        });
+      }
+    }
+
     // Check if user has face registered
     const user = await prisma.user.findUnique({
       where: {id: userId},
@@ -1045,7 +1085,7 @@ export const getTodayAttendance = async (req: Request, res: Response) => {
     const now = new Date();
     const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
-    const [attendance, user, config] = await Promise.all([
+    const [attendance, user, config, subscriptionStatus] = await Promise.all([
       prisma.attendance.findFirst({
         where: {
           userId,
@@ -1057,6 +1097,7 @@ export const getTodayAttendance = async (req: Request, res: Response) => {
         where: {id: userId},
       }),
       prisma.companyConfig.findFirst(),
+      req.tenantId ? getTenantSubscriptionStatus(req.tenantId) : Promise.resolve(null),
     ]);
 
     const allowedLocations = getAllowedWorkLocations(user, config);
@@ -1064,6 +1105,7 @@ export const getTodayAttendance = async (req: Request, res: Response) => {
     res.json({
       success: true,
       data: attendance,
+      isAttendanceBlocked: subscriptionStatus?.isBlocked ?? false,
       workLocations: {
         allowedLocations,
         companyName: config?.companyName || "Perusahaan",

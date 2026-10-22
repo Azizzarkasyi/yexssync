@@ -30,6 +30,8 @@ import {
   RotateCw,
   ListChecks,
   ArrowRight,
+  AlertCircle,
+  Clock,
 } from 'lucide-react-native';
 import { AuthContext } from '@/context/AuthContext';
 import FaceRecognitionModal from '@/components/FaceRecognitionModal';
@@ -92,6 +94,7 @@ export default function UserHomeScreen() {
     activeBreak: any;
   } | null>(null);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [isAttendanceBlocked, setIsAttendanceBlocked] = useState<boolean>(false);
 
   // Face Recognition Modal State
   const [faceModalVisible, setFaceModalVisible] = useState(false);
@@ -512,6 +515,9 @@ export default function UserHomeScreen() {
       if (todayRes.data?.success) {
         setAttendanceToday(todayRes.data.data);
       }
+      if (todayRes.data?.isAttendanceBlocked !== undefined) {
+        setIsAttendanceBlocked(Boolean(todayRes.data.isAttendanceBlocked));
+      }
       if (todayRes.data?.workLocations) {
         const locs: AllowedWorkLocation[] = todayRes.data.workLocations.allowedLocations || [];
         const restriction: boolean = todayRes.data.workLocations.hasLocationRestriction ?? (locs.length > 0);
@@ -583,6 +589,14 @@ export default function UserHomeScreen() {
   };
 
   const handleClockIn = async () => {
+    if (isAttendanceBlocked) {
+      showError(
+        'Presensi Tidak Tersedia',
+        'Akses presensi saat ini sedang dinonaktifkan sementara. Silakan hubungi administrator kantor untuk informasi lebih lanjut.'
+      );
+      return;
+    }
+
     if (attendanceToday?.clockIn) {
       showInfo(
         'Sudah Presensi Masuk',
@@ -638,6 +652,14 @@ export default function UserHomeScreen() {
   };
 
   const handleClockOut = async () => {
+    if (isAttendanceBlocked) {
+      showError(
+        'Presensi Tidak Tersedia',
+        'Akses presensi saat ini sedang dinonaktifkan sementara. Silakan hubungi administrator kantor untuk informasi lebih lanjut.'
+      );
+      return;
+    }
+
     if (!attendanceToday?.clockIn) {
       showWarning('Belum Presensi Masuk', 'Anda harus melakukan presensi masuk terlebih dahulu sebelum presensi pulang.');
       return;
@@ -696,6 +718,14 @@ export default function UserHomeScreen() {
   };
 
   const handleStartBreak = async () => {
+    if (isAttendanceBlocked) {
+      showError(
+        'Presensi Tidak Tersedia',
+        'Akses istirahat saat ini sedang dinonaktifkan sementara. Silakan hubungi administrator kantor untuk informasi lebih lanjut.'
+      );
+      return;
+    }
+
     if (!attendanceToday?.clockIn) {
       showWarning('Perhatian', 'Anda harus melakukan presensi masuk terlebih dahulu sebelum istirahat.');
       return;
@@ -735,6 +765,14 @@ export default function UserHomeScreen() {
   };
 
   const handleEndBreak = async () => {
+    if (isAttendanceBlocked) {
+      showError(
+        'Presensi Tidak Tersedia',
+        'Akses istirahat saat ini sedang dinonaktifkan sementara. Silakan hubungi administrator kantor untuk informasi lebih lanjut.'
+      );
+      return;
+    }
+
     if (!breakData?.activeBreak) {
       showWarning('Perhatian', 'Tidak ada sesi istirahat yang sedang berjalan.');
       return;
@@ -1006,30 +1044,65 @@ export default function UserHomeScreen() {
             </View>
           </View>
 
+          {/* ======================================================== */}
+          {/* BANNER PRESENSI DINONAKTIFKAN (PESAN NETRAL & ETIS)      */}
+          {/* ======================================================== */}
+          {isAttendanceBlocked && (
+            <View className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[14px] p-4 mb-4 flex-row items-center gap-3">
+              <View className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 items-center justify-center">
+                <AlertCircle size={22} color={isDark ? '#94a3b8' : '#64748b'} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[14px] font-bold text-slate-800 dark:text-slate-200">
+                  Layanan Presensi Dinonaktifkan
+                </Text>
+                <Text className="text-[12px] text-slate-600 dark:text-slate-400 mt-0.5 leading-4">
+                  Akses presensi saat ini sedang tidak dapat digunakan. Silakan hubungi bagian administrator kantor untuk informasi lebih lanjut.
+                </Text>
+              </View>
+            </View>
+          )}
+
           <View className="flex-row flex-wrap justify-between gap-y-3 mb-[25px]">
-            <TouchableOpacity style={{ width: '48%' }} onPress={handleClockIn} disabled={isSubmitting}>
-              <LinearGradient colors={['#38c159', '#28a745']} style={{ borderRadius: 16, paddingVertical: 20, alignItems: 'center', gap: 6 }}>
+            <TouchableOpacity
+              style={{ width: '48%', opacity: isAttendanceBlocked ? 0.6 : 1 }}
+              onPress={handleClockIn}
+              disabled={isSubmitting}
+            >
+              <LinearGradient colors={isAttendanceBlocked ? ['#94a3b8', '#64748b'] : ['#38c159', '#28a745']} style={{ borderRadius: 16, paddingVertical: 20, alignItems: 'center', gap: 6 }}>
                 <LogIn size={26} color="#ffffff" strokeWidth={2.4} />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '700' }}>MASUK</Text>
                 <Text style={{ color: '#ffffff', fontSize: 11, opacity: 0.9 }}>{attendanceToday?.clockIn ? `${formatTime(attendanceToday.clockIn)} WIB` : '--:-- WIB'}</Text>
               </LinearGradient>
             </TouchableOpacity>
-            <TouchableOpacity style={{ width: '48%' }} onPress={handleClockOut} disabled={isSubmitting}>
-              <LinearGradient colors={['#ef5350', '#dc3545']} style={{ borderRadius: 16, paddingVertical: 20, alignItems: 'center', gap: 6 }}>
+            <TouchableOpacity
+              style={{ width: '48%', opacity: isAttendanceBlocked ? 0.6 : 1 }}
+              onPress={handleClockOut}
+              disabled={isSubmitting}
+            >
+              <LinearGradient colors={isAttendanceBlocked ? ['#94a3b8', '#64748b'] : ['#ef5350', '#dc3545']} style={{ borderRadius: 16, paddingVertical: 20, alignItems: 'center', gap: 6 }}>
                 <LogOut size={26} color="#ffffff" strokeWidth={2.4} />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '700' }}>PULANG</Text>
                 <Text style={{ color: '#ffffff', fontSize: 11, opacity: 0.9 }}>{attendanceToday?.clockOut ? `${formatTime(attendanceToday.clockOut)} WIB` : '--:-- WIB'}</Text>
               </LinearGradient>
             </TouchableOpacity>
-            <TouchableOpacity style={{ width: '48%' }} onPress={handleStartBreak} disabled={isSubmitting}>
-              <LinearGradient colors={['#fbb847', '#f59e0b']} style={{ borderRadius: 16, paddingVertical: 20, alignItems: 'center', gap: 6 }}>
+            <TouchableOpacity
+              style={{ width: '48%', opacity: isAttendanceBlocked ? 0.6 : 1 }}
+              onPress={handleStartBreak}
+              disabled={isSubmitting}
+            >
+              <LinearGradient colors={isAttendanceBlocked ? ['#94a3b8', '#64748b'] : ['#fbb847', '#f59e0b']} style={{ borderRadius: 16, paddingVertical: 20, alignItems: 'center', gap: 6 }}>
                 <Coffee size={26} color="#ffffff" strokeWidth={2.4} />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '700', textAlign: 'center' }}>MULAI ISTIRAHAT</Text>
                 <Text style={{ color: '#ffffff', fontSize: 11, opacity: 0.9 }}>{breakStartTimeText}</Text>
               </LinearGradient>
             </TouchableOpacity>
-            <TouchableOpacity style={{ width: '48%' }} onPress={handleEndBreak} disabled={isSubmitting}>
-              <LinearGradient colors={['#38bdf8', '#0ea5e9']} style={{ borderRadius: 16, paddingVertical: 20, alignItems: 'center', gap: 6 }}>
+            <TouchableOpacity
+              style={{ width: '48%', opacity: isAttendanceBlocked ? 0.6 : 1 }}
+              onPress={handleEndBreak}
+              disabled={isSubmitting}
+            >
+              <LinearGradient colors={isAttendanceBlocked ? ['#94a3b8', '#64748b'] : ['#38bdf8', '#0ea5e9']} style={{ borderRadius: 16, paddingVertical: 20, alignItems: 'center', gap: 6 }}>
                 <Briefcase size={26} color="#ffffff" strokeWidth={2.4} />
                 <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '700', textAlign: 'center' }}>SELESAI ISTIRAHAT</Text>
                 <Text style={{ color: '#ffffff', fontSize: 11, opacity: 0.9 }}>{breakEndTimeText}</Text>

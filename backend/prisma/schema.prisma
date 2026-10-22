@@ -12,13 +12,14 @@ datasource db {
 // ============================================
 
 model Tenant {
-  id         Int      @id @default(autoincrement())
-  name       String   @unique
-  schemaName String   @unique // e.g., "tenant_1", "tenant_2"
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  billings   SubscriptionBilling[]
+  id                    Int      @id @default(autoincrement())
+  name                  String   @unique
+  schemaName            String   @unique // e.g., "tenant_1", "tenant_2"
+  isActive              Boolean  @default(true)
+  customGracePeriodDays Int?     // Masa tenggat khusus perusahaan ini (hari)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  billings              SubscriptionBilling[]
 }
 
 model SubscriptionBilling {
@@ -32,6 +33,8 @@ model SubscriptionBilling {
   status          PaymentStatus @default(PENDING)
   paymentProof    String?
   paidAt          DateTime?
+  dueDate         DateTime? // Tanggal jatuh tempo pembayaran
+  gracePeriodDays Int?      @default(3) // Masa tenggat toleransi pembayaran (hari)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -39,15 +42,19 @@ model SubscriptionBilling {
 }
 
 model SuperAdmin {
-  id              Int      @id @default(autoincrement())
-  email           String   @unique
-  password        String
-  name            String
-  bankName        String?
-  bankAccount     String?
-  bankAccountName String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                       Int      @id @default(autoincrement())
+  email                    String   @unique
+  password                 String
+  name                     String
+  bankName                 String?
+  bankAccount              String?
+  bankAccountName          String?
+  billingDueDay            Int?     @default(1) // Hari jatuh tempo bulanan (1 - 28)
+  defaultGracePeriodDays   Int?     @default(3) // Default toleransi masa tenggat (hari)
+  blockAttendanceOnOverdue Boolean? @default(true) // Blokir absensi karyawan jika lewat masa tenggat
+  costPerUser              Float?   @default(10000) // Tarif biaya per user aktif
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 }
 
 // ============================================

@@ -15,6 +15,9 @@ import {
   getAllBillings,
   updateSuperAdminProfile,
   approveBilling,
+  getBillingSettings,
+  updateBillingSettings,
+  updateTenantGracePeriod,
 } from "../controllers/super-admin.controller";
 import {superAdminAuth} from "../middleware/auth.middleware";
 
@@ -38,10 +41,13 @@ router.put("/tenants/:id", superAdminAuth, updateTenant);
 router.delete("/tenants/:id", superAdminAuth, deleteTenant);
 router.patch("/tenants/:id/deactivate", superAdminAuth, deactivateTenant);
 router.patch("/tenants/:id/activate", superAdminAuth, activateTenant);
+router.put("/tenants/:id/grace-period", superAdminAuth, updateTenantGracePeriod);
 
 router.get("/billings", superAdminAuth, getAllBillings);
 router.post("/billings/generate", superAdminAuth, generateBillings);
 router.post("/billings/:id/approve", superAdminAuth, approveBilling);
+router.get("/billing-settings", superAdminAuth, getBillingSettings);
+router.put("/billing-settings", superAdminAuth, updateBillingSettings);
 router.put("/profile", superAdminAuth, updateSuperAdminProfile);
 
 export default router;

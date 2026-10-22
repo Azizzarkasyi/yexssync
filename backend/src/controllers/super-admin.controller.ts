@@ -497,7 +497,10 @@ export async function getSuperAdminProfile(req: Request, res: Response) {
 export async function generateBillings(req: Request, res: Response) {
   try {
     const publicPrisma = getPublicPrisma();
-    const COST_PER_USER = 10000;
+    const superAdmin = await publicPrisma.superAdmin.findFirst();
+    const COST_PER_USER = superAdmin?.costPerUser ?? 10000;
+    const defaultDueDay = superAdmin?.billingDueDay ?? 1;
+    const defaultGracePeriod = superAdmin?.defaultGracePeriodDays ?? 3;
     
     const date = new Date();
     const currentMonth = date.getMonth() + 1;
@@ -534,6 +537,8 @@ export async function generateBillings(req: Request, res: Response) {
         });
 
         const totalAmount = activeUserCount * COST_PER_USER;
+        const dueDate = new Date(Date.UTC(currentYear, currentMonth - 1, defaultDueDay, 0, 0, 0));
+        const gracePeriodDays = tenant.customGracePeriodDays ?? defaultGracePeriod;
 
         await publicPrisma.subscriptionBilling.create({
           data: {
@@ -543,6 +548,8 @@ export async function generateBillings(req: Request, res: Response) {
             activeUserCount: activeUserCount,
             amount: totalAmount,
             status: "PENDING",
+            dueDate,
+            gracePeriodDays,
           },
         });
 
@@ -573,14 +580,62 @@ export async function generateBillings(req: Request, res: Response) {
 export async function getAllBillings(req: Request, res: Response) {
   try {
     const prisma = getPublicPrisma();
+    const superAdmin = await prisma.superAdmin.findFirst();
+    const defaultGracePeriod = superAdmin?.defaultGracePeriodDays ?? 3;
+    const defaultDueDay = superAdmin?.billingDueDay ?? 1;
+    const shouldBlock = superAdmin?.blockAttendanceOnOverdue !== false;
+
     const billings = await prisma.subscriptionBilling.findMany({
       include: { tenant: true },
       orderBy: [{ year: 'desc' }, { month: 'desc' }, { createdAt: 'desc' }]
     });
 
+    const now = new Date();
+
+    const formattedBillings = billings.map((b) => {
+      const gracePeriod = b.tenant?.customGracePeriodDays ?? b.gracePeriodDays ?? defaultGracePeriod;
+      let dueDate = b.dueDate
+        ? new Date(b.dueDate)
+        : new Date(Date.UTC(b.year, b.month - 1, defaultDueDay, 0, 0, 0));
+      if (b.createdAt && b.createdAt.getTime() > dueDate.getTime()) {
+        dueDate = new Date(b.createdAt);
+      }
+
+      const deadlineDate = new Date(dueDate.getTime() + gracePeriod * 24 * 60 * 60 * 1000);
+      deadlineDate.setUTCHours(23, 59, 59, 999);
+
+      const isPaid = b.status === 'PAID';
+      const isOverdue = !isPaid && now.getTime() > deadlineDate.getTime();
+      const isInGrace = !isPaid && !isOverdue;
+      const daysLeftInGrace = isInGrace
+        ? Math.max(1, Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        : 0;
+      const daysOverdue = isOverdue
+        ? Math.floor((now.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        : 0;
+
+      return {
+        ...b,
+        dueDate: dueDate.toISOString(),
+        deadlineDate: deadlineDate.toISOString(),
+        gracePeriodDays: gracePeriod,
+        isOverdue,
+        isInGrace,
+        daysLeftInGrace,
+        daysOverdue,
+        isBlocked: isOverdue && shouldBlock,
+      };
+    });
+
     res.json({
       success: true,
-      data: billings,
+      data: formattedBillings,
+      settings: {
+        defaultGracePeriodDays: defaultGracePeriod,
+        billingDueDay: defaultDueDay,
+        blockAttendanceOnOverdue: shouldBlock,
+        costPerUser: superAdmin?.costPerUser ?? 10000,
+      },
     });
   } catch (error: any) {
     console.error("Get billings error:", error);
@@ -659,5 +714,112 @@ export async function updateSuperAdminProfile(req: Request, res: Response) {
       success: false,
       message: "Internal server error",
     });
+  }
+}
+
+/**
+ * Get Billing & Grace Period Settings (SuperAdmin)
+ */
+export async function getBillingSettings(req: Request, res: Response) {
+  try {
+    const prisma = getPublicPrisma();
+    const superAdmin = await prisma.superAdmin.findFirst();
+
+    res.json({
+      success: true,
+      data: {
+        billingDueDay: superAdmin?.billingDueDay ?? 1,
+        defaultGracePeriodDays: superAdmin?.defaultGracePeriodDays ?? 3,
+        blockAttendanceOnOverdue: superAdmin?.blockAttendanceOnOverdue !== false,
+        costPerUser: superAdmin?.costPerUser ?? 10000,
+        bankName: superAdmin?.bankName || '',
+        bankAccount: superAdmin?.bankAccount || '',
+        bankAccountName: superAdmin?.bankAccountName || '',
+      },
+    });
+  } catch (error: any) {
+    console.error("Get billing settings error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
+/**
+ * Update Billing & Grace Period Settings (SuperAdmin)
+ */
+export async function updateBillingSettings(req: Request, res: Response) {
+  try {
+    const prisma = getPublicPrisma();
+    const adminId = req.user!.id;
+    const {
+      billingDueDay,
+      defaultGracePeriodDays,
+      blockAttendanceOnOverdue,
+      costPerUser,
+      bankName,
+      bankAccount,
+      bankAccountName,
+    } = req.body;
+
+    const updated = await prisma.superAdmin.update({
+      where: { id: adminId },
+      data: {
+        ...(billingDueDay !== undefined && { billingDueDay: parseInt(billingDueDay, 10) }),
+        ...(defaultGracePeriodDays !== undefined && { defaultGracePeriodDays: parseInt(defaultGracePeriodDays, 10) }),
+        ...(blockAttendanceOnOverdue !== undefined && { blockAttendanceOnOverdue: Boolean(blockAttendanceOnOverdue) }),
+        ...(costPerUser !== undefined && { costPerUser: parseFloat(costPerUser) }),
+        ...(bankName !== undefined && { bankName }),
+        ...(bankAccount !== undefined && { bankAccount }),
+        ...(bankAccountName !== undefined && { bankAccountName }),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Pengaturan tagihan & masa tenggat berhasil diperbarui",
+      data: {
+        billingDueDay: updated.billingDueDay ?? 1,
+        defaultGracePeriodDays: updated.defaultGracePeriodDays ?? 3,
+        blockAttendanceOnOverdue: updated.blockAttendanceOnOverdue !== false,
+        costPerUser: updated.costPerUser ?? 10000,
+        bankName: updated.bankName || '',
+        bankAccount: updated.bankAccount || '',
+        bankAccountName: updated.bankAccountName || '',
+      },
+    });
+  } catch (error: any) {
+    console.error("Update billing settings error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
+/**
+ * Update Tenant Custom Grace Period (SuperAdmin)
+ */
+export async function updateTenantGracePeriod(req: Request, res: Response) {
+  try {
+    const prisma = getPublicPrisma();
+    const tenantId = parseInt(req.params.id as string, 10);
+    const { customGracePeriodDays } = req.body;
+
+    const parsedDays =
+      customGracePeriodDays === null || customGracePeriodDays === '' || customGracePeriodDays === undefined
+        ? null
+        : parseInt(customGracePeriodDays, 10);
+
+    const updatedTenant = await prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        customGracePeriodDays: parsedDays,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Masa tenggat khusus untuk ${updatedTenant.name} berhasil diset ke ${parsedDays ? `${parsedDays} hari` : 'default sistem'}.`,
+      data: updatedTenant,
+    });
+  } catch (error: any) {
+    console.error("Update tenant grace period error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 }

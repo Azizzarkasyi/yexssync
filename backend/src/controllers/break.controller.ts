@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { getTenantSubscriptionStatus } from '../utils/subscription';
 
 /**
  * Start a break
@@ -9,6 +10,19 @@ export const startBreak = async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const { faceVerified } = req.body;
     const photo = req.file ? req.file.filename : null;
+
+    // Check subscription / grace period block
+    if (req.tenantId) {
+      const subStatus = await getTenantSubscriptionStatus(req.tenantId);
+      if (subStatus.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          code: 'ATTENDANCE_DISABLED',
+          message: 'Akses istirahat saat ini sedang dinonaktifkan sementara. Silakan hubungi administrator kantor untuk informasi lebih lanjut.',
+          isBlocked: true,
+        });
+      }
+    }
 
     // Check if user has face registered
     const user = await prisma.user.findUnique({
@@ -107,6 +121,19 @@ export const endBreak = async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const { faceVerified } = req.body;
     const photo = req.file ? req.file.filename : null;
+
+    // Check subscription / grace period block
+    if (req.tenantId) {
+      const subStatus = await getTenantSubscriptionStatus(req.tenantId);
+      if (subStatus.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          code: 'ATTENDANCE_DISABLED',
+          message: 'Akses istirahat saat ini sedang dinonaktifkan sementara. Silakan hubungi administrator kantor untuk informasi lebih lanjut.',
+          isBlocked: true,
+        });
+      }
+    }
 
     // Check if user has face registered
     const user = await prisma.user.findUnique({
