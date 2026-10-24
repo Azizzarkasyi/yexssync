@@ -62,8 +62,8 @@ export default function SuperAdminSettingsScreen() {
   // Form States - Tab 1: Identitas & Konfigurasi Umum
   const [appName, setAppName] = useState('YexsSync');
   const [appDomain, setAppDomain] = useState('https://yexssync.yexsx.my.id');
-  const [supportEmail, setSupportEmail] = useState('azizsework@gmail.com');
-  const [hotlinePhone, setHotlinePhone] = useState('+62 811-2233-4455');
+  const [supportEmail, setSupportEmail] = useState('yexsdev@gmail.com');
+  const [hotlinePhone, setHotlinePhone] = useState('+62 878-9855-5764');
 
   // Maintenance Mode
   const [isMaintenance, setIsMaintenance] = useState(false);
@@ -706,8 +706,8 @@ export default function SuperAdminSettingsScreen() {
                       onPress={() => {
                         setAppName('YexsSync');
                         setAppDomain('https://yexssync.yexsx.my.id');
-                        setSupportEmail('azizsework@gmail.com');
-                        setHotlinePhone('+62 811-2233-4455');
+                        setSupportEmail('yexsdev@gmail.com');
+                        setHotlinePhone('+62 878-9855-5764');
                         setIsMaintenance(false);
                       }}
                       style={{
@@ -1283,7 +1283,7 @@ export default function SuperAdminSettingsScreen() {
                   }}
                 >
                   <TouchableOpacity
-                    onPress={() => alert('Email uji coba berhasil dikirim ke ' + (user?.email || 'azizsework@gmail.com'))}
+                    onPress={() => alert('Email uji coba berhasil dikirim ke ' + (user?.email || 'yexsdev@gmail.com'))}
                     style={{
                       paddingVertical: 10,
                       paddingHorizontal: 16,

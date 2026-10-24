@@ -48,6 +48,8 @@ import {
   Calendar,
   Layers,
   HeartHandshake,
+  Mail,
+  Phone,
 } from 'lucide-react-native';
 import { AuthContext } from '@/context/AuthContext';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
@@ -123,7 +125,16 @@ export default function LandingPage() {
     const text = encodeURIComponent(
       'Halo Tim YexsSync, saya tertarik untuk mencoba demo dan berlangganan sistem presensi YexsSync untuk perusahaan saya.'
     );
-    const url = `https://wa.me/6281122334455?text=${text}`;
+    const url = `https://wa.me/6287898555764?text=${text}`;
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank');
+    } else {
+      Linking.openURL(url);
+    }
+  };
+
+  const handleOpenEmail = () => {
+    const url = 'mailto:yexsdev@gmail.com?subject=Tanya%20Layanan%20YexsSync';
     if (Platform.OS === 'web') {
       window.open(url, '_blank');
     } else {
@@ -990,17 +1001,27 @@ export default function LandingPage() {
             width: '100%',
           }}
         >
-          <View style={{ alignItems: 'center', marginBottom: 40 }}>
-            <View style={{ backgroundColor: theme.isDark ? 'rgba(59, 130, 246, 0.15)' : '#e0f2fe', paddingVertical: 4, paddingHorizontal: 12, borderRadius: 20, marginBottom: 12 }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: theme.primaryBlue, textTransform: 'uppercase' }}>
-                Harga Terjangkau & Transparan
+          <View style={{ alignItems: 'center', marginBottom: 32 }}>
+            <View
+              style={{
+                backgroundColor: theme.isDark ? 'rgba(16, 185, 129, 0.15)' : '#dcfce7',
+                paddingVertical: 5,
+                paddingHorizontal: 16,
+                borderRadius: 20,
+                marginBottom: 12,
+                borderWidth: 1,
+                borderColor: theme.isDark ? '#059669' : '#86efac',
+              }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '800', color: theme.isDark ? '#34d399' : '#15803d', textTransform: 'uppercase' }}>
+                ✨ SEMUA FITUR DAPAT DIAKSES DI SEMUA PAKET
               </Text>
             </View>
             <Text style={{ fontSize: isDesktop ? 34 : 26, fontWeight: '900', color: theme.textDark, textAlign: 'center' }}>
               Investasi Terbaik untuk Efisiensi Bisnis Anda
             </Text>
-            <Text style={{ fontSize: 15, color: theme.textMuted, textAlign: 'center', maxWidth: 640, marginTop: 8 }}>
-              Pilih paket yang sesuai dengan jumlah karyawan dan skala perusahaan Anda. Tanpa biaya instalasi tersembunyi.
+            <Text style={{ fontSize: 15, color: theme.textMuted, textAlign: 'center', maxWidth: 680, marginTop: 8, lineHeight: 22 }}>
+              Semua fitur canggih YexsSync (GPS Geofencing, Biometrik Wajah, Anti-Fake GPS, Smart Payroll & Slip Gaji PDF) 100% terbuka untuk semua paket. Anda hanya menentukan kuota jumlah karyawan yang sesuai!
             </Text>
 
             {/* Billing Toggle (Monthly vs Yearly) */}
@@ -1069,7 +1090,12 @@ export default function LandingPage() {
               }}
             >
               <View>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textDark }}>Basic Plan</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textDark }}>Basic Plan</Text>
+                  <View style={{ backgroundColor: theme.isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primaryBlue }}>Semua Fitur</Text>
+                  </View>
+                </View>
                 <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>Ideal untuk rintisan toko, kafe & UKM</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', marginVertical: 20 }}>
                   <Text style={{ fontSize: 32, fontWeight: '900', color: theme.textDark }}>
@@ -1078,10 +1104,21 @@ export default function LandingPage() {
                   <Text style={{ fontSize: 13, color: theme.textMuted }}> / bulan</Text>
                 </View>
                 <View style={{ gap: 10, marginBottom: 24 }}>
-                  {['Maksimal 20 Karyawan Aktif', 'Presensi GPS Geofencing', 'Verifikasi Wajah Biometrik', 'Manajemen Cuti & Izin', 'Aplikasi Android & Dashboard Web'].map((f, idx) => (
+                  {[
+                    { text: 'Akses Penuh 100% Seluruh Fitur', highlight: true },
+                    { text: 'Kapasitas Hingga 20 Karyawan Aktif', highlight: false },
+                    { text: 'Presensi GPS Geofencing & Anti-Fake GPS', highlight: false },
+                    { text: 'Verifikasi Wajah Biometrik On-Device', highlight: false },
+                    { text: 'Smart Payroll & Cetak Slip Gaji PDF', highlight: false },
+                    { text: 'Manajemen Cuti, Izin, Lembur & Multi-Lokasi', highlight: false },
+                    { text: 'Aplikasi Android Mobile & Web Dashboard', highlight: false },
+                    { text: 'Standard Support via Email & Chat', highlight: false },
+                  ].map((f, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Check size={16} color="#16a34a" />
-                      <Text style={{ fontSize: 13, color: theme.textDark }}>{f}</Text>
+                      <Check size={16} color={f.highlight ? theme.primaryBlue : '#16a34a'} />
+                      <Text style={{ fontSize: 13, color: f.highlight ? theme.primaryBlue : theme.textDark, fontWeight: f.highlight ? '800' : '500' }}>
+                        {f.text}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -1137,7 +1174,12 @@ export default function LandingPage() {
               </View>
 
               <View>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.primaryBlue }}>Pro Plan</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: theme.primaryBlue }}>Pro Plan</Text>
+                  <View style={{ backgroundColor: theme.isDark ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: theme.primaryBlue }}>Semua Fitur</Text>
+                  </View>
+                </View>
                 <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>Untuk perusahaan berkembang & multi-cabang</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', marginVertical: 20 }}>
                   <Text style={{ fontSize: 32, fontWeight: '900', color: theme.primaryBlue }}>
@@ -1147,16 +1189,20 @@ export default function LandingPage() {
                 </View>
                 <View style={{ gap: 10, marginBottom: 24 }}>
                   {[
-                    'Maksimal 100 Karyawan Aktif',
-                    'Semua Fitur Basic Termasuk',
-                    'Multi-Lokasi Radius GPS Kantor Cabang',
-                    'Smart Payroll & Slip Gaji PDF Otomatis',
-                    'Denda Keterlambatan & Lembur Kustom',
-                    'Prioritas Customer Support 24/7',
+                    { text: 'Akses Penuh 100% Seluruh Fitur', highlight: true },
+                    { text: 'Kapasitas Hingga 100 Karyawan Aktif', highlight: false },
+                    { text: 'Presensi GPS Geofencing & Anti-Fake GPS', highlight: false },
+                    { text: 'Verifikasi Wajah Biometrik On-Device', highlight: false },
+                    { text: 'Smart Payroll & Cetak Slip Gaji PDF', highlight: false },
+                    { text: 'Manajemen Cuti, Izin, Lembur & Multi-Lokasi', highlight: false },
+                    { text: 'Aplikasi Android Mobile & Web Dashboard', highlight: false },
+                    { text: 'Prioritas Support WhatsApp & Fast Response', highlight: true },
                   ].map((f, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Check size={16} color={theme.primaryBlue} />
-                      <Text style={{ fontSize: 13, color: theme.textDark, fontWeight: '600' }}>{f}</Text>
+                      <Text style={{ fontSize: 13, color: f.highlight ? theme.primaryBlue : theme.textDark, fontWeight: f.highlight ? '800' : '600' }}>
+                        {f.text}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -1188,7 +1234,12 @@ export default function LandingPage() {
               }}
             >
               <View>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textDark }}>Enterprise</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textDark }}>Enterprise</Text>
+                  <View style={{ backgroundColor: theme.isDark ? 'rgba(16, 185, 129, 0.15)' : '#dcfce7', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#16a34a' }}>Semua Fitur</Text>
+                  </View>
+                </View>
                 <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>Korporat besar, pabrik & ribuan pegawai</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', marginVertical: 20 }}>
                   <Text style={{ fontSize: 32, fontWeight: '900', color: theme.textDark }}>Kustom</Text>
@@ -1196,16 +1247,20 @@ export default function LandingPage() {
                 </View>
                 <View style={{ gap: 10, marginBottom: 24 }}>
                   {[
-                    'Karyawan Tanpa Batas (Unlimited)',
-                    'Semua Fitur Pro Termasuk',
-                    'Custom Domain Perusahaan Sendiri',
-                    'Dedicated Server / On-Premise Support',
-                    'Integrasi API ERP & Fingerprint Legacy',
-                    'Dedicated Account Manager & SLA 99.9%',
+                    { text: 'Akses Penuh 100% Seluruh Fitur', highlight: true },
+                    { text: 'Kapasitas Karyawan Tanpa Batas (Unlimited)', highlight: true },
+                    { text: 'Presensi GPS Geofencing & Anti-Fake GPS', highlight: false },
+                    { text: 'Verifikasi Wajah Biometrik On-Device', highlight: false },
+                    { text: 'Smart Payroll & Cetak Slip Gaji PDF', highlight: false },
+                    { text: 'Manajemen Cuti, Izin, Lembur & Multi-Lokasi', highlight: false },
+                    { text: 'Custom Domain Perusahaan Sendiri (Opsional)', highlight: false },
+                    { text: 'Dedicated Account Manager & SLA 99.9% 24/7', highlight: true },
                   ].map((f, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Check size={16} color="#16a34a" />
-                      <Text style={{ fontSize: 13, color: theme.textDark }}>{f}</Text>
+                      <Text style={{ fontSize: 13, color: f.highlight ? '#16a34a' : theme.textDark, fontWeight: f.highlight ? '800' : '500' }}>
+                        {f.text}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -1225,6 +1280,62 @@ export default function LandingPage() {
                 <Text style={{ fontSize: 13, fontWeight: '700', color: theme.textDark }}>Hubungi Sales Enterprise</Text>
               </TouchableOpacity>
             </View>
+          </View>
+
+          {/* Jaminan Semua Fitur Terbuka */}
+          <View
+            style={{
+              backgroundColor: theme.subtleBg,
+              borderRadius: 16,
+              padding: 22,
+              marginTop: 28,
+              borderWidth: 1,
+              borderColor: theme.borderColor,
+              flexDirection: isDesktop ? 'row' : 'column',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 }}>
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: theme.isDark ? '#064e3b' : '#dcfce7',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CheckCircle2 size={24} color="#16a34a" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: theme.textDark }}>
+                  Tanpa Fitur Terkunci di Semua Paket
+                </Text>
+                <Text style={{ fontSize: 13, color: theme.textMuted, marginTop: 3, lineHeight: 18 }}>
+                  Semua paket mendapatkan fitur yang sama lengkapnya. Mulai dari Basic hingga Enterprise, Anda bebas menggunakan Geofencing GPS, Face Recognition, Anti-Fake GPS, Cuti/Lembur, dan Smart Payroll tanpa biaya tambahan per modul.
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              onPress={handleOpenWhatsApp}
+              style={{
+                backgroundColor: '#16a34a',
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                borderRadius: 10,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <Phone size={16} color="#ffffff" />
+              <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '700' }}>
+                Konsultasi WhatsApp (0878-9855-5764)
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -1460,28 +1571,38 @@ export default function LandingPage() {
             </View>
 
             {/* Col 4: Kontak & Bantuan */}
-            <View style={{ gap: 10 }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.textDark, marginBottom: 4 }}>
+            <View style={{ gap: 12 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.textDark, marginBottom: 2 }}>
                 Hubungi Kami
               </Text>
-              <Text style={{ fontSize: 13, color: theme.textMuted }}>
-                Email: support@yexssync.yexsx.my.id
-              </Text>
-              <Text style={{ fontSize: 13, color: theme.textMuted }}>
-                Hotline WA: +62 811-2233-4455
-              </Text>
+              <TouchableOpacity onPress={handleOpenEmail} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Mail size={15} color={theme.primaryBlue} />
+                <Text style={{ fontSize: 13, color: theme.textDark, fontWeight: '600' }}>
+                  yexsdev@gmail.com
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleOpenWhatsApp} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Phone size={15} color="#16a34a" />
+                <Text style={{ fontSize: 13, color: theme.textDark, fontWeight: '600' }}>
+                  WA: 0878-9855-5764
+                </Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleOpenWhatsApp}
                 style={{
-                  marginTop: 6,
-                  paddingVertical: 6,
-                  paddingHorizontal: 12,
-                  borderRadius: 6,
+                  marginTop: 4,
+                  paddingVertical: 8,
+                  paddingHorizontal: 14,
+                  borderRadius: 8,
                   backgroundColor: theme.isDark ? '#064e3b' : '#dcfce7',
                   alignSelf: 'flex-start',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
                 }}
               >
-                <Text style={{ fontSize: 11, fontWeight: '700', color: theme.isDark ? '#34d399' : '#15803d' }}>
+                <Phone size={13} color={theme.isDark ? '#34d399' : '#15803d'} />
+                <Text style={{ fontSize: 12, fontWeight: '800', color: theme.isDark ? '#34d399' : '#15803d' }}>
                   Chat WhatsApp Live
                 </Text>
               </TouchableOpacity>
