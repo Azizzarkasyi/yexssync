@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { AuthContext } from '@/context/AuthContext';
 
@@ -26,13 +26,14 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
     if (!user) {
       if (!isPublic) {
         console.warn(`[RouteGuard] Unauthorized access to ${pathname}, redirecting to login...`);
-        router.replace('/');
+        router.replace('/auth/login');
       }
       return;
     }
 
     // Case 2: Authenticated user accessing public login route -> redirect to their dashboard
-    if (pathname === '/' || pathname === '/auth/login') {
+    // If on native mobile or visiting /auth/login, direct them straight into their workspace
+    if (pathname === '/auth/login' || (Platform.OS !== 'web' && pathname === '/')) {
       if (user.role === 'SUPER_ADMIN') {
         router.replace('/superadmin');
       } else if (user.role === 'ADMIN') {
