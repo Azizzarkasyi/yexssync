@@ -582,84 +582,162 @@ export default function LandingPage() {
           </Text>
 
           {/* CTA Buttons */}
-          <View
-            style={{
-              flexDirection: width >= 768 ? 'row' : 'column',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: 12,
-              width: width >= 768 ? 'auto' : '100%',
-              maxWidth: 520,
-              marginBottom: 36,
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => setShowDemoModal(true)}
-              style={{
-                backgroundColor: theme.primaryBlue,
-                paddingVertical: 14,
-                paddingHorizontal: 24,
-                borderRadius: 10,
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 8,
-                shadowColor: theme.primaryBlue,
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.35,
-                shadowRadius: 12,
-                elevation: 6,
-              }}
-            >
-              <Sparkles size={18} color="#ffffff" />
-              <Text style={{ fontSize: 15, fontWeight: '800', color: '#ffffff' }}>
-                Mulai Uji Coba Gratis
-              </Text>
-              <ArrowRight size={16} color="#ffffff" />
-            </TouchableOpacity>
+          {width < 600 ? (
+            <View style={{ width: '100%', maxWidth: 420, gap: 10, marginBottom: 28 }}>
+              {/* Primary Action Button (Full Width on Mobile) */}
+              <TouchableOpacity
+                onPress={() => setShowDemoModal(true)}
+                style={{
+                  backgroundColor: theme.primaryBlue,
+                  paddingVertical: 14,
+                  paddingHorizontal: 20,
+                  borderRadius: 10,
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: 8,
+                  shadowColor: theme.primaryBlue,
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.35,
+                  shadowRadius: 12,
+                  elevation: 6,
+                  width: '100%',
+                }}
+              >
+                <Sparkles size={18} color="#ffffff" />
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#ffffff' }}>
+                  Mulai Uji Coba Gratis
+                </Text>
+                <ArrowRight size={16} color="#ffffff" />
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => router.push('/auth/login')}
-              style={{
-                backgroundColor: theme.cardBg,
-                paddingVertical: 14,
-                paddingHorizontal: 22,
-                borderRadius: 10,
-                borderWidth: 1.5,
-                borderColor: theme.borderColor,
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              <LogIn size={18} color={theme.textDark} />
-              <Text style={{ fontSize: 15, fontWeight: '700', color: theme.textDark }}>
-                Masuk ke Aplikasi
-              </Text>
-            </TouchableOpacity>
+              {/* Secondary Actions Row (Side-by-Side on Mobile) */}
+              <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
+                <TouchableOpacity
+                  onPress={() => router.push('/auth/login')}
+                  style={{
+                    flex: 1,
+                    backgroundColor: theme.cardBg,
+                    paddingVertical: 12,
+                    paddingHorizontal: 10,
+                    borderRadius: 10,
+                    borderWidth: 1.5,
+                    borderColor: theme.borderColor,
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <LogIn size={16} color={theme.textDark} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.textDark }} numberOfLines={1}>
+                    Masuk
+                  </Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={handleOpenWhatsApp}
+                <TouchableOpacity
+                  onPress={handleOpenWhatsApp}
+                  style={{
+                    flex: 1,
+                    backgroundColor: theme.isDark ? '#064e3b' : '#dcfce7',
+                    paddingVertical: 12,
+                    paddingHorizontal: 10,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: theme.isDark ? '#059669' : '#86efac',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <HeartHandshake size={16} color={theme.isDark ? '#34d399' : '#16a34a'} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.isDark ? '#34d399' : '#15803d' }} numberOfLines={1}>
+                    WhatsApp
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View
               style={{
-                backgroundColor: theme.isDark ? '#064e3b' : '#dcfce7',
-                paddingVertical: 14,
-                paddingHorizontal: 20,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: theme.isDark ? '#059669' : '#86efac',
                 flexDirection: 'row',
-                justifyContent: 'center',
                 alignItems: 'center',
-                gap: 8,
+                justifyContent: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
+                maxWidth: 900,
+                marginBottom: 36,
               }}
             >
-              <HeartHandshake size={18} color={theme.isDark ? '#34d399' : '#16a34a'} />
-              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.isDark ? '#34d399' : '#15803d' }}>
-                Konsultasi WhatsApp
-              </Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                onPress={() => setShowDemoModal(true)}
+                style={{
+                  backgroundColor: theme.primaryBlue,
+                  paddingVertical: 14,
+                  paddingHorizontal: 24,
+                  borderRadius: 10,
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: 8,
+                  shadowColor: theme.primaryBlue,
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.35,
+                  shadowRadius: 12,
+                  elevation: 6,
+                }}
+              >
+                <Sparkles size={18} color="#ffffff" />
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#ffffff' }}>
+                  Mulai Uji Coba Gratis
+                </Text>
+                <ArrowRight size={16} color="#ffffff" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => router.push('/auth/login')}
+                style={{
+                  backgroundColor: theme.cardBg,
+                  paddingVertical: 14,
+                  paddingHorizontal: 22,
+                  borderRadius: 10,
+                  borderWidth: 1.5,
+                  borderColor: theme.borderColor,
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <LogIn size={18} color={theme.textDark} />
+                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.textDark }}>
+                  Masuk ke Aplikasi
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleOpenWhatsApp}
+                style={{
+                  backgroundColor: theme.isDark ? '#064e3b' : '#dcfce7',
+                  paddingVertical: 14,
+                  paddingHorizontal: 20,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: theme.isDark ? '#059669' : '#86efac',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <HeartHandshake size={18} color={theme.isDark ? '#34d399' : '#16a34a'} />
+                <Text style={{ fontSize: 14, fontWeight: '700', color: theme.isDark ? '#34d399' : '#15803d' }}>
+                  Konsultasi WhatsApp
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Value Highlights Pill Bar */}
           <View
