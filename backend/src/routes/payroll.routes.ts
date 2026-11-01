@@ -23,6 +23,7 @@ router.get('/my-payrolls/export', authenticate, exportMyExcel); // Fallback alia
 
 // Admin routes
 router.post('/generate', authenticate, authorizeAdmin, generatePayroll);
+router.post('/', authenticate, authorizeAdmin, generatePayroll); // Support both /payroll and /payroll/generate
 router.get('/', authenticate, authorizeAdmin, getAllPayrolls);
 router.get('/export/excel', authenticate, authorizeAdmin, exportExcel);
 router.get('/user/:userId', authenticate, authorizeAdmin, getUserPayrolls);

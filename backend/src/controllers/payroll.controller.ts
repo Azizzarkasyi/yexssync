@@ -3,7 +3,7 @@ import ExcelJS from 'exceljs';
 import path from 'path';
 
 /**
- * Generate payroll for a user
+ * Generate payroll for a user or all users in tenant
  */
 export const generatePayroll = async (req: Request, res: Response) => {
   try {
@@ -13,27 +13,47 @@ export const generatePayroll = async (req: Request, res: Response) => {
     if (!periodStart || !periodEnd) {
       return res.status(400).json({
         success: false,
-        message: 'periodStart and periodEnd are required',
+        message: 'periodStart dan periodEnd wajib diisi',
       });
     }
 
     const startDate = new Date(periodStart);
     const endDate = new Date(periodEnd);
 
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Format tanggal periodStart atau periodEnd tidak valid',
+      });
+    }
+
+    // Set to start of day (00:00:00.000) and end of day (23:59:59.999)
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
     // Get company config for overtime rate
     const config = await prisma.companyConfig.findFirst();
     const overtimeRate = config?.overtimeRateMultiplier || 1.5;
 
-    // Get users (single or all active employees)
+    // Get users (single or all active non-admin employees)
     const isAll = !userId || userId === 'ALL' || userId === '';
     const users = isAll
-      ? await prisma.user.findMany({ where: { role: 'USER' } })
-      : await prisma.user.findMany({ where: { id: Number(userId) } });
+      ? await prisma.user.findMany({
+          where: {
+            role: { not: 'ADMIN' },
+            isActive: true,
+          },
+        })
+      : await prisma.user.findMany({
+          where: {
+            id: Number(userId),
+          },
+        });
 
     if (users.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'User tidak ditemukan',
+        message: 'Tidak ada karyawan yang ditemukan untuk digenerate payroll',
       });
     }
 
@@ -75,34 +95,34 @@ export const generatePayroll = async (req: Request, res: Response) => {
       }
 
       // Calculate salary based on type
-      let baseSalary = user.salary;
+      let baseSalary = user.salary || 0;
       switch (user.salaryType) {
         case 'HOURLY':
-          baseSalary = user.salary * workingHours;
+          baseSalary = (user.salary || 0) * workingHours;
           break;
         case 'DAILY':
-          baseSalary = user.salary * workingDays;
+          baseSalary = (user.salary || 0) * workingDays;
           break;
         case 'WEEKLY':
-          baseSalary = user.salary * Math.ceil(workingDays / 7);
+          baseSalary = (user.salary || 0) * Math.ceil(workingDays / 7);
           break;
         case 'MONTHLY':
         default:
-          baseSalary = user.salary;
+          baseSalary = user.salary || 0;
           break;
       }
 
-      const lateDeductions = lateCount * user.latePenalty;
+      const lateDeductions = lateCount * (user.latePenalty || 0);
       const expectedHours = workingDays * 8;
       const overtimeHours = Math.max(0, workingHours - expectedHours);
 
-      let hourlyRate = user.salary;
+      let hourlyRate = user.salary || 0;
       if (user.salaryType === 'MONTHLY') {
-        hourlyRate = user.salary / 160;
+        hourlyRate = (user.salary || 0) / 160;
       } else if (user.salaryType === 'DAILY') {
-        hourlyRate = user.salary / 8;
+        hourlyRate = (user.salary || 0) / 8;
       } else if (user.salaryType === 'WEEKLY') {
-        hourlyRate = user.salary / 40;
+        hourlyRate = (user.salary || 0) / 40;
       }
 
       const totalDeductions = lateDeductions;
@@ -113,29 +133,66 @@ export const generatePayroll = async (req: Request, res: Response) => {
         overtimeBonus = overtimeHours * hourlyRate * overtimeRate;
       }
 
-      const netSalary = baseSalary + overtimeBonus - totalDeductions;
+      const netSalary = Math.max(0, baseSalary + overtimeBonus - totalDeductions);
 
-      const payroll = await prisma.payroll.create({
-        data: {
+      // Check if payroll record already exists for this user in this period
+      const existing = await prisma.payroll.findFirst({
+        where: {
           userId: user.id,
-          periodStart: startDate,
-          periodEnd: endDate,
-          baseSalary,
-          workingDays,
-          workingHours,
-          overtimeHours,
-          lateDeductions,
-          breakDeductions: 0,
-          overtimeBonus,
-          deductions: totalDeductions,
-          netSalary,
-        },
-        include: {
-          user: {
-            select: { id: true, name: true, email: true },
-          },
+          periodStart: { gte: startDate },
+          periodEnd: { lte: endDate },
         },
       });
+
+      let payroll;
+      if (existing) {
+        // If already paid, do not overwrite paid record
+        if (existing.paymentStatus === 'PAID') {
+          generatedPayrolls.push(existing);
+          continue;
+        }
+        payroll = await prisma.payroll.update({
+          where: { id: existing.id },
+          data: {
+            baseSalary,
+            workingDays,
+            workingHours,
+            overtimeHours,
+            lateDeductions,
+            breakDeductions: 0,
+            overtimeBonus,
+            deductions: totalDeductions,
+            netSalary,
+          },
+          include: {
+            user: {
+              select: { id: true, name: true, email: true },
+            },
+          },
+        });
+      } else {
+        payroll = await prisma.payroll.create({
+          data: {
+            userId: user.id,
+            periodStart: startDate,
+            periodEnd: endDate,
+            baseSalary,
+            workingDays,
+            workingHours,
+            overtimeHours,
+            lateDeductions,
+            breakDeductions: 0,
+            overtimeBonus,
+            deductions: totalDeductions,
+            netSalary,
+          },
+          include: {
+            user: {
+              select: { id: true, name: true, email: true },
+            },
+          },
+        });
+      }
 
       generatedPayrolls.push(payroll);
     }
@@ -149,7 +206,7 @@ export const generatePayroll = async (req: Request, res: Response) => {
     console.error('Generate payroll error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Internal server error',
     });
   }
 };
@@ -221,15 +278,23 @@ export const getAllPayrolls = async (req: Request, res: Response) => {
     }
 
     if (periodStart && periodEnd) {
-      where.periodStart = { gte: new Date(periodStart as string) };
-      where.periodEnd = { lte: new Date(periodEnd as string) };
+      const pStart = new Date(periodStart as string);
+      const pEnd = new Date(periodEnd as string);
+      if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
+        pStart.setHours(0, 0, 0, 0);
+        pEnd.setHours(23, 59, 59, 999);
+        where.periodStart = { gte: pStart };
+        where.periodEnd = { lte: pEnd };
+      }
     } else if (month && year) {
       const m = Number(month) - 1;
       const y = Number(year);
-      const start = new Date(Date.UTC(y, m, 1));
-      const end = new Date(Date.UTC(m === 11 ? y + 1 : y, m === 11 ? 0 : m + 1, 1));
-      where.periodStart = { gte: start };
-      where.periodEnd = { lt: end };
+      if (!isNaN(m) && !isNaN(y)) {
+        const start = new Date(Date.UTC(y, m, 1));
+        const end = new Date(Date.UTC(m === 11 ? y + 1 : y, m === 11 ? 0 : m + 1, 1));
+        where.periodStart = { gte: start };
+        where.periodEnd = { lt: end };
+      }
     }
 
     const payrolls = await prisma.payroll.findMany({
@@ -379,8 +444,14 @@ export const exportExcel = async (req: Request, res: Response) => {
 
     const where: any = {};
     if (periodStart && periodEnd) {
-      where.periodStart = { gte: new Date(periodStart as string) };
-      where.periodEnd = { lte: new Date(periodEnd as string) };
+      const pStart = new Date(periodStart as string);
+      const pEnd = new Date(periodEnd as string);
+      if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
+        pStart.setHours(0, 0, 0, 0);
+        pEnd.setHours(23, 59, 59, 999);
+        where.periodStart = { gte: pStart };
+        where.periodEnd = { lte: pEnd };
+      }
     }
 
     const payrolls = await prisma.payroll.findMany({
@@ -455,8 +526,14 @@ export const exportMyExcel = async (req: Request, res: Response) => {
 
     const where: any = { userId };
     if (periodStart && periodEnd) {
-      where.periodStart = { gte: new Date(periodStart as string) };
-      where.periodEnd = { lte: new Date(periodEnd as string) };
+      const pStart = new Date(periodStart as string);
+      const pEnd = new Date(periodEnd as string);
+      if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
+        pStart.setHours(0, 0, 0, 0);
+        pEnd.setHours(23, 59, 59, 999);
+        where.periodStart = { gte: pStart };
+        where.periodEnd = { lte: pEnd };
+      }
     }
 
     const payrolls = await prisma.payroll.findMany({

@@ -187,6 +187,53 @@ export async function autoMigrateTenants() {
           ADD COLUMN IF NOT EXISTS "progress" INTEGER DEFAULT 0`,
         )
         .catch(() => {});
+
+      // Ensure PaymentStatus Enum and Payroll table exist in tenant schema
+      await prisma
+        .$executeRawUnsafe(
+          `DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_type t
+              JOIN pg_namespace n ON n.oid = t.typnamespace
+              WHERE t.typname = 'PaymentStatus' AND n.nspname = '${schema}'
+            ) THEN
+              CREATE TYPE "${schema}"."PaymentStatus" AS ENUM ('PENDING', 'PAID');
+            END IF;
+          END $$;`,
+        )
+        .catch(() => {});
+
+      await prisma
+        .$executeRawUnsafe(
+          `CREATE TABLE IF NOT EXISTS "${schema}"."Payroll" (
+            "id" SERIAL PRIMARY KEY,
+            "userId" INTEGER NOT NULL REFERENCES "${schema}"."User"("id") ON DELETE CASCADE,
+            "periodStart" TIMESTAMP(3) NOT NULL,
+            "periodEnd" TIMESTAMP(3) NOT NULL,
+            "baseSalary" DOUBLE PRECISION NOT NULL DEFAULT 0,
+            "workingDays" INTEGER NOT NULL DEFAULT 0,
+            "workingHours" DOUBLE PRECISION NOT NULL DEFAULT 0,
+            "overtimeHours" DOUBLE PRECISION NOT NULL DEFAULT 0,
+            "lateDeductions" DOUBLE PRECISION NOT NULL DEFAULT 0,
+            "breakDeductions" DOUBLE PRECISION NOT NULL DEFAULT 0,
+            "overtimeBonus" DOUBLE PRECISION NOT NULL DEFAULT 0,
+            "deductions" DOUBLE PRECISION NOT NULL DEFAULT 0,
+            "netSalary" DOUBLE PRECISION NOT NULL DEFAULT 0,
+            "paymentStatus" "${schema}"."PaymentStatus" NOT NULL DEFAULT 'PENDING',
+            "paymentProof" TEXT,
+            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );`,
+        )
+        .catch(() => {});
+
+      await prisma
+        .$executeRawUnsafe(
+          `ALTER TABLE "${schema}"."Payroll"
+          ADD COLUMN IF NOT EXISTS "paymentStatus" "${schema}"."PaymentStatus" NOT NULL DEFAULT 'PENDING',
+          ADD COLUMN IF NOT EXISTS "paymentProof" TEXT;`,
+        )
+        .catch(() => {});
     }
 
     console.log("Auto-migration completed for all tenants.");

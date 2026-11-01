@@ -213,8 +213,12 @@ export default function PayrollScreen() {
       if (selectedUserId && selectedUserId !== 'ALL') {
         params.userId = selectedUserId;
       }
-      if (startDate) params.periodStart = startDate;
-      if (endDate) params.periodEnd = endDate;
+      if (startDate && !isNaN(new Date(startDate).getTime())) {
+        params.periodStart = startDate;
+      }
+      if (endDate && !isNaN(new Date(endDate).getTime())) {
+        params.periodEnd = endDate;
+      }
 
       const res = await api.get('/payroll', { params });
       if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
@@ -363,7 +367,7 @@ export default function PayrollScreen() {
       if (generateTargetUserId && generateTargetUserId !== 'ALL') {
         payload.userId = generateTargetUserId;
       }
-      const res = await api.post('/payroll', payload);
+      const res = await api.post('/payroll/generate', payload);
       const msg = res.data?.message || 'Payroll berhasil digenerate!';
       if (Platform.OS === 'web') {
         window.alert(msg);
