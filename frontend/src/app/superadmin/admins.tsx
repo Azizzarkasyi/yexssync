@@ -48,6 +48,7 @@ import {
 import { router } from 'expo-router';
 import { AuthContext } from '@/context/AuthContext';
 import { useError } from '@/context/ErrorContext';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
 import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
@@ -79,6 +80,7 @@ export default function CentralAdminManagementScreen() {
   const theme = useSuperAdminTheme();
   const { user, logout } = useContext(AuthContext);
   const { showError } = useError();
+  const { showSuccess, showConfirm } = useGlobalModal();
 
   // Navigation
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -286,11 +288,7 @@ export default function CentralAdminManagementScreen() {
     }
     setShowResetPasswordModal(false);
     setNewResetPassword('');
-    if (Platform.OS === 'web') {
-      window.alert(`Password untuk ${selectedAdmin?.name} berhasil diperbarui.`);
-    } else {
-      Alert.alert('Sukses', `Password untuk ${selectedAdmin?.name} berhasil diperbarui.`);
-    }
+    showSuccess('Sukses', `Password untuk ${selectedAdmin?.name} berhasil diperbarui.`);
   };
 
   // Action: Hapus Admin
@@ -304,16 +302,14 @@ export default function CentralAdminManagementScreen() {
       setAdmins((prev) => prev.filter((a) => a.id !== admin.id));
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Yakin ingin menghapus admin ${admin.name}?`)) {
-        doDelete();
-      }
-    } else {
-      Alert.alert('Konfirmasi Hapus', `Yakin ingin menghapus admin ${admin.name}?`, [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Hapus', style: 'destructive', onPress: doDelete },
-      ]);
-    }
+    showConfirm({
+      title: 'Konfirmasi Hapus',
+      message: `Yakin ingin menghapus admin ${admin.name}?`,
+      confirmText: 'Hapus',
+      cancelText: 'Batal',
+      variant: 'danger',
+      onConfirm: doDelete,
+    });
   };
 
   const resetForm = () => {

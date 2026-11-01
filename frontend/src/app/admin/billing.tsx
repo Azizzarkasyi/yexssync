@@ -30,6 +30,7 @@ import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
 import AdminTopHeader from '@/components/AdminTopHeader';
 import api from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export default function AdminBillingScreen() {
   const insets = useSafeAreaInsets();
@@ -40,6 +41,7 @@ export default function AdminBillingScreen() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const { showSuccess, showError, showWarning, showInfo } = useGlobalModal();
   const [copied, setCopied] = useState(false);
 
   const [billingData, setBillingData] = useState<{
@@ -84,7 +86,7 @@ export default function AdminBillingScreen() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      Alert.alert('Tersalin', `Nomor rekening ${accountNumber} berhasil disalin.`);
+      showSuccess('Tersalin', `Nomor rekening ${accountNumber} berhasil disalin.`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -99,7 +101,7 @@ export default function AdminBillingScreen() {
         const file = e.target.files?.[0];
         if (file) {
           if (file.size > 5 * 1024 * 1024) {
-            window.alert('Ukuran foto maksimal 5 MB.');
+            showWarning('Ukuran File', 'Ukuran foto maksimal 5 MB.');
             return;
           }
           const objectUrl = URL.createObjectURL(file);
@@ -134,11 +136,11 @@ export default function AdminBillingScreen() {
 
   const handleUploadProof = async () => {
     if (!billingData?.billing?.id) {
-      Alert.alert('Perhatian', 'Data tagihan tidak ditemukan.');
+      showWarning('Perhatian', 'Data tagihan tidak ditemukan.');
       return;
     }
     if (!selectedImage) {
-      Alert.alert('Perhatian', 'Harap pilih foto struk/bukti transfer terlebih dahulu.');
+      showWarning('Perhatian', 'Harap pilih foto struk/bukti transfer terlebih dahulu.');
       return;
     }
 
@@ -162,18 +164,14 @@ export default function AdminBillingScreen() {
       });
 
       if (res.data?.success) {
-        if (Platform.OS === 'web') {
-          window.alert('Bukti pembayaran berhasil diunggah! SuperAdmin akan memverifikasi pembayaran Anda.');
-        } else {
-          Alert.alert('Sukses', 'Bukti pembayaran berhasil diunggah! SuperAdmin akan memverifikasi pembayaran Anda.');
-        }
+        showSuccess('Sukses', 'Bukti pembayaran berhasil diunggah! SuperAdmin akan memverifikasi pembayaran Anda.');
         setSelectedImage(null);
         fetchBilling();
       } else {
-        Alert.alert('Gagal', res.data?.message || 'Gagal mengunggah bukti pembayaran.');
+        showError('Gagal', res.data?.message || 'Gagal mengunggah bukti pembayaran.');
       }
     } catch (err: any) {
-      Alert.alert('Gagal Mengunggah', err.response?.data?.message || 'Terjadi kesalahan saat mengunggah bukti bayar.');
+      showError('Gagal Mengunggah', err.response?.data?.message || 'Terjadi kesalahan saat mengunggah bukti bayar.');
     } finally {
       setSubmitting(false);
     }

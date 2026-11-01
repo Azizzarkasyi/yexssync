@@ -34,6 +34,7 @@ import {
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
 import UserAvatar from '@/components/UserAvatar';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export interface TaskItem {
   id: string | number;
@@ -58,6 +59,7 @@ export default function UserTasksScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { user } = useContext(AuthContext);
+  const { showSuccess } = useGlobalModal();
 
   const [tasks, setTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -253,8 +255,7 @@ export default function UserTasksScreen() {
         setSelectedTask((prev) => (prev ? { ...prev, status: newStatus } : null));
       }
       const msg = newStatus === 'DONE' ? 'Tugas berhasil ditandai selesai!' : 'Tugas sedang dikerjakan.';
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Berhasil', msg);
+      showSuccess('Berhasil', msg);
       fetchTasks();
     } catch (error: any) {
       console.warn('Backend update failed:', error);

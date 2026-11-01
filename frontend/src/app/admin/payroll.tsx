@@ -41,6 +41,7 @@ import AdminSidebar from '@/components/AdminSidebar';
 import AdminTopHeader from '@/components/AdminTopHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 interface PayrollRecord {
   id: number;
@@ -69,6 +70,7 @@ export default function PayrollScreen() {
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
+  const { showSuccess, showError, showWarning, showInfo, showConfirm } = useGlobalModal();
 
   // Mobile menu drawer state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -336,7 +338,7 @@ export default function PayrollScreen() {
         a.click();
       }
     } else {
-      Alert.alert('Info', 'Laporan Excel penggajian siap diunduh.');
+      showInfo('Laporan Excel', 'Laporan Excel penggajian siap diunduh.');
     }
   };
 
@@ -357,11 +359,7 @@ export default function PayrollScreen() {
       setPayrolls((prev) =>
         prev.map((p) => (p.id === payingRecord.id ? { ...p, status: 'PAID' } : p))
       );
-      if (Platform.OS === 'web') {
-        window.alert(`Gaji ${payingRecord.name} berhasil ditandai LUNAS (PAID)!`);
-      } else {
-        Alert.alert('Sukses', `Gaji ${payingRecord.name} berhasil ditandai LUNAS!`);
-      }
+      showSuccess('Sukses', `Gaji ${payingRecord.name} berhasil ditandai LUNAS (PAID)!`);
       setPayingRecord(null);
     } finally {
       setIsSubmittingPay(false);
@@ -410,11 +408,7 @@ export default function PayrollScreen() {
         if (selectedSlip?.id === deleteTarget.record.id) {
           setSelectedSlip(null);
         }
-        if (Platform.OS === 'web') {
-          window.alert(`Data payroll ${deleteTarget.record.name} berhasil dihapus.`);
-        } else {
-          Alert.alert('Sukses', `Data payroll ${deleteTarget.record.name} berhasil dihapus.`);
-        }
+        showSuccess('Sukses', `Data payroll ${deleteTarget.record.name} berhasil dihapus.`);
       } else if (deleteTarget.type === 'BULK' && deleteTarget.ids && deleteTarget.ids.length > 0) {
         await api.delete('/payroll/bulk', { data: { ids: deleteTarget.ids } });
         const removedSet = new Set(deleteTarget.ids);
@@ -423,20 +417,12 @@ export default function PayrollScreen() {
         if (selectedSlip && removedSet.has(selectedSlip.id)) {
           setSelectedSlip(null);
         }
-        if (Platform.OS === 'web') {
-          window.alert(`${deleteTarget.ids.length} data payroll berhasil dihapus.`);
-        } else {
-          Alert.alert('Sukses', `${deleteTarget.ids.length} data payroll berhasil dihapus.`);
-        }
+        showSuccess('Sukses', `${deleteTarget.ids.length} data payroll berhasil dihapus.`);
       }
       setDeleteTarget(null);
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || 'Gagal menghapus data payroll';
-      if (Platform.OS === 'web') {
-        window.alert(`Error: ${msg}`);
-      } else {
-        Alert.alert('Gagal', msg);
-      }
+      showError('Gagal', msg);
     } finally {
       setIsDeleting(false);
     }
@@ -455,20 +441,12 @@ export default function PayrollScreen() {
       }
       const res = await api.post('/payroll/generate', payload);
       const msg = res.data?.message || 'Payroll berhasil digenerate!';
-      if (Platform.OS === 'web') {
-        window.alert(msg);
-      } else {
-        Alert.alert('Sukses', msg);
-      }
+      showSuccess('Sukses', msg);
       setShowGenerateModal(false);
       fetchBackendPayroll();
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Terjadi kesalahan saat generate payroll';
-      if (Platform.OS === 'web') {
-        window.alert(msg);
-      } else {
-        Alert.alert('Gagal', msg);
-      }
+      showError('Gagal', msg);
     } finally {
       setIsGenerating(false);
     }
@@ -680,6 +658,9 @@ export default function PayrollScreen() {
               shadowOpacity: 0.02,
               shadowRadius: 10,
               elevation: 1,
+              position: 'relative',
+              zIndex: (userDropdownOpen || deptDropdownOpen || statusDropdownOpen) ? 9999 : 20,
+              overflow: 'visible',
             }}
           >
             {/* Filters Row */}
@@ -690,6 +671,8 @@ export default function PayrollScreen() {
                 alignItems: isDesktop ? 'center' : 'stretch',
                 flexWrap: 'wrap',
                 flex: 1,
+                position: 'relative',
+                zIndex: (userDropdownOpen || deptDropdownOpen || statusDropdownOpen) ? 9999 : 20,
               }}
             >
               {/* Filter Per Karyawan (Searchable Dropdown) */}
@@ -2113,7 +2096,7 @@ export default function PayrollScreen() {
                     <TouchableOpacity
                       onPress={() => {
                         if (Platform.OS === 'web') window.print();
-                        else Alert.alert('Info', 'Mencetak slip gaji...');
+                        else showInfo('Info', 'Mencetak slip gaji...');
                       }}
                       style={{
                         flex: 1,
@@ -2316,6 +2299,8 @@ export default function PayrollScreen() {
                     shadowOpacity: 0.15,
                     shadowRadius: 20,
                     elevation: 10,
+                    position: 'relative',
+                    overflow: 'visible',
                   }}
                 >
                   <View
@@ -2339,9 +2324,9 @@ export default function PayrollScreen() {
                     </TouchableOpacity>
                   </View>
 
-                  <View style={{ marginTop: 14, gap: 14 }}>
+                  <View style={{ marginTop: 14, gap: 14, position: 'relative', zIndex: genEmployeeDropdownOpen ? 5000 : 10 }}>
                     {/* Target Karyawan (Searchable Dropdown) */}
-                    <View style={{ position: 'relative', zIndex: genEmployeeDropdownOpen ? 1000 : 1 }}>
+                    <View style={{ position: 'relative', zIndex: genEmployeeDropdownOpen ? 9999 : 20 }}>
                       <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textMuted, marginBottom: 6 }}>
                         Pilih Karyawan Sasaran:
                       </Text>
@@ -2389,11 +2374,11 @@ export default function PayrollScreen() {
                             borderColor: theme.borderColor,
                             borderRadius: 8,
                             shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.12,
-                            shadowRadius: 10,
-                            zIndex: 2000,
-                            elevation: 10,
+                            shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: 0.18,
+                            shadowRadius: 14,
+                            zIndex: 99999,
+                            elevation: 9999,
                             overflow: 'hidden',
                           }}
                         >
@@ -2513,7 +2498,7 @@ export default function PayrollScreen() {
                     </View>
 
                     {/* Rentang Periode Penggajian (Murni Tanggal Mulai s/d Selesai) */}
-                    <View>
+                    <View style={{ position: 'relative', zIndex: 1 }}>
                       <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textMuted, marginBottom: 6 }}>
                         Rentang Periode Penggajian:
                       </Text>
@@ -2589,7 +2574,7 @@ export default function PayrollScreen() {
                     </View>
                   </View>
 
-                  <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+                  <View style={{ flexDirection: 'row', gap: 10, marginTop: 18, position: 'relative', zIndex: 1 }}>
                     <TouchableOpacity
                       onPress={() => setShowGenerateModal(false)}
                       style={{

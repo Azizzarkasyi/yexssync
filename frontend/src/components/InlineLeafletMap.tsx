@@ -9,6 +9,7 @@ import {
 import { Crosshair, MapPin, Maximize2, RefreshCw } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { APP_ENV } from '@/config/env';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export interface InlineLeafletMapProps {
   latitude?: number | null;
@@ -30,6 +31,7 @@ export const InlineLeafletMap: React.FC<InlineLeafletMapProps> = ({
   editable = true,
 }) => {
   const theme = useAdminTheme();
+  const { showError, showWarning } = useGlobalModal();
   const iframeRef = useRef<any>(null);
   const [isLocating, setIsLocating] = useState(false);
 
@@ -98,16 +100,12 @@ export const InlineLeafletMap: React.FC<InlineLeafletMapProps> = ({
         },
         (err) => {
           setIsLocating(false);
-          if (typeof window !== 'undefined') {
-            window.alert('Gagal mengambil lokasi GPS: ' + err.message);
-          }
+          showError('GPS Error', 'Gagal mengambil lokasi GPS: ' + err.message);
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     } else {
-      if (typeof window !== 'undefined') {
-        window.alert('Perangkat atau browser tidak mendukung akses geolokasi.');
-      }
+      showWarning('Geolokasi', 'Perangkat atau browser tidak mendukung akses geolokasi.');
     }
   };
 

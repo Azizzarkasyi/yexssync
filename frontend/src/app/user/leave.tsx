@@ -34,6 +34,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 import UserAvatar from '@/components/UserAvatar';
 
 export interface LeaveItem {
@@ -54,6 +55,7 @@ export default function UserLeaveScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { user } = useContext(AuthContext);
+  const { showSuccess, showError, showWarning, showInfo } = useGlobalModal();
 
   // Segmented Control: 'CREATE' (Buat Pengajuan) | 'HISTORY' (Riwayat Saya)
   const [activeTab, setActiveTab] = useState<'CREATE' | 'HISTORY'>('CREATE');
@@ -152,11 +154,7 @@ export default function UserLeaveScreen() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      if (Platform.OS === 'web') {
-        window.alert('Ukuran file maksimal 5MB.');
-      } else {
-        Alert.alert('Perhatian', 'Ukuran file maksimal 5MB.');
-      }
+      showWarning('Ukuran File', 'Ukuran file maksimal 5MB.');
       return;
     }
 
@@ -187,7 +185,7 @@ export default function UserLeaveScreen() {
         });
       }
     } catch {
-      Alert.alert('Gagal', 'Tidak dapat membuka galeri foto.');
+      showError('Gagal', 'Tidak dapat membuka galeri foto.');
     }
   };
 
@@ -201,30 +199,22 @@ export default function UserLeaveScreen() {
   // Submit Leave Request
   const handleSubmitLeave = async () => {
     if (!startDate || !endDate) {
-      const msg = 'Tanggal mulai dan selesai wajib diisi.';
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Perhatian', msg);
+      showWarning('Perhatian', 'Tanggal mulai dan selesai wajib diisi.');
       return;
     }
 
     if (new Date(endDate) < new Date(startDate)) {
-      const msg = 'Tanggal selesai tidak boleh lebih awal dari tanggal mulai.';
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Perhatian', msg);
+      showWarning('Perhatian', 'Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');
       return;
     }
 
     if (!description.trim()) {
-      const msg = 'Keterangan/alasan pengajuan wajib diisi.';
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Perhatian', msg);
+      showWarning('Perhatian', 'Keterangan/alasan pengajuan wajib diisi.');
       return;
     }
 
     if (leaveType === 'SICK' && !selectedFile) {
-      const msg = 'Pengajuan Sakit wajib melampirkan foto Surat Keterangan Dokter.';
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Perhatian', msg);
+      showWarning('Perhatian', 'Pengajuan Sakit wajib melampirkan foto Surat Keterangan Dokter.');
       return;
     }
 
@@ -266,9 +256,7 @@ export default function UserLeaveScreen() {
       });
 
       if (res.data?.success) {
-        const successMsg = 'Pengajuan izin berhasil dikirim dan menunggu persetujuan.';
-        if (Platform.OS === 'web') window.alert(successMsg);
-        else Alert.alert('Sukses', successMsg);
+        showSuccess('Sukses', 'Pengajuan izin berhasil dikirim dan menunggu persetujuan.');
 
         // Reset form
         setDescription('');
@@ -279,16 +267,10 @@ export default function UserLeaveScreen() {
         await fetchLeaves();
         setActiveTab('HISTORY');
       } else {
-        const err = res.data?.message || 'Gagal mengirim pengajuan.';
-        if (Platform.OS === 'web') window.alert(err);
-        else Alert.alert('Info', err);
+        showInfo('Info', res.data?.message || 'Gagal mengirim pengajuan.');
       }
     } catch (error: any) {
-      const msg =
-        error.response?.data?.message ||
-        'Terjadi kendala saat mengirim pengajuan. Pastikan tanggal belum terdaftar.';
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Gagal', msg);
+      showError('Gagal', error.response?.data?.message || 'Terjadi kendala saat mengirim pengajuan. Pastikan tanggal belum terdaftar.');
     } finally {
       setIsSubmitting(false);
     }

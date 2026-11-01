@@ -44,6 +44,7 @@ import { LocationMapPicker } from '@/components/LocationMapPicker';
 import FaceRecognitionModal from '@/components/FaceRecognitionModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export interface ExtraWorkLocation {
   id: string;
@@ -58,6 +59,7 @@ export default function AddEmployeeScreen() {
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+  const { showSuccess, showError, showWarning, showInfo } = useGlobalModal();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -359,48 +361,44 @@ export default function AddEmployeeScreen() {
         (pos) => {
           setLatitude(pos.coords.latitude.toFixed(6));
           setLongitude(pos.coords.longitude.toFixed(6));
-          window.alert(
+          showSuccess(
+            'GPS Berhasil',
             `Koordinat GPS berhasil diset: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`
           );
         },
         () => {
           setLatitude('-6.208800');
           setLongitude('106.845600');
-          window.alert('Koordinat GPS diset ke titik pusat Jakarta (-6.208800, 106.845600)');
+          showInfo('GPS Standar', 'Koordinat GPS diset ke titik pusat Jakarta (-6.208800, 106.845600)');
         }
       );
     } else {
       setLatitude('-6.208800');
       setLongitude('106.845600');
-      Alert.alert('GPS', 'Koordinat titik kantor pusat diset (-6.208800, 106.845600)');
+      showInfo('GPS Standar', 'Koordinat titik kantor pusat diset (-6.208800, 106.845600)');
     }
   };
 
   // Submit Handler
   const handleSaveEmployee = async () => {
     if (!name.trim()) {
-      if (Platform.OS === 'web') window.alert('Nama lengkap pegawai wajib diisi.');
-      else Alert.alert('Peringatan', 'Nama lengkap pegawai wajib diisi.');
+      showWarning('Peringatan', 'Nama lengkap pegawai wajib diisi.');
       return;
     }
     if (!nik.trim()) {
-      if (Platform.OS === 'web') window.alert('Nomor Induk Kependudukan (NIK) wajib diisi.');
-      else Alert.alert('Peringatan', 'Nomor Induk Kependudukan (NIK) wajib diisi.');
+      showWarning('Peringatan', 'Nomor Induk Kependudukan (NIK) wajib diisi.');
       return;
     }
     if (!email.trim()) {
-      if (Platform.OS === 'web') window.alert('Email resmi pegawai wajib diisi.');
-      else Alert.alert('Peringatan', 'Email resmi pegawai wajib diisi.');
+      showWarning('Peringatan', 'Email resmi pegawai wajib diisi.');
       return;
     }
     if (!phone.trim()) {
-      if (Platform.OS === 'web') window.alert('Nomor telepon/HP pegawai wajib diisi.');
-      else Alert.alert('Peringatan', 'Nomor telepon/HP pegawai wajib diisi.');
+      showWarning('Peringatan', 'Nomor telepon/HP pegawai wajib diisi.');
       return;
     }
     if (!password || password.trim().length < 6) {
-      if (Platform.OS === 'web') window.alert('Password akun pegawai wajib diisi minimal 6 karakter.');
-      else Alert.alert('Peringatan', 'Password akun pegawai wajib diisi minimal 6 karakter.');
+      showWarning('Peringatan', 'Password akun pegawai wajib diisi minimal 6 karakter.');
       return;
     }
 
@@ -485,19 +483,11 @@ export default function AddEmployeeScreen() {
         console.warn('API /users error (continuing):', apiErr);
       }
 
-      if (Platform.OS === 'web') {
-        window.alert(`Pegawai ${name} berhasil disimpan!`);
-      } else {
-        Alert.alert('Sukses', `Pegawai ${name} berhasil disimpan!`);
-      }
-
-      router.replace('/admin/users');
+      showSuccess('Sukses', `Pegawai ${name} berhasil disimpan!`, () => {
+        router.replace('/admin/users');
+      });
     } catch {
-      if (Platform.OS === 'web') {
-        window.alert('Terjadi kesalahan saat menyimpan data pegawai.');
-      } else {
-        Alert.alert('Kesalahan', 'Terjadi kesalahan saat menyimpan data pegawai.');
-      }
+      showError('Kesalahan', 'Terjadi kesalahan saat menyimpan data pegawai.');
     } finally {
       setIsSubmitting(false);
     }

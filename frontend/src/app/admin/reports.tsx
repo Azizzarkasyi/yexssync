@@ -39,6 +39,7 @@ import AdminSidebar from '@/components/AdminSidebar';
 import AdminTopHeader from '@/components/AdminTopHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export interface CorrectionItem {
   id: number;
@@ -66,6 +67,7 @@ export default function AdminReportsScreen() {
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
+  const { showSuccess, showError, showWarning, showInfo } = useGlobalModal();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -228,11 +230,7 @@ export default function AdminReportsScreen() {
         setViewingItem({ ...viewingItem, status: 'APPROVED', reviewNote });
       }
 
-      if (Platform.OS === 'web') {
-        window.alert(`Koreksi jam kerja ${approveModalItem.user.name} berhasil disetujui!`);
-      } else {
-        Alert.alert('Sukses', `Koreksi jam kerja ${approveModalItem.user.name} berhasil disetujui!`);
-      }
+      showSuccess('Sukses', `Koreksi jam kerja ${approveModalItem.user.name} berhasil disetujui!`);
       setApproveModalItem(null);
       setReviewNote('');
     } finally {
@@ -270,11 +268,7 @@ export default function AdminReportsScreen() {
         });
       }
 
-      if (Platform.OS === 'web') {
-        window.alert(`Pengajuan koreksi ${rejectModalItem.user.name} telah ditolak.`);
-      } else {
-        Alert.alert('Sukses', `Pengajuan koreksi ${rejectModalItem.user.name} telah ditolak.`);
-      }
+      showSuccess('Sukses', `Pengajuan koreksi ${rejectModalItem.user.name} telah ditolak.`);
       setRejectModalItem(null);
       setReviewNote('');
     } finally {
@@ -298,13 +292,10 @@ export default function AdminReportsScreen() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        window.alert('Laporan koreksi absensi berhasil diekspor!');
-      } else {
-        Alert.alert('Sukses', 'Laporan koreksi absensi siap diunduh.');
       }
+      showSuccess('Sukses', 'Laporan koreksi absensi siap diunduh.');
     } catch {
-      if (Platform.OS === 'web') window.alert('Export laporan berhasil diproses.');
-      else Alert.alert('Sukses', 'Export laporan berhasil diproses.');
+      showError('Gagal', 'Terjadi kesalahan saat memproses ekspor laporan.');
     }
   };
 
@@ -496,6 +487,9 @@ export default function AdminReportsScreen() {
               shadowOpacity: 0.02,
               shadowRadius: 10,
               elevation: 1,
+              position: 'relative',
+              zIndex: statusDropdownOpen ? 9999 : 20,
+              overflow: 'visible',
             }}
           >
             {/* Left Filters */}
@@ -506,10 +500,12 @@ export default function AdminReportsScreen() {
                 alignItems: isDesktop ? 'center' : 'stretch',
                 flexWrap: 'wrap',
                 flex: 1,
+                position: 'relative',
+                zIndex: statusDropdownOpen ? 9999 : 20,
               }}
             >
               {/* Filter 1: Status Dropdown */}
-              <View style={{ position: 'relative', zIndex: 30 }}>
+              <View style={{ position: 'relative', zIndex: statusDropdownOpen ? 9999 : 30 }}>
                 <TouchableOpacity
                   onPress={() => setStatusDropdownOpen(!statusDropdownOpen)}
                   style={{
@@ -552,8 +548,8 @@ export default function AdminReportsScreen() {
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.1,
                       shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      zIndex: 99999,
+                      elevation: 9999,
                     }}
                   >
                     {[

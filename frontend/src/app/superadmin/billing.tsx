@@ -52,6 +52,7 @@ import {
 import { router } from 'expo-router';
 import { AuthContext } from '@/context/AuthContext';
 import { useError } from '@/context/ErrorContext';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
 import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
@@ -145,6 +146,7 @@ export default function SuperAdminBillingScreen() {
   const theme = useSuperAdminTheme();
   const { user, logout } = useContext(AuthContext);
   const { showError } = useError();
+  const { showSuccess, showConfirm } = useGlobalModal();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -314,9 +316,7 @@ export default function SuperAdminBillingScreen() {
       if (res.data?.success) {
         setBillingSettings(res.data.data);
         setShowSettingsModal(false);
-        if (Platform.OS === 'web') {
-          window.alert('Pengaturan masa tenggat dan penagihan berhasil disimpan!');
-        }
+        showSuccess('Sukses', 'Pengaturan masa tenggat dan penagihan berhasil disimpan!');
         fetchBillingsData();
       }
     } catch (err: any) {
@@ -351,9 +351,7 @@ export default function SuperAdminBillingScreen() {
       });
       if (res.data?.success) {
         setShowTenantGraceModal(false);
-        if (Platform.OS === 'web') {
-          window.alert(`Masa tenggat khusus untuk ${selectedTenantGrace.name} berhasil diperbarui!`);
-        }
+        showSuccess('Sukses', `Masa tenggat khusus untuk ${selectedTenantGrace.name} berhasil diperbarui!`);
         fetchBillingsData();
       }
     } catch (err: any) {
@@ -368,9 +366,7 @@ export default function SuperAdminBillingScreen() {
     try {
       const res = await api.post('/super-admin/billings/generate');
       if (res.data?.success) {
-        if (Platform.OS === 'web') {
-          window.alert(res.data.message || 'Tagihan bulan ini berhasil diproses untuk seluruh tenant.');
-        }
+        showSuccess('Sukses', res.data.message || 'Tagihan bulan ini berhasil diproses untuk seluruh tenant.');
         fetchBillingsData();
       }
     } catch (err: any) {
@@ -380,27 +376,29 @@ export default function SuperAdminBillingScreen() {
     }
   };
 
-  const handleApproveBilling = async (id: number) => {
-    const ok = Platform.OS === 'web'
-      ? window.confirm('Apakah Anda yakin ingin memverifikasi pembayaran ini? Seluruh pemblokiran absensi tenant akan langsung dibuka.')
-      : true;
-    if (!ok) return;
-
-    setIsApprovingId(id);
-    try {
-      const res = await api.post(`/super-admin/billings/${id}/approve`);
-      if (res.data?.success) {
-        if (Platform.OS === 'web') {
-          window.alert('Pembayaran berhasil disetujui! Status tagihan kini LUNAS dan akses absensi aktif.');
+  const handleApproveBilling = (id: number) => {
+    showConfirm({
+      title: 'Verifikasi Pembayaran',
+      message: 'Apakah Anda yakin ingin memverifikasi pembayaran ini? Seluruh pemblokiran absensi tenant akan langsung dibuka.',
+      confirmText: 'Verifikasi',
+      cancelText: 'Batal',
+      variant: 'primary',
+      onConfirm: async () => {
+        setIsApprovingId(id);
+        try {
+          const res = await api.post(`/super-admin/billings/${id}/approve`);
+          if (res.data?.success) {
+            showSuccess('Sukses', 'Pembayaran berhasil disetujui! Status tagihan kini LUNAS dan akses absensi aktif.');
+            setShowInvoiceDetailModal(false);
+            fetchBillingsData();
+          }
+        } catch (err: any) {
+          showError('Gagal Verifikasi', err.response?.data?.message || 'Gagal menyetujui pembayaran.');
+        } finally {
+          setIsApprovingId(null);
         }
-        setShowInvoiceDetailModal(false);
-        fetchBillingsData();
-      }
-    } catch (err: any) {
-      showError('Gagal Verifikasi', err.response?.data?.message || 'Gagal menyetujui pembayaran.');
-    } finally {
-      setIsApprovingId(null);
-    }
+      },
+    });
   };
 
   const handleExportCSV = () => {

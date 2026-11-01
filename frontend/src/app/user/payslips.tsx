@@ -7,10 +7,12 @@ import { Download, FileText, CheckCircle2, Clock, Eye, X, ExternalLink } from 'l
 import api, { getUploadUrl } from '@/lib/api';
 import { AuthContext } from '@/context/AuthContext';
 import { Header } from '@/components/Header';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export default function PayslipsScreen() {
   const { user } = useContext(AuthContext);
   const router = useRouter();
+  const { showError, showInfo } = useGlobalModal();
   const [payrolls, setPayrolls] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
@@ -51,10 +53,10 @@ export default function PayslipsScreen() {
         document.body.appendChild(link);
         link.click();
       } else {
-        Alert.alert('Info', 'Fitur download Excel di aplikasi mobile akan segera hadir.');
+        showInfo('Excel Slip Gaji', 'Fitur download Excel di aplikasi mobile akan segera hadir.');
       }
     } catch (error) {
-      Alert.alert('Gagal', 'Gagal mengunduh file Excel');
+      showError('Gagal', 'Gagal mengunduh file Excel');
     }
   };
 

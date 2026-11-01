@@ -29,12 +29,14 @@ import {
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
 import UserAvatar from '@/components/UserAvatar';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export default function HistoryScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { user } = useContext(AuthContext);
+  const { showSuccess, showError, showWarning } = useGlobalModal();
 
   const [history, setHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -176,7 +178,7 @@ export default function HistoryScreen() {
 
   const submitCorrection = async () => {
     if (!reason.trim() || (!clockIn.trim() && !clockOut.trim())) {
-      Alert.alert('Perhatian', 'Alasan koreksi dan minimal satu jam koreksi wajib diisi.');
+      showWarning('Perhatian', 'Alasan koreksi dan minimal satu jam koreksi wajib diisi.');
       return;
     }
 
@@ -184,7 +186,7 @@ export default function HistoryScreen() {
     try {
       const recordId = selectedRecord?.id || history[0]?.id;
       if (!recordId) {
-        Alert.alert('Sukses', 'Pengajuan koreksi presensi berhasil dicatat!');
+        showSuccess('Sukses', 'Pengajuan koreksi presensi berhasil dicatat!');
         setShowModal(false);
         return;
       }
@@ -196,14 +198,14 @@ export default function HistoryScreen() {
       });
 
       if (response.data?.success) {
-        Alert.alert('Sukses', 'Pengajuan koreksi berhasil dikirim dan menunggu persetujuan.');
+        showSuccess('Sukses', 'Pengajuan koreksi berhasil dikirim dan menunggu persetujuan.');
         setShowModal(false);
         fetchHistory();
       } else {
-        Alert.alert('Gagal', response.data?.message || 'Gagal mengirim koreksi');
+        showError('Gagal', response.data?.message || 'Gagal mengirim koreksi');
       }
     } catch (error: any) {
-      Alert.alert('Gagal', error.response?.data?.message || 'Terjadi kesalahan sistem');
+      showError('Gagal', error.response?.data?.message || 'Terjadi kesalahan sistem');
     } finally {
       setIsSubmitting(false);
     }

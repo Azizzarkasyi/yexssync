@@ -588,6 +588,9 @@ export default function AdminUsersScreen() {
               justifyContent: 'space-between',
               alignItems: isDesktop ? 'center' : 'stretch',
               gap: 15,
+              position: 'relative',
+              zIndex: (deptDropdownOpen || statusDropdownOpen) ? 9999 : 20,
+              overflow: 'visible',
             }}
           >
             {/* Filters Row */}
@@ -596,6 +599,8 @@ export default function AdminUsersScreen() {
                 flexDirection: isDesktop ? 'row' : 'column',
                 gap: 12,
                 flex: 1,
+                position: 'relative',
+                zIndex: (deptDropdownOpen || statusDropdownOpen) ? 9999 : 20,
               }}
             >
               {/* Search Employee Bar */}
@@ -635,7 +640,7 @@ export default function AdminUsersScreen() {
               </View>
 
               {/* Departemen Dropdown */}
-              <View style={{ position: 'relative', minWidth: 190 }}>
+              <View style={{ position: 'relative', minWidth: 190, zIndex: deptDropdownOpen ? 9999 : 20 }}>
                 <TouchableOpacity
                   onPress={() => {
                     setDeptDropdownOpen(!deptDropdownOpen);
@@ -670,12 +675,12 @@ export default function AdminUsersScreen() {
                       borderWidth: 1,
                       borderColor: theme.borderColor,
                       borderRadius: 8,
-                      zIndex: 100,
+                      zIndex: 99999,
+                      elevation: 9999,
                       shadowColor: '#000',
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.1,
                       shadowRadius: 8,
-                      elevation: 5,
                       overflow: 'hidden',
                     }}
                   >
@@ -720,7 +725,7 @@ export default function AdminUsersScreen() {
               </View>
 
               {/* Status Dropdown */}
-              <View style={{ position: 'relative', minWidth: 160 }}>
+              <View style={{ position: 'relative', minWidth: 160, zIndex: statusDropdownOpen ? 9998 : 10 }}>
                 <TouchableOpacity
                   onPress={() => {
                     setStatusDropdownOpen(!statusDropdownOpen);
@@ -755,12 +760,12 @@ export default function AdminUsersScreen() {
                       borderWidth: 1,
                       borderColor: theme.borderColor,
                       borderRadius: 8,
-                      zIndex: 100,
+                      zIndex: 99999,
+                      elevation: 9999,
                       shadowColor: '#000',
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.1,
                       shadowRadius: 8,
-                      elevation: 5,
                       overflow: 'hidden',
                     }}
                   >

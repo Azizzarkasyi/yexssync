@@ -51,6 +51,7 @@ import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
 import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
 import api from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 // Interface definitions matching the provided mockup
 interface TenantCompany {
@@ -83,6 +84,7 @@ export default function TenantManagementScreen() {
   const theme = useSuperAdminTheme();
   const { user, logout } = useContext(AuthContext);
   const { showError } = useError();
+  const { showSuccess } = useGlobalModal();
 
   // Navigation state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -262,7 +264,7 @@ export default function TenantManagementScreen() {
       link.click();
       document.body.removeChild(link);
     } else {
-      Alert.alert('Export CSV Berhasil', `${filteredCompanies.length} data perusahaan siap diekspor.`);
+      showSuccess('Export CSV Berhasil', `${filteredCompanies.length} data perusahaan siap diekspor.`);
     }
   };
 

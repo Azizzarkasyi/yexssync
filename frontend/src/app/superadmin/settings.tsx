@@ -42,6 +42,7 @@ import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
 import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
 import api from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 type SettingsTab = 'general' | 'payment' | 'smtp' | 'security' | 'backup';
 
@@ -50,6 +51,7 @@ export default function SuperAdminSettingsScreen() {
   const isDesktop = width >= 768;
   const theme = useSuperAdminTheme();
   const { user, logout } = useContext(AuthContext);
+  const { showError } = useGlobalModal();
 
   // Navigation states
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -124,9 +126,7 @@ export default function SuperAdminSettingsScreen() {
         setTimeout(() => setSaveSuccessMessage(null), 3500);
       }
     } catch (err: any) {
-      if (Platform.OS === 'web') {
-        window.alert('Gagal menyimpan rekening bank: ' + (err.response?.data?.message || err.message));
-      }
+      showError('Gagal Menyimpan', 'Gagal menyimpan rekening bank: ' + (err.response?.data?.message || err.message));
     } finally {
       setIsSavingBank(false);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, {useState, useEffect, useContext} from "react";
 import {
   View,
   Text,
@@ -13,10 +13,10 @@ import {
   useColorScheme,
   Platform,
   KeyboardAvoidingView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+} from "react-native";
+import {SafeAreaView} from "react-native-safe-area-context";
+import {useRouter} from "expo-router";
+import {LinearGradient} from "expo-linear-gradient";
 import {
   Settings,
   User,
@@ -41,18 +41,21 @@ import {
   CreditCard,
   FileCheck,
   Info,
-} from 'lucide-react-native';
-import { AuthContext } from '@/context/AuthContext';
-import { FaceCamera } from '@/components/FaceCamera';
-import api from '@/lib/api';
-import UserAvatar from '@/components/UserAvatar';
-import { APP_ENV } from '@/config/env';
+} from "lucide-react-native";
+import {AuthContext} from "@/context/AuthContext";
+import {FaceCamera} from "@/components/FaceCamera";
+import api from "@/lib/api";
+import {useGlobalModal} from "@/context/GlobalModalContext";
+import UserAvatar from "@/components/UserAvatar";
+import {APP_ENV} from "@/config/env";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const { user, logout, loadUser } = useContext(AuthContext);
+  const isDark = colorScheme === "dark";
+  const {user, logout, loadUser} = useContext(AuthContext);
+  const {showSuccess, showError, showWarning, showInfo, showConfirm} =
+    useGlobalModal();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -63,14 +66,14 @@ export default function ProfileScreen() {
 
   // Modals state
   const [showEditModal, setShowEditModal] = useState(false);
-  const [name, setName] = useState(user?.name || '');
-  const [phone, setPhone] = useState((user as any)?.phone || '');
+  const [name, setName] = useState(user?.name || "");
+  const [phone, setPhone] = useState((user as any)?.phone || "");
 
   const [showJobModal, setShowJobModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -83,7 +86,7 @@ export default function ProfileScreen() {
     (user as any)?.photo ||
     (user as any)?.avatar ||
     (user as any)?.profilePicture ||
-    'https://i.pravatar.cc/150?img=12';
+    "https://i.pravatar.cc/150?img=12";
 
   useEffect(() => {
     if (user?.name) {
@@ -99,12 +102,16 @@ export default function ProfileScreen() {
     try {
       let res;
       try {
-        res = await api.get('/payroll/my');
+        res = await api.get("/payroll/my");
       } catch {
-        res = await api.get('/payrolls/my-payrolls');
+        res = await api.get("/payrolls/my-payrolls");
       }
 
-      if (res?.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      if (
+        res?.data?.success &&
+        Array.isArray(res.data.data) &&
+        res.data.data.length > 0
+      ) {
         setLatestPayroll(res.data.data[0]);
       }
     } catch (err) {
@@ -124,25 +131,34 @@ export default function ProfileScreen() {
     setIsProcessing(true);
     try {
       const formData = new FormData();
-      formData.append('faceDescriptor', JSON.stringify(descriptor));
-      const filename = photoUri.split('/').pop() || 'face.jpg';
+      formData.append("faceDescriptor", JSON.stringify(descriptor));
+      const filename = photoUri.split("/").pop() || "face.jpg";
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image/jpeg`;
-      formData.append('photo', { uri: photoUri, name: filename, type } as any);
+      formData.append("photo", {uri: photoUri, name: filename, type} as any);
 
-      const response = await api.post('/face/register', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await api.post("/face/register", formData, {
+        headers: {"Content-Type": "multipart/form-data"},
       });
 
       if (response.data.success) {
-        Alert.alert('Berhasil', 'Data wajah biometrik Anda berhasil didaftarkan!');
+        showSuccess(
+          "Berhasil",
+          "Data wajah biometrik Anda berhasil didaftarkan!",
+        );
         await loadUser();
         setShowFaceCamera(false);
       } else {
-        Alert.alert('Gagal', response.data.message || 'Gagal mendaftarkan data wajah');
+        showError(
+          "Gagal",
+          response.data.message || "Gagal mendaftarkan data wajah",
+        );
       }
     } catch (error: any) {
-      Alert.alert('Gagal', error.response?.data?.message || 'Gagal menyimpan data wajah');
+      showError(
+        "Gagal",
+        error.response?.data?.message || "Gagal menyimpan data wajah",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -151,21 +167,24 @@ export default function ProfileScreen() {
   // Update Profile Name & Phone
   const handleSaveProfile = async () => {
     if (!name.trim()) {
-      Alert.alert('Peringatan', 'Nama lengkap wajib diisi');
+      showWarning("Peringatan", "Nama lengkap wajib diisi");
       return;
     }
     setIsProcessing(true);
     try {
-      const response = await api.put('/users/profile', { name, phone });
+      const response = await api.put("/users/profile", {name, phone});
       if (response.data.success) {
-        Alert.alert('Sukses', 'Informasi profil berhasil diperbarui');
+        showSuccess("Sukses", "Informasi profil berhasil diperbarui");
         await loadUser();
         setShowEditModal(false);
       } else {
-        Alert.alert('Gagal', response.data.message);
+        showError("Gagal", response.data.message);
       }
     } catch (error: any) {
-      Alert.alert('Gagal', error.response?.data?.message || 'Gagal memperbarui profil');
+      showError(
+        "Gagal",
+        error.response?.data?.message || "Gagal memperbarui profil",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -174,30 +193,33 @@ export default function ProfileScreen() {
   // Change Password
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword) {
-      Alert.alert('Peringatan', 'Password lama dan baru wajib diisi');
+      showWarning("Peringatan", "Password lama dan baru wajib diisi");
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Peringatan', 'Konfirmasi password baru tidak cocok');
+      showWarning("Peringatan", "Konfirmasi password baru tidak cocok");
       return;
     }
     setIsProcessing(true);
     try {
-      const response = await api.put('/users/change-password', {
+      const response = await api.put("/users/change-password", {
         currentPassword,
         newPassword,
       });
       if (response.data.success) {
-        Alert.alert('Sukses', 'Kata sandi berhasil diperbarui');
+        showSuccess("Sukses", "Kata sandi berhasil diperbarui");
         setShowPasswordModal(false);
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
       } else {
-        Alert.alert('Gagal', response.data.message);
+        showError("Gagal", response.data.message);
       }
     } catch (error: any) {
-      Alert.alert('Gagal', error.response?.data?.message || 'Gagal mengubah kata sandi');
+      showError(
+        "Gagal",
+        error.response?.data?.message || "Gagal mengubah kata sandi",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -205,49 +227,47 @@ export default function ProfileScreen() {
 
   // Logout
   const handleLogout = async () => {
-    const doLogout = async () => {
-      try {
-        await logout();
-      } catch (err) {
-        console.error('Logout error:', err);
-      }
-      router.replace('/');
-    };
-
-    if (Platform.OS === 'web') {
-      const confirmed = typeof window !== 'undefined' ? window.confirm('Apakah Anda yakin ingin keluar dari aplikasi?') : true;
-      if (confirmed) {
-        await doLogout();
-      }
-      return;
-    }
-
-    Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin keluar dari aplikasi?', [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Keluar',
-        style: 'destructive',
-        onPress: doLogout,
+    showConfirm({
+      title: "Konfirmasi Keluar",
+      message: "Apakah Anda yakin ingin keluar dari aplikasi?",
+      confirmText: "Keluar",
+      cancelText: "Batal",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await logout();
+        } catch (err) {
+          console.error("Logout error:", err);
+        }
+        router.replace("/");
       },
-    ]);
+    });
   };
 
   // Download Latest Slip
   const handleDownloadLatestSlip = async () => {
     try {
-      if (Platform.OS === 'web') {
-        const res = await api.get('/payroll/my/export/excel', { responseType: 'blob' });
+      if (Platform.OS === "web") {
+        const res = await api.get("/payroll/my/export/excel", {
+          responseType: "blob",
+        });
         const url = window.URL.createObjectURL(new Blob([res.data]));
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = url;
-        link.setAttribute('download', `Slip_Gaji_${user?.name || 'Karyawan'}.xlsx`);
+        link.setAttribute(
+          "download",
+          `Slip_Gaji_${user?.name || "Karyawan"}.xlsx`,
+        );
         document.body.appendChild(link);
         link.click();
       } else {
-        Alert.alert('Sukses', 'Permintaan unduh slip gaji telah dikirim ke perangkat Anda.');
+        showSuccess(
+          "Sukses",
+          "Permintaan unduh slip gaji telah dikirim ke perangkat Anda.",
+        );
       }
     } catch {
-      Alert.alert('Info', 'Slip gaji berhasil diunduh ke folder dokumen Anda.');
+      showInfo("Info", "Slip gaji berhasil diunduh ke folder dokumen Anda.");
     }
   };
 
@@ -261,20 +281,28 @@ export default function ProfileScreen() {
     );
   }
 
-  const employeeId = (user as any)?.employeeId || `HY-${String(user?.id || '01').padStart(3, '0')}`;
+  const employeeId =
+    (user as any)?.employeeId ||
+    `HY-${String(user?.id || "01").padStart(3, "0")}`;
   const positionTitle =
     (user as any)?.position ||
-    (user?.role === 'ADMIN'
-      ? 'System Administrator'
-      : user?.role === 'LEADER'
-      ? 'Team Leader'
-      : 'Karyawan');
-  const departmentName = (user as any)?.department || 'Umum';
+    (user?.role === "ADMIN"
+      ? "System Administrator"
+      : user?.role === "LEADER"
+        ? "Team Leader"
+        : "Karyawan");
+  const departmentName = (user as any)?.department || "Umum";
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
-      <View className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm" style={{ flex: 1, height: '100%', minHeight: 0 }}>
-        
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center"
+      style={{flex: 1, height: "100%", minHeight: "100%"}}
+    >
+      <View
+        className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm"
+        style={{flex: 1, height: "100%", minHeight: 0}}
+      >
         {/* Header disamakan persis dengan halaman lain */}
         <View className="flex-row justify-between items-center px-6 pt-5 pb-4 bg-[#f4f7fb] dark:bg-slate-950 z-10">
           <Text className="text-[18px] font-bold text-[#222222] dark:text-white">
@@ -287,7 +315,11 @@ export default function ProfileScreen() {
               onPress={() => setShowSettingsModal(true)}
               className="items-center justify-center"
             >
-              <Settings size={20} color={isDark ? '#cbd5e1' : '#222222'} strokeWidth={2} />
+              <Settings
+                size={20}
+                color={isDark ? "#cbd5e1" : "#222222"}
+                strokeWidth={2}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -295,15 +327,15 @@ export default function ProfileScreen() {
         {/* Scrollable Main Content */}
         <ScrollView
           className="flex-1"
-          style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
+          style={{flex: 1}}
+          contentContainerStyle={{flexGrow: 1, paddingBottom: 100}}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              colors={['#2a75d3']}
+              colors={["#2a75d3"]}
               tintColor="#2a75d3"
             />
           }
@@ -311,8 +343,8 @@ export default function ProfileScreen() {
           {/* Profile Header Card - Disesuaikan menjadi bentuk kartu agar tidak bertabrakan dengan header abu-abu */}
           <View
             style={{
-              shadowColor: '#2a75d3',
-              shadowOffset: { width: 0, height: 8 },
+              shadowColor: "#2a75d3",
+              shadowOffset: {width: 0, height: 8},
               shadowOpacity: 0.2,
               shadowRadius: 20,
               elevation: 6,
@@ -322,8 +354,12 @@ export default function ProfileScreen() {
             {/* Profile Avatar */}
             <View className="relative">
               <UserAvatar
-                name={user?.name || 'Karyawan'}
-                photo={(user as any)?.photo || (user as any)?.avatar || (user as any)?.profilePicture}
+                name={user?.name || "Karyawan"}
+                photo={
+                  (user as any)?.photo ||
+                  (user as any)?.avatar ||
+                  (user as any)?.profilePicture
+                }
                 size={70}
                 borderWidth={3}
                 borderColor="rgba(255,255,255,0.4)"
@@ -332,8 +368,8 @@ export default function ProfileScreen() {
                 activeOpacity={0.85}
                 onPress={() => setShowFaceCamera(true)}
                 style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
+                  shadowColor: "#000",
+                  shadowOffset: {width: 0, height: 2},
                   shadowOpacity: 0.1,
                   shadowRadius: 5,
                   elevation: 2,
@@ -350,9 +386,12 @@ export default function ProfileScreen() {
                 className="text-[18px] font-bold text-white mb-1 leading-[1.3]"
                 numberOfLines={1}
               >
-                {user?.name || 'Karyawan'}
+                {user?.name || "Karyawan"}
               </Text>
-              <Text className="text-[13px] text-white/80 mb-2" numberOfLines={1}>
+              <Text
+                className="text-[13px] text-white/80 mb-2"
+                numberOfLines={1}
+              >
                 {positionTitle}
               </Text>
 
@@ -366,7 +405,9 @@ export default function ProfileScreen() {
                 {user?.faceRegistered ? (
                   <View className="bg-emerald-500/30 border border-emerald-400/40 px-2 py-0.5 rounded-[6px] flex-row items-center gap-1">
                     <ShieldCheck size={11} color="#ffffff" strokeWidth={2.4} />
-                    <Text className="text-[10px] font-semibold text-white">Biometrik</Text>
+                    <Text className="text-[10px] font-semibold text-white">
+                      Biometrik
+                    </Text>
                   </View>
                 ) : (
                   <TouchableOpacity
@@ -375,7 +416,9 @@ export default function ProfileScreen() {
                     className="bg-white/20 px-2 py-0.5 rounded-[6px] flex-row items-center gap-1"
                   >
                     <Camera size={11} color="#ffffff" strokeWidth={2.4} />
-                    <Text className="text-[10px] font-semibold text-white">Daftar Wajah</Text>
+                    <Text className="text-[10px] font-semibold text-white">
+                      Daftar Wajah
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -384,12 +427,11 @@ export default function ProfileScreen() {
 
           {/* Content Padding */}
           <View className="px-5">
-            
             {/* Kartu Highlight Slip Gaji Terakhir */}
             <View
               style={{
-                shadowColor: '#2a75d3',
-                shadowOffset: { width: 0, height: 4 },
+                shadowColor: "#2a75d3",
+                shadowOffset: {width: 0, height: 4},
                 shadowOpacity: 0.08,
                 shadowRadius: 20,
                 elevation: 3,
@@ -406,7 +448,13 @@ export default function ProfileScreen() {
                       Slip Gaji Terakhir
                     </Text>
                     <Text className="text-[12px] text-[#777777] dark:text-slate-400">
-                      Periode {latestPayroll?.periodEnd ? new Date(latestPayroll.periodEnd).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : 'Agustus 2026'}
+                      Periode{" "}
+                      {latestPayroll?.periodEnd
+                        ? new Date(latestPayroll.periodEnd).toLocaleDateString(
+                            "id-ID",
+                            {month: "long", year: "numeric"},
+                          )
+                        : "Agustus 2026"}
                     </Text>
                   </View>
                 </View>
@@ -420,11 +468,13 @@ export default function ProfileScreen() {
               <View className="flex-row gap-2.5">
                 <TouchableOpacity
                   activeOpacity={0.85}
-                  onPress={() => router.push('/user/payslips')}
+                  onPress={() => router.push("/user/payslips")}
                   className="flex-1 py-2.5 rounded-[8px] bg-[#2a75d3] items-center justify-center flex-row gap-1.5"
                 >
                   <Eye size={14} color="#ffffff" strokeWidth={2.2} />
-                  <Text className="text-[12px] font-semibold text-white">Lihat Slip</Text>
+                  <Text className="text-[12px] font-semibold text-white">
+                    Lihat Slip
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -432,8 +482,14 @@ export default function ProfileScreen() {
                   onPress={handleDownloadLatestSlip}
                   className="flex-1 py-2.5 rounded-[8px] bg-[#f1f5f9] dark:bg-slate-800 items-center justify-center flex-row gap-1.5 border border-[#eef1f6] dark:border-slate-700"
                 >
-                  <Download size={14} color={isDark ? '#e2e8f0' : '#222222'} strokeWidth={2.2} />
-                  <Text className="text-[12px] font-semibold text-[#222222] dark:text-slate-200">Unduh PDF</Text>
+                  <Download
+                    size={14}
+                    color={isDark ? "#e2e8f0" : "#222222"}
+                    strokeWidth={2.2}
+                  />
+                  <Text className="text-[12px] font-semibold text-[#222222] dark:text-slate-200">
+                    Unduh PDF
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -443,7 +499,6 @@ export default function ProfileScreen() {
               Akun & Data Diri
             </Text>
             <View className="bg-white dark:bg-slate-900 rounded-[16px] overflow-hidden border border-[#eef1f6] dark:border-slate-800 mb-5 shadow-sm shadow-black/5 dark:shadow-none">
-              
               {/* Informasi Pribadi */}
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -510,7 +565,9 @@ export default function ProfileScreen() {
                       Pendaftaran Wajah (Biometrik)
                     </Text>
                     <Text className="text-[11px] text-[#777777] dark:text-slate-400">
-                      {user?.faceRegistered ? 'Wajah Terdaftar' : 'Belum Terdaftar'}
+                      {user?.faceRegistered
+                        ? "Wajah Terdaftar"
+                        : "Belum Terdaftar"}
                     </Text>
                   </View>
                 </View>
@@ -518,18 +575,18 @@ export default function ProfileScreen() {
                   <View
                     className={`px-2 py-0.5 rounded-full ${
                       user?.faceRegistered
-                        ? 'bg-emerald-100 dark:bg-emerald-950'
-                        : 'bg-rose-100 dark:bg-rose-950'
+                        ? "bg-emerald-100 dark:bg-emerald-950"
+                        : "bg-rose-100 dark:bg-rose-950"
                     }`}
                   >
                     <Text
                       className={`text-[10px] font-bold uppercase ${
                         user?.faceRegistered
-                          ? 'text-emerald-700 dark:text-emerald-400'
-                          : 'text-rose-700 dark:text-rose-400'
+                          ? "text-emerald-700 dark:text-emerald-400"
+                          : "text-rose-700 dark:text-rose-400"
                       }`}
                     >
-                      {user?.faceRegistered ? 'Aktif' : 'Belum'}
+                      {user?.faceRegistered ? "Aktif" : "Belum"}
                     </Text>
                   </View>
                   <ChevronRight size={16} color="#cbd5e1" strokeWidth={2.2} />
@@ -542,11 +599,10 @@ export default function ProfileScreen() {
               Keuangan & Dokumen
             </Text>
             <View className="bg-white dark:bg-slate-900 rounded-[16px] overflow-hidden border border-[#eef1f6] dark:border-slate-800 mb-6 shadow-sm shadow-black/5 dark:shadow-none">
-              
               {/* Riwayat Slip Gaji */}
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => router.push('/user/payslips')}
+                onPress={() => router.push("/user/payslips")}
                 className="flex-row items-center justify-between p-4 border-b border-[#eef1f6] dark:border-slate-800"
               >
                 <View className="flex-row items-center gap-3">
@@ -606,7 +662,6 @@ export default function ProfileScreen() {
                 Keluar Aplikasi
               </Text>
             </TouchableOpacity>
-
           </View>
         </ScrollView>
 
@@ -620,12 +675,15 @@ export default function ProfileScreen() {
           onRequestClose={() => setShowEditModal(false)}
         >
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{flex: 1}}
           >
             <View className="flex-1 bg-black/50 justify-center items-center px-4 py-6">
               <View className="w-full max-w-[390px] max-h-[85%] bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-xl border border-slate-100 dark:border-slate-800">
-                <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                >
                   <View className="flex-row justify-between items-center mb-4">
                     <View className="flex-row items-center gap-2">
                       <View className="w-8 h-8 rounded-full bg-[#2a75d3]/10 items-center justify-center">
@@ -640,7 +698,11 @@ export default function ProfileScreen() {
                       onPress={() => setShowEditModal(false)}
                       className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
                     >
-                      <X size={15} color={isDark ? '#cbd5e1' : '#64748b'} strokeWidth={2.2} />
+                      <X
+                        size={15}
+                        color={isDark ? "#cbd5e1" : "#64748b"}
+                        strokeWidth={2.2}
+                      />
                     </TouchableOpacity>
                   </View>
 
@@ -651,7 +713,7 @@ export default function ProfileScreen() {
                     value={name}
                     onChangeText={setName}
                     placeholder="Masukkan nama lengkap"
-                    placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                    placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                     className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white mb-3 text-[14px]"
                   />
 
@@ -663,7 +725,7 @@ export default function ProfileScreen() {
                     onChangeText={setPhone}
                     placeholder="Contoh: 081234567890"
                     keyboardType="phone-pad"
-                    placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                    placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                     className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white mb-3 text-[14px]"
                   />
 
@@ -671,7 +733,7 @@ export default function ProfileScreen() {
                     Alamat Email
                   </Text>
                   <TextInput
-                    value={user?.email || ''}
+                    value={user?.email || ""}
                     editable={false}
                     className="w-full bg-slate-100 dark:bg-slate-800/50 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-slate-500 dark:text-slate-400 mb-3 text-[14px]"
                   />
@@ -680,7 +742,7 @@ export default function ProfileScreen() {
                     Peran Pengguna
                   </Text>
                   <TextInput
-                    value={user?.role || 'USER'}
+                    value={user?.role || "USER"}
                     editable={false}
                     className="w-full bg-slate-100 dark:bg-slate-800/50 p-3 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-slate-500 dark:text-slate-400 mb-4 text-[14px]"
                   />
@@ -693,7 +755,7 @@ export default function ProfileScreen() {
                       className="flex-1 py-3 rounded-[10px] bg-[#2a75d3] items-center justify-center flex-row gap-2"
                     >
                       <Text className="text-white font-semibold text-[13px]">
-                        {isProcessing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                        {isProcessing ? "Menyimpan..." : "Simpan Perubahan"}
                       </Text>
                     </TouchableOpacity>
 
@@ -736,45 +798,72 @@ export default function ProfileScreen() {
                   onPress={() => setShowJobModal(false)}
                   className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
                 >
-                  <X size={15} color={isDark ? '#cbd5e1' : '#64748b'} strokeWidth={2.2} />
+                  <X
+                    size={15}
+                    color={isDark ? "#cbd5e1" : "#64748b"}
+                    strokeWidth={2.2}
+                  />
                 </TouchableOpacity>
               </View>
 
               <View className="bg-[#fafbfe] dark:bg-slate-800/60 p-4 rounded-[12px] border border-[#eef1f6] dark:border-slate-800 flex-col gap-3 mb-4">
                 <View className="flex-row justify-between items-center">
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">ID Karyawan</Text>
-                  <Text className="text-[13px] font-bold text-[#222222] dark:text-white">{employeeId}</Text>
-                </View>
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">Jabatan</Text>
-                  <Text className="text-[13px] font-semibold text-[#222222] dark:text-white">{positionTitle}</Text>
-                </View>
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">Departemen</Text>
-                  <Text className="text-[13px] font-semibold text-[#222222] dark:text-white">{departmentName}</Text>
-                </View>
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">Status Kerja</Text>
-                  <View className="bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded">
-                    <Text className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">Karyawan Tetap</Text>
-                  </View>
-                </View>
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">Tanggal Bergabung</Text>
-                  <Text className="text-[13px] font-medium text-[#222222] dark:text-white">
-                    {(user as any)?.joinDate
-                      ? new Date((user as any).joinDate).toLocaleDateString('id-ID', {
-                          day: '2-digit',
-                          month: 'long',
-                          year: 'numeric',
-                        })
-                      : '01 Januari 2025'}
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">
+                    ID Karyawan
+                  </Text>
+                  <Text className="text-[13px] font-bold text-[#222222] dark:text-white">
+                    {employeeId}
                   </Text>
                 </View>
                 <View className="flex-row justify-between items-center">
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">Kontak Telepon</Text>
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">
+                    Jabatan
+                  </Text>
+                  <Text className="text-[13px] font-semibold text-[#222222] dark:text-white">
+                    {positionTitle}
+                  </Text>
+                </View>
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">
+                    Departemen
+                  </Text>
+                  <Text className="text-[13px] font-semibold text-[#222222] dark:text-white">
+                    {departmentName}
+                  </Text>
+                </View>
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">
+                    Status Kerja
+                  </Text>
+                  <View className="bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded">
+                    <Text className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                      Karyawan Tetap
+                    </Text>
+                  </View>
+                </View>
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">
+                    Tanggal Bergabung
+                  </Text>
                   <Text className="text-[13px] font-medium text-[#222222] dark:text-white">
-                    {(user as any)?.phone || '-'}
+                    {(user as any)?.joinDate
+                      ? new Date((user as any).joinDate).toLocaleDateString(
+                          "id-ID",
+                          {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          },
+                        )
+                      : "01 Januari 2025"}
+                  </Text>
+                </View>
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">
+                    Kontak Telepon
+                  </Text>
+                  <Text className="text-[13px] font-medium text-[#222222] dark:text-white">
+                    {(user as any)?.phone || "-"}
                   </Text>
                 </View>
               </View>
@@ -784,7 +873,9 @@ export default function ProfileScreen() {
                 onPress={() => setShowJobModal(false)}
                 className="w-full py-2.5 rounded-[10px] bg-[#2a75d3] items-center justify-center"
               >
-                <Text className="text-white font-semibold text-[13px]">Tutup</Text>
+                <Text className="text-white font-semibold text-[13px]">
+                  Tutup
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -798,12 +889,15 @@ export default function ProfileScreen() {
           onRequestClose={() => setShowPasswordModal(false)}
         >
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{flex: 1}}
           >
             <View className="flex-1 bg-black/50 justify-center items-center px-4 py-6">
               <View className="w-full max-w-[390px] max-h-[85%] bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-xl border border-slate-100 dark:border-slate-800">
-                <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                >
                   <View className="flex-row justify-between items-center mb-4">
                     <View className="flex-row items-center gap-2">
                       <View className="w-8 h-8 rounded-full bg-orange-500/10 items-center justify-center">
@@ -818,7 +912,11 @@ export default function ProfileScreen() {
                       onPress={() => setShowPasswordModal(false)}
                       className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
                     >
-                      <X size={15} color={isDark ? '#cbd5e1' : '#64748b'} strokeWidth={2.2} />
+                      <X
+                        size={15}
+                        color={isDark ? "#cbd5e1" : "#64748b"}
+                        strokeWidth={2.2}
+                      />
                     </TouchableOpacity>
                   </View>
 
@@ -831,17 +929,22 @@ export default function ProfileScreen() {
                       onChangeText={setCurrentPassword}
                       secureTextEntry={!showCurrentPassword}
                       placeholder="Masukkan password saat ini"
-                      placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                      placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                       className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
                     />
                     <TouchableOpacity
-                      onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-                      style={{ position: 'absolute', right: 12, padding: 4 }}
+                      onPress={() =>
+                        setShowCurrentPassword(!showCurrentPassword)
+                      }
+                      style={{position: "absolute", right: 12, padding: 4}}
                     >
                       {showCurrentPassword ? (
-                        <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                        <EyeOff
+                          size={18}
+                          color={isDark ? "#94a3b8" : "#64748b"}
+                        />
                       ) : (
-                        <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                        <Eye size={18} color={isDark ? "#94a3b8" : "#64748b"} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -855,17 +958,20 @@ export default function ProfileScreen() {
                       onChangeText={setNewPassword}
                       secureTextEntry={!showNewPassword}
                       placeholder="Minimal 6 karakter"
-                      placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                      placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                       className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
                     />
                     <TouchableOpacity
                       onPress={() => setShowNewPassword(!showNewPassword)}
-                      style={{ position: 'absolute', right: 12, padding: 4 }}
+                      style={{position: "absolute", right: 12, padding: 4}}
                     >
                       {showNewPassword ? (
-                        <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                        <EyeOff
+                          size={18}
+                          color={isDark ? "#94a3b8" : "#64748b"}
+                        />
                       ) : (
-                        <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                        <Eye size={18} color={isDark ? "#94a3b8" : "#64748b"} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -879,17 +985,22 @@ export default function ProfileScreen() {
                       onChangeText={setConfirmPassword}
                       secureTextEntry={!showConfirmPassword}
                       placeholder="Ulangi password baru"
-                      placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                      placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                       className="w-full bg-[#fafbfe] dark:bg-slate-800 p-3 pr-11 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 text-[#222222] dark:text-white text-[14px]"
                     />
                     <TouchableOpacity
-                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                      style={{ position: 'absolute', right: 12, padding: 4 }}
+                      onPress={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      style={{position: "absolute", right: 12, padding: 4}}
                     >
                       {showConfirmPassword ? (
-                        <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                        <EyeOff
+                          size={18}
+                          color={isDark ? "#94a3b8" : "#64748b"}
+                        />
                       ) : (
-                        <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                        <Eye size={18} color={isDark ? "#94a3b8" : "#64748b"} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -902,7 +1013,7 @@ export default function ProfileScreen() {
                       className="flex-1 py-3 rounded-[10px] bg-orange-500 items-center justify-center"
                     >
                       <Text className="text-white font-semibold text-[13px]">
-                        {isProcessing ? 'Memproses...' : 'Ubah Sandi'}
+                        {isProcessing ? "Memproses..." : "Ubah Sandi"}
                       </Text>
                     </TouchableOpacity>
 
@@ -945,7 +1056,11 @@ export default function ProfileScreen() {
                   onPress={() => setShowBankModal(false)}
                   className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
                 >
-                  <X size={15} color={isDark ? '#cbd5e1' : '#64748b'} strokeWidth={2.2} />
+                  <X
+                    size={15}
+                    color={isDark ? "#cbd5e1" : "#64748b"}
+                    strokeWidth={2.2}
+                  />
                 </TouchableOpacity>
               </View>
 
@@ -954,25 +1069,32 @@ export default function ProfileScreen() {
                   Bank Penerima Gaji
                 </Text>
                 <Text className="text-white text-[16px] font-bold mb-3">
-                  {(user as any)?.bankName || 'Bank Central Asia (BCA)'}
+                  {(user as any)?.bankName || "Bank Central Asia (BCA)"}
                 </Text>
                 <Text className="text-white font-mono text-[15px] tracking-widest mb-2">
-                  {(user as any)?.bankAccountNumber || '•••• •••• 8291'}
+                  {(user as any)?.bankAccountNumber || "•••• •••• 8291"}
                 </Text>
                 <View className="flex-row justify-between items-center">
                   <Text className="text-white/80 text-[12px] font-medium">
-                    {((user as any)?.bankAccountHolder || user?.name || 'Karyawan').toUpperCase()}
+                    {(
+                      (user as any)?.bankAccountHolder ||
+                      user?.name ||
+                      "Karyawan"
+                    ).toUpperCase()}
                   </Text>
                   <View className="bg-emerald-400/30 px-2 py-0.5 rounded">
                     <Text className="text-[10px] font-bold text-white">
-                      {(user as any)?.bankAccountNumber ? 'TERVERIFIKASI' : 'DEFAULT'}
+                      {(user as any)?.bankAccountNumber
+                        ? "TERVERIFIKASI"
+                        : "DEFAULT"}
                     </Text>
                   </View>
                 </View>
               </View>
 
               <Text className="text-[11px] text-[#777777] dark:text-slate-400 mb-4 text-center">
-                Untuk mengajukan perubahan nomor rekening, silakan hubungi bagian HRD / Finance perusahaan.
+                Untuk mengajukan perubahan nomor rekening, silakan hubungi
+                bagian HRD / Finance perusahaan.
               </Text>
 
               <TouchableOpacity
@@ -980,7 +1102,9 @@ export default function ProfileScreen() {
                 onPress={() => setShowBankModal(false)}
                 className="w-full py-2.5 rounded-[10px] bg-[#2a75d3] items-center justify-center"
               >
-                <Text className="text-white font-semibold text-[13px]">Tutup</Text>
+                <Text className="text-white font-semibold text-[13px]">
+                  Tutup
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1009,35 +1133,57 @@ export default function ProfileScreen() {
                   onPress={() => setShowContractModal(false)}
                   className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
                 >
-                  <X size={15} color={isDark ? '#cbd5e1' : '#64748b'} strokeWidth={2.2} />
+                  <X
+                    size={15}
+                    color={isDark ? "#cbd5e1" : "#64748b"}
+                    strokeWidth={2.2}
+                  />
                 </TouchableOpacity>
+                d{" "}
               </View>
 
               <View className="bg-[#fafbfe] dark:bg-slate-800/60 p-4 rounded-[12px] border border-[#eef1f6] dark:border-slate-800 flex-col gap-2.5 mb-4">
                 <View className="flex-row justify-between items-center">
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">Nomor PKWT</Text>
-                  <Text className="text-[12px] font-semibold text-[#222222] dark:text-white">024/HR-KTR/I/2025</Text>
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">
+                    Nomor PKWT
+                  </Text>
+                  <Text className="text-[12px] font-semibold text-[#222222] dark:text-white">
+                    024/HR-KTR/I/2025
+                  </Text>
                 </View>
                 <View className="flex-row justify-between items-center">
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">Masa Kontrak</Text>
-                  <Text className="text-[12px] font-medium text-[#222222] dark:text-white">01 Jan 2025 - 31 Des 2026</Text>
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">
+                    Masa Kontrak
+                  </Text>
+                  <Text className="text-[12px] font-medium text-[#222222] dark:text-white">
+                    01 Jan 2025 - 31 Des 2026
+                  </Text>
                 </View>
                 <View className="flex-row justify-between items-center">
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">Status</Text>
-                  <Text className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">Berlaku Aktif</Text>
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">
+                    Status
+                  </Text>
+                  <Text className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">
+                    Berlaku Aktif
+                  </Text>
                 </View>
               </View>
 
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => {
-                  Alert.alert('Info', 'Salinan dokumen kontrak kerja akan dikirimkan ke email terdaftar Anda.');
+                  showInfo(
+                    "Kontrak Kerja",
+                    "Salinan dokumen kontrak kerja akan dikirimkan ke email terdaftar Anda.",
+                  );
                   setShowContractModal(false);
                 }}
                 className="w-full py-2.5 rounded-[10px] bg-[#2a75d3] items-center justify-center flex-row gap-2 mb-2"
               >
                 <Download size={14} color="#ffffff" strokeWidth={2.2} />
-                <Text className="text-white font-semibold text-[13px]">Unduh Salinan Kontrak</Text>
+                <Text className="text-white font-semibold text-[13px]">
+                  Unduh Salinan Kontrak
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1045,7 +1191,9 @@ export default function ProfileScreen() {
                 onPress={() => setShowContractModal(false)}
                 className="w-full py-2.5 rounded-[10px] border border-[#eef1f6] dark:border-slate-700 items-center justify-center"
               >
-                <Text className="text-[#777777] dark:text-slate-300 font-medium text-[13px]">Tutup</Text>
+                <Text className="text-[#777777] dark:text-slate-300 font-medium text-[13px]">
+                  Tutup
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1074,22 +1222,38 @@ export default function ProfileScreen() {
                   onPress={() => setShowSettingsModal(false)}
                   className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
                 >
-                  <X size={15} color={isDark ? '#cbd5e1' : '#64748b'} strokeWidth={2.2} />
+                  <X
+                    size={15}
+                    color={isDark ? "#cbd5e1" : "#64748b"}
+                    strokeWidth={2.2}
+                  />
                 </TouchableOpacity>
               </View>
 
               <View className="bg-[#fafbfe] dark:bg-slate-800/60 p-4 rounded-[12px] border border-[#eef1f6] dark:border-slate-800 flex-col gap-3 mb-4">
                 <View className="flex-row justify-between items-center">
-                  <Text className="text-[13px] text-[#222222] dark:text-white font-medium">Tema Sistem</Text>
-                  <Text className="text-[12px] font-semibold text-[#2a75d3]">{isDark ? 'Mode Gelap' : 'Mode Terang'}</Text>
+                  <Text className="text-[13px] text-[#222222] dark:text-white font-medium">
+                    Tema Sistem
+                  </Text>
+                  <Text className="text-[12px] font-semibold text-[#2a75d3]">
+                    {isDark ? "Mode Gelap" : "Mode Terang"}
+                  </Text>
                 </View>
                 <View className="flex-row justify-between items-center">
-                  <Text className="text-[13px] text-[#222222] dark:text-white font-medium">Notifikasi Presensi</Text>
-                  <Text className="text-[12px] font-semibold text-emerald-600">Aktif</Text>
+                  <Text className="text-[13px] text-[#222222] dark:text-white font-medium">
+                    Notifikasi Presensi
+                  </Text>
+                  <Text className="text-[12px] font-semibold text-emerald-600">
+                    Aktif
+                  </Text>
                 </View>
                 <View className="flex-row justify-between items-center">
-                  <Text className="text-[13px] text-[#222222] dark:text-white font-medium">Versi Aplikasi</Text>
-                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">v{APP_ENV.APP_VERSION}</Text>
+                  <Text className="text-[13px] text-[#222222] dark:text-white font-medium">
+                    Versi Aplikasi
+                  </Text>
+                  <Text className="text-[12px] text-[#777777] dark:text-slate-400">
+                    v{APP_ENV.APP_VERSION}
+                  </Text>
                 </View>
               </View>
 
@@ -1098,12 +1262,13 @@ export default function ProfileScreen() {
                 onPress={() => setShowSettingsModal(false)}
                 className="w-full py-2.5 rounded-[10px] bg-[#2a75d3] items-center justify-center"
               >
-                <Text className="text-white font-semibold text-[13px]">Tutup</Text>
+                <Text className="text-white font-semibold text-[13px]">
+                  Tutup
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
-
       </View>
     </SafeAreaView>
   );

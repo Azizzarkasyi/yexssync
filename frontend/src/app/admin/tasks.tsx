@@ -42,6 +42,7 @@ import AdminSidebar from '@/components/AdminSidebar';
 import AdminTopHeader from '@/components/AdminTopHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 interface TaskItem {
   id: number;
@@ -75,6 +76,7 @@ export default function AdminTasksScreen() {
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
+  const { showSuccess, showError, showWarning, showInfo } = useGlobalModal();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -253,8 +255,7 @@ export default function AdminTasksScreen() {
   // Save Task (Create or Update)
   const handleSaveTask = async () => {
     if (!formTitle.trim()) {
-      if (Platform.OS === 'web') window.alert('Judul tugas wajib diisi!');
-      else Alert.alert('Peringatan', 'Judul tugas wajib diisi!');
+      showWarning('Peringatan', 'Judul tugas wajib diisi!');
       return;
     }
     setSubmitting(true);
@@ -336,11 +337,7 @@ export default function AdminTasksScreen() {
         setTasks((prev) => [newTask, ...prev]);
       }
 
-      if (Platform.OS === 'web') {
-        window.alert(`Tugas berhasil ${editingTaskId ? 'diperbarui' : 'dibuat'}!`);
-      } else {
-        Alert.alert('Sukses', `Tugas berhasil ${editingTaskId ? 'diperbarui' : 'dibuat'}!`);
-      }
+      showSuccess('Sukses', `Tugas berhasil ${editingTaskId ? 'diperbarui' : 'dibuat'}!`);
       setIsModalOpen(false);
     } finally {
       setSubmitting(false);
@@ -357,11 +354,7 @@ export default function AdminTasksScreen() {
         // Continue local removal
       }
       setTasks((prev) => prev.filter((t) => t.id !== deleteConfirmTask.id));
-      if (Platform.OS === 'web') {
-        window.alert('Tugas berhasil dihapus.');
-      } else {
-        Alert.alert('Sukses', 'Tugas berhasil dihapus.');
-      }
+      showSuccess('Sukses', 'Tugas berhasil dihapus.');
       setDeleteConfirmTask(null);
     } catch {
       setDeleteConfirmTask(null);
@@ -636,6 +629,9 @@ export default function AdminTasksScreen() {
               shadowOpacity: 0.02,
               shadowRadius: 10,
               elevation: 1,
+              position: 'relative',
+              zIndex: (statusDropdownOpen || priorityDropdownOpen) ? 9999 : 20,
+              overflow: 'visible',
             }}
           >
             {/* Left Filters */}
@@ -646,10 +642,12 @@ export default function AdminTasksScreen() {
                 alignItems: isDesktop ? 'center' : 'stretch',
                 flexWrap: 'wrap',
                 flex: 1,
+                position: 'relative',
+                zIndex: (statusDropdownOpen || priorityDropdownOpen) ? 9999 : 20,
               }}
             >
               {/* Status Filter Dropdown */}
-              <View style={{ position: 'relative' }}>
+              <View style={{ position: 'relative', zIndex: statusDropdownOpen ? 9999 : 20 }}>
                 <TouchableOpacity
                   onPress={() => {
                     setStatusDropdownOpen(!statusDropdownOpen);
@@ -695,8 +693,8 @@ export default function AdminTasksScreen() {
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.1,
                       shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      zIndex: 99999,
+                      elevation: 9999,
                     }}
                   >
                     {[
@@ -737,7 +735,7 @@ export default function AdminTasksScreen() {
               </View>
 
               {/* Priority Filter Dropdown */}
-              <View style={{ position: 'relative' }}>
+              <View style={{ position: 'relative', zIndex: priorityDropdownOpen ? 9998 : 10 }}>
                 <TouchableOpacity
                   onPress={() => {
                     setPriorityDropdownOpen(!priorityDropdownOpen);
@@ -783,8 +781,8 @@ export default function AdminTasksScreen() {
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.1,
                       shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      zIndex: 99999,
+                      elevation: 9999,
                     }}
                   >
                     {[

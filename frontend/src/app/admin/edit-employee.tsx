@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import api from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 import { 
   User, Mail, Lock, Shield, Banknote, Clock, MapPin, Save, X, 
   Info, Plus, Trash2, Building2, Phone, Calendar, CreditCard, 
@@ -34,6 +35,7 @@ export default function EditEmployeeScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const { id } = useLocalSearchParams();
+  const { showSuccess, showError, showWarning, showInfo } = useGlobalModal();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -235,8 +237,7 @@ export default function EditEmployeeScreen() {
         }
       }
     } catch (error) {
-      Alert.alert('Error', 'Gagal memuat data karyawan');
-      router.back();
+      showError('Error', 'Gagal memuat data karyawan', () => router.back());
     } finally {
       setIsLoading(false);
     }
@@ -244,7 +245,7 @@ export default function EditEmployeeScreen() {
 
   const handleUpdate = async () => {
     if (!formData.name || !formData.email) {
-      Alert.alert('Error', 'Nama dan Email wajib diisi.');
+      showWarning('Peringatan', 'Nama dan Email wajib diisi.');
       return;
     }
 
@@ -288,13 +289,12 @@ export default function EditEmployeeScreen() {
 
       const response = await api.put(`/users/${id}`, payload);
       if (response.data.success) {
-        Alert.alert('Sukses', 'Data karyawan berhasil diperbarui');
-        router.back();
+        showSuccess('Sukses', 'Data karyawan berhasil diperbarui', () => router.back());
       } else {
-        Alert.alert('Gagal', response.data.message);
+        showError('Gagal', response.data.message);
       }
     } catch (error: any) {
-      Alert.alert('Gagal', error.response?.data?.message || 'Terjadi kesalahan');
+      showError('Gagal', error.response?.data?.message || 'Terjadi kesalahan');
     } finally {
       setIsSubmitting(false);
     }
@@ -581,7 +581,7 @@ export default function EditEmployeeScreen() {
         </Card>
 
         {/* 5. Pengaturan Waktu Kerja */}
-        <Card className="mb-6 border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden rounded-3xl">
+        <Card className="mb-6 border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm rounded-3xl" style={{ overflow: shiftDropdownOpen ? 'visible' : 'hidden', zIndex: shiftDropdownOpen ? 9999 : 1 }}>
           <View className="bg-purple-50 dark:bg-purple-900/20 px-6 py-4 flex-row items-center border-b border-purple-100 dark:border-purple-900/50">
             <View className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-800/50 items-center justify-center mr-3">
               <Clock size={16} className="text-purple-600 dark:text-purple-400" />
@@ -590,7 +590,7 @@ export default function EditEmployeeScreen() {
           </View>
           <View className="p-6">
             {/* Shift Kerja Dropdown */}
-            <View className="mb-4 relative z-50">
+            <View className="mb-4 relative" style={{ zIndex: shiftDropdownOpen ? 99999 : 20 }}>
               <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">
                 Pilih Shift Kerja:
               </Text>
@@ -614,7 +614,7 @@ export default function EditEmployeeScreen() {
               </TouchableOpacity>
 
               {shiftDropdownOpen && (
-                <View className="absolute top-16 left-0 right-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden max-h-60">
+                <View className="absolute top-16 left-0 right-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden max-h-60" style={{ zIndex: 999999, elevation: 9999 }}>
                   <ScrollView nestedScrollEnabled style={{ maxHeight: 220 }}>
                     {/* Option Kosong */}
                     <TouchableOpacity
@@ -742,7 +742,7 @@ export default function EditEmployeeScreen() {
                       workRadius: '50',
                     });
                     setWorkLocations([]);
-                    Alert.alert('Info', 'Lokasi khusus dikosongkan. Karyawan akan otomatis mengikuti lokasi kantor perusahaan.');
+                    showInfo('Lokasi Standar', 'Lokasi khusus dikosongkan. Karyawan akan otomatis mengikuti lokasi kantor perusahaan.');
                   }}
                   className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-xl flex-row items-center"
                 >

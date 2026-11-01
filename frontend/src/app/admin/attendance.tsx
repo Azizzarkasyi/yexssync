@@ -33,12 +33,14 @@ import AdminSidebar from '@/components/AdminSidebar';
 import AdminTopHeader from '@/components/AdminTopHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api, { getUploadUrl } from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export default function AttendanceScreen() {
   const insets = useSafeAreaInsets();
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
+  const { showInfo } = useGlobalModal();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
@@ -111,10 +113,10 @@ export default function AttendanceScreen() {
         document.body.appendChild(link);
         link.click();
       } else {
-        Alert.alert('Info', 'Laporan diekspor dan dikirim ke perangkat Anda.');
+        showInfo('Ekspor Presensi', 'Laporan diekspor dan dikirim ke perangkat Anda.');
       }
     } catch (err) {
-      Alert.alert('Info', 'Format laporan presensi CSV/Excel siap diunduh.');
+      showInfo('Ekspor Presensi', 'Format laporan presensi CSV/Excel siap diunduh.');
     } finally {
       setIsExporting(false);
     }

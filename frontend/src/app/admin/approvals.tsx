@@ -43,6 +43,7 @@ import AdminSidebar from '@/components/AdminSidebar';
 import AdminTopHeader from '@/components/AdminTopHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api, { getUploadUrl } from '@/lib/api';
+import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export interface LeaveItem {
   id: number;
@@ -74,6 +75,7 @@ export default function AdminApprovalsScreen() {
   const theme = useAdminTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
+  const { showSuccess, showError, showWarning, showInfo } = useGlobalModal();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -239,11 +241,7 @@ export default function AdminApprovalsScreen() {
         setViewingLeave({ ...viewingLeave, status: 'APPROVED', reviewNote });
       }
 
-      if (Platform.OS === 'web') {
-        window.alert(`Pengajuan izin ${approveModalItem.user.name} berhasil disetujui!`);
-      } else {
-        Alert.alert('Sukses', `Pengajuan izin ${approveModalItem.user.name} berhasil disetujui!`);
-      }
+      showSuccess('Sukses', `Pengajuan izin ${approveModalItem.user.name} berhasil disetujui!`);
       setApproveModalItem(null);
       setReviewNote('');
     } finally {
@@ -281,11 +279,7 @@ export default function AdminApprovalsScreen() {
         });
       }
 
-      if (Platform.OS === 'web') {
-        window.alert(`Pengajuan izin ${rejectModalItem.user.name} telah ditolak.`);
-      } else {
-        Alert.alert('Sukses', `Pengajuan izin ${rejectModalItem.user.name} telah ditolak.`);
-      }
+      showSuccess('Sukses', `Pengajuan izin ${rejectModalItem.user.name} telah ditolak.`);
       setRejectModalItem(null);
       setReviewNote('');
     } finally {
@@ -309,13 +303,10 @@ export default function AdminApprovalsScreen() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        window.alert('Data pengajuan izin & cuti berhasil diekspor!');
-      } else {
-        Alert.alert('Sukses', 'Data pengajuan izin & cuti siap diunduh.');
       }
+      showSuccess('Sukses', 'Data pengajuan izin & cuti siap diunduh.');
     } catch {
-      if (Platform.OS === 'web') window.alert('Export data berhasil diproses.');
-      else Alert.alert('Sukses', 'Export data berhasil diproses.');
+      showError('Gagal', 'Terjadi kesalahan saat memproses ekspor data.');
     }
   };
 
@@ -507,6 +498,9 @@ export default function AdminApprovalsScreen() {
               shadowOpacity: 0.02,
               shadowRadius: 10,
               elevation: 1,
+              position: 'relative',
+              zIndex: (statusDropdownOpen || typeDropdownOpen) ? 9999 : 20,
+              overflow: 'visible',
             }}
           >
             {/* Filters */}
@@ -517,10 +511,12 @@ export default function AdminApprovalsScreen() {
                 alignItems: isDesktop ? 'center' : 'stretch',
                 flexWrap: 'wrap',
                 flex: 1,
+                position: 'relative',
+                zIndex: (statusDropdownOpen || typeDropdownOpen) ? 9999 : 20,
               }}
             >
               {/* Filter 1: Status Dropdown */}
-              <View style={{ position: 'relative', zIndex: 30 }}>
+              <View style={{ position: 'relative', zIndex: statusDropdownOpen ? 9999 : 30 }}>
                 <TouchableOpacity
                   onPress={() => {
                     setStatusDropdownOpen(!statusDropdownOpen);
@@ -566,8 +562,8 @@ export default function AdminApprovalsScreen() {
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.1,
                       shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      zIndex: 99999,
+                      elevation: 9999,
                     }}
                   >
                     {[
@@ -609,7 +605,7 @@ export default function AdminApprovalsScreen() {
               </View>
 
               {/* Filter 2: Jenis Dropdown */}
-              <View style={{ position: 'relative', zIndex: 20 }}>
+              <View style={{ position: 'relative', zIndex: typeDropdownOpen ? 9998 : 20 }}>
                 <TouchableOpacity
                   onPress={() => {
                     setTypeDropdownOpen(!typeDropdownOpen);
@@ -653,8 +649,8 @@ export default function AdminApprovalsScreen() {
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.1,
                       shadowRadius: 8,
-                      zIndex: 100,
-                      elevation: 5,
+                      zIndex: 99999,
+                      elevation: 9999,
                     }}
                   >
                     {[
@@ -1068,9 +1064,7 @@ export default function AdminApprovalsScreen() {
                                 if (l.attachment?.url) {
                                   setPreviewAttachmentUrl(l.attachment.url);
                                 } else {
-                                  if (Platform.OS === 'web') {
-                                    window.alert(`Membuka lampiran: ${l.attachment?.name || 'Dokumen'}`);
-                                  }
+                                  showInfo('Lampiran', `Membuka lampiran: ${l.attachment?.name || 'Dokumen'}`);
                                 }
                               }}
                               style={{
