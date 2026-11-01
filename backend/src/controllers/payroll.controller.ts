@@ -368,12 +368,31 @@ export const getPayrollById = async (req: Request, res: Response) => {
 };
 
 /**
- * Delete payroll
+ * Delete payroll (Single)
  */
 export const deletePayroll = async (req: Request, res: Response) => {
   try {
     const prisma = req.prisma!;
     const id = parseInt(req.params.id as string, 10);
+
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID payroll tidak valid',
+      });
+    }
+
+    const existing = await prisma.payroll.findUnique({
+      where: { id },
+      include: { user: { select: { name: true } } },
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Data payroll tidak ditemukan',
+      });
+    }
 
     await prisma.payroll.delete({
       where: { id },
@@ -381,13 +400,74 @@ export const deletePayroll = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Payroll deleted successfully',
+      message: `Data payroll untuk ${existing.user?.name || 'karyawan'} berhasil dihapus`,
     });
   } catch (error) {
     console.error('Delete payroll error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Bulk delete payrolls (by IDs array or period)
+ */
+export const deleteBulkPayrolls = async (req: Request, res: Response) => {
+  try {
+    const prisma = req.prisma!;
+    const { ids, periodStart, periodEnd, userId } = req.body || {};
+
+    const where: any = {};
+
+    if (Array.isArray(ids) && ids.length > 0) {
+      const validIds = ids.map((id: any) => Number(id)).filter((id: number) => !isNaN(id) && id > 0);
+      if (validIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Daftar ID payroll tidak valid',
+        });
+      }
+      where.id = { in: validIds };
+    } else if (periodStart && periodEnd) {
+      const pStart = new Date(periodStart);
+      const pEnd = new Date(periodEnd);
+      if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
+        pStart.setHours(0, 0, 0, 0);
+        pEnd.setHours(23, 59, 59, 999);
+        where.periodStart = { gte: pStart };
+        where.periodEnd = { lte: pEnd };
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Format tanggal periode tidak valid',
+        });
+      }
+      if (userId && userId !== 'ALL') {
+        where.userId = Number(userId);
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Tentukan daftar ID payroll atau rentang periode yang ingin dihapus',
+      });
+    }
+
+    const result = await prisma.payroll.deleteMany({
+      where,
+    });
+
+    res.json({
+      success: true,
+      message: `${result.count} data payroll berhasil dihapus`,
+      count: result.count,
+    });
+  } catch (error) {
+    console.error('Delete bulk payrolls error:', error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Internal server error',
     });
   }
 };

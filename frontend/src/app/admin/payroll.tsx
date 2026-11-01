@@ -34,6 +34,7 @@ import {
   Search,
   User,
   RefreshCw,
+  Trash2,
 } from 'lucide-react-native';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import AdminSidebar from '@/components/AdminSidebar';
@@ -115,6 +116,15 @@ export default function PayrollScreen() {
 
   // Payrolls data (loaded from real database API)
   const [payrolls, setPayrolls] = useState<PayrollRecord[]>([]);
+
+  // Selection & Delete State
+  const [selectedPayrollIds, setSelectedPayrollIds] = useState<number[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: 'SINGLE' | 'BULK';
+    record?: PayrollRecord;
+    ids?: number[];
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -353,6 +363,80 @@ export default function PayrollScreen() {
       setPayingRecord(null);
     } finally {
       setIsSubmittingPay(false);
+    }
+  };
+
+  // Selection Handlers
+  const toggleSelectPayroll = (id: number) => {
+    setSelectedPayrollIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const isAllSelected = useMemo(() => {
+    return (
+      filteredPayrolls.length > 0 &&
+      filteredPayrolls.every((p) => selectedPayrollIds.includes(p.id))
+    );
+  }, [filteredPayrolls, selectedPayrollIds]);
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedPayrollIds([]);
+    } else {
+      setSelectedPayrollIds(filteredPayrolls.map((p) => p.id));
+    }
+  };
+
+  // Delete Payroll Handlers
+  const handleOpenDeleteModal = (target: {
+    type: 'SINGLE' | 'BULK';
+    record?: PayrollRecord;
+    ids?: number[];
+  }) => {
+    setDeleteTarget(target);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      if (deleteTarget.type === 'SINGLE' && deleteTarget.record) {
+        await api.delete(`/payroll/${deleteTarget.record.id}`);
+        setPayrolls((prev) => prev.filter((p) => p.id !== deleteTarget.record!.id));
+        setSelectedPayrollIds((prev) => prev.filter((id) => id !== deleteTarget.record!.id));
+        if (selectedSlip?.id === deleteTarget.record.id) {
+          setSelectedSlip(null);
+        }
+        if (Platform.OS === 'web') {
+          window.alert(`Data payroll ${deleteTarget.record.name} berhasil dihapus.`);
+        } else {
+          Alert.alert('Sukses', `Data payroll ${deleteTarget.record.name} berhasil dihapus.`);
+        }
+      } else if (deleteTarget.type === 'BULK' && deleteTarget.ids && deleteTarget.ids.length > 0) {
+        await api.delete('/payroll/bulk', { data: { ids: deleteTarget.ids } });
+        const removedSet = new Set(deleteTarget.ids);
+        setPayrolls((prev) => prev.filter((p) => !removedSet.has(p.id)));
+        setSelectedPayrollIds([]);
+        if (selectedSlip && removedSet.has(selectedSlip.id)) {
+          setSelectedSlip(null);
+        }
+        if (Platform.OS === 'web') {
+          window.alert(`${deleteTarget.ids.length} data payroll berhasil dihapus.`);
+        } else {
+          Alert.alert('Sukses', `${deleteTarget.ids.length} data payroll berhasil dihapus.`);
+        }
+      }
+      setDeleteTarget(null);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Gagal menghapus data payroll';
+      if (Platform.OS === 'web') {
+        window.alert(`Error: ${msg}`);
+      } else {
+        Alert.alert('Gagal', msg);
+      }
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1083,8 +1167,33 @@ export default function PayrollScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Action Buttons: Export Excel & Generate Payroll */}
+            {/* Action Buttons: Export Excel, Generate Payroll, & Bulk Delete */}
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+              {selectedPayrollIds.length > 0 && (
+                <TouchableOpacity
+                  onPress={() =>
+                    handleOpenDeleteModal({
+                      type: 'BULK',
+                      ids: selectedPayrollIds,
+                    })
+                  }
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    paddingVertical: 9,
+                    paddingHorizontal: 14,
+                    borderRadius: 6,
+                    backgroundColor: theme.danger,
+                  }}
+                >
+                  <Trash2 size={15} color="#ffffff" />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>
+                    Hapus ({selectedPayrollIds.length}) Terpilih
+                  </Text>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
                 onPress={handleExportExcel}
                 style={{
@@ -1140,6 +1249,68 @@ export default function PayrollScreen() {
               elevation: 1,
             }}
           >
+            {/* Selected Items Floating/Alert Banner */}
+            {selectedPayrollIds.length > 0 && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                  borderRadius: 8,
+                  backgroundColor: theme.isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2',
+                  borderWidth: 1,
+                  borderColor: theme.isDark ? '#ef4444' : '#fca5a5',
+                  marginBottom: 15,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Trash2 size={16} color={theme.danger} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.danger }}>
+                    {selectedPayrollIds.length} data payroll dipilih
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={() => setSelectedPayrollIds([])}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 12,
+                      borderRadius: 6,
+                      backgroundColor: theme.subtleBg,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textDark }}>
+                      Batalkan
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleOpenDeleteModal({
+                        type: 'BULK',
+                        ids: selectedPayrollIds,
+                      })
+                    }
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 14,
+                      borderRadius: 6,
+                      backgroundColor: theme.danger,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <Trash2 size={14} color="#ffffff" />
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#ffffff' }}>
+                      Hapus Terpilih
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {/* Panel Header */}
             <View
               style={{
@@ -1174,11 +1345,12 @@ export default function PayrollScreen() {
               style={{ width: '100%' }}
               contentContainerStyle={{ minWidth: '100%', flexGrow: 1 }}
             >
-              <View style={{ minWidth: 920, width: '100%', flexGrow: 1 }}>
+              <View style={{ minWidth: 980, width: '100%', flexGrow: 1 }}>
                 {/* Table Header Row */}
                 <View
                   style={{
                     flexDirection: 'row',
+                    alignItems: 'center',
                     backgroundColor: theme.isDark ? '#1e293b' : '#f8f9fa',
                     borderBottomWidth: 2,
                     borderBottomColor: theme.borderColor,
@@ -1186,6 +1358,31 @@ export default function PayrollScreen() {
                     paddingHorizontal: 15,
                   }}
                 >
+                  {/* Select All Checkbox */}
+                  <TouchableOpacity
+                    onPress={toggleSelectAll}
+                    style={{
+                      width: 36,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: 4,
+                        borderWidth: 1.5,
+                        borderColor: isAllSelected ? theme.primaryBlue : theme.borderColor,
+                        backgroundColor: isAllSelected ? theme.primaryBlue : 'transparent',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {isAllSelected && <Check size={12} color="#ffffff" />}
+                    </View>
+                  </TouchableOpacity>
+
                   <Text
                     style={{
                       flex: 2.2,
@@ -1261,7 +1458,7 @@ export default function PayrollScreen() {
                   </Text>
                   <Text
                     style={{
-                      width: 120,
+                      width: 150,
                       fontSize: 11,
                       fontWeight: '600',
                       color: theme.textMuted,
@@ -1277,6 +1474,7 @@ export default function PayrollScreen() {
                 {/* Table Rows */}
                 {filteredPayrolls.map((row, idx) => {
                   const isPaid = row.status === 'PAID';
+                  const isSelected = selectedPayrollIds.includes(row.id);
                   return (
                     <View
                       key={row.id}
@@ -1288,8 +1486,38 @@ export default function PayrollScreen() {
                         borderBottomWidth:
                           idx < filteredPayrolls.length - 1 ? 1 : 0,
                         borderBottomColor: theme.borderColor,
+                        backgroundColor: isSelected
+                          ? theme.isDark
+                            ? 'rgba(59, 130, 246, 0.12)'
+                            : '#eff6ff'
+                          : 'transparent',
                       }}
                     >
+                      {/* Row Checkbox */}
+                      <TouchableOpacity
+                        onPress={() => toggleSelectPayroll(row.id)}
+                        style={{
+                          width: 36,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: 4,
+                            borderWidth: 1.5,
+                            borderColor: isSelected ? theme.primaryBlue : theme.borderColor,
+                            backgroundColor: isSelected ? theme.primaryBlue : 'transparent',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                        >
+                          {isSelected && <Check size={12} color="#ffffff" />}
+                        </View>
+                      </TouchableOpacity>
+
                       {/* Pegawai Cell */}
                       <View
                         style={{
@@ -1424,10 +1652,11 @@ export default function PayrollScreen() {
                       {/* Action Buttons */}
                       <View
                         style={{
-                          width: 120,
+                          width: 150,
                           flexDirection: 'row',
-                          gap: 8,
+                          gap: 6,
                           justifyContent: 'center',
+                          alignItems: 'center',
                         }}
                       >
                         {/* Detail Button */}
@@ -1436,19 +1665,19 @@ export default function PayrollScreen() {
                           style={{
                             flexDirection: 'row',
                             alignItems: 'center',
-                            gap: 5,
+                            gap: 4,
                             backgroundColor: theme.isDark ? '#1e293b' : '#f8f9fa',
                             borderWidth: 1,
                             borderColor: theme.borderColor,
                             borderRadius: 6,
                             paddingVertical: 6,
-                            paddingHorizontal: 10,
+                            paddingHorizontal: 8,
                           }}
                         >
                           <FileText size={13} color={theme.textDark} />
                           <Text
                             style={{
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: '500',
                               color: theme.textDark,
                             }}
@@ -1464,27 +1693,45 @@ export default function PayrollScreen() {
                             style={{
                               flexDirection: 'row',
                               alignItems: 'center',
-                              gap: 5,
+                              gap: 4,
                               backgroundColor: theme.isDark ? '#1e293b' : '#f8f9fa',
                               borderWidth: 1,
                               borderColor: theme.borderColor,
                               borderRadius: 6,
                               paddingVertical: 6,
-                              paddingHorizontal: 10,
+                              paddingHorizontal: 8,
                             }}
                           >
                             <Check size={13} color={theme.success} />
                             <Text
                               style={{
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: '500',
-                                color: theme.textDark,
+                                color: theme.success,
                               }}
                             >
                               Bayar
                             </Text>
                           </TouchableOpacity>
                         )}
+
+                        {/* Hapus Button */}
+                        <TouchableOpacity
+                          onPress={() => handleOpenDeleteModal({ type: 'SINGLE', record: row })}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: theme.isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2',
+                            borderWidth: 1,
+                            borderColor: theme.isDark ? '#ef4444' : '#fca5a5',
+                            borderRadius: 6,
+                            paddingVertical: 6,
+                            paddingHorizontal: 8,
+                          }}
+                        >
+                          <Trash2 size={13} color={theme.danger} />
+                        </TouchableOpacity>
                       </View>
                     </View>
                   );
@@ -1833,6 +2080,31 @@ export default function PayrollScreen() {
                     >
                       <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
                         Tutup
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        const rec = selectedSlip;
+                        setSelectedSlip(null);
+                        handleOpenDeleteModal({ type: 'SINGLE', record: rec });
+                      }}
+                      style={{
+                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        backgroundColor: theme.isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2',
+                        borderWidth: 1,
+                        borderColor: theme.isDark ? '#ef4444' : '#fca5a5',
+                        borderRadius: 8,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <Trash2 size={16} color={theme.danger} />
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: theme.danger }}>
+                        Hapus
                       </Text>
                     </TouchableOpacity>
 
@@ -2512,6 +2784,199 @@ export default function PayrollScreen() {
                     >
                       <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>
                         Tutup
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          )}
+
+          {/* MODAL: Konfirmasi Hapus Payroll */}
+          {deleteTarget && (
+            <Modal
+              transparent
+              visible
+              animationType="fade"
+              onRequestClose={() => !isDeleting && setDeleteTarget(null)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 16,
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: theme.cardBg,
+                    borderRadius: 16,
+                    width: '100%',
+                    maxWidth: 440,
+                    padding: 24,
+                    borderWidth: 1,
+                    borderColor: theme.borderColor,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 20,
+                    elevation: 10,
+                  }}
+                >
+                  {/* Icon Header */}
+                  <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                    <View
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: 28,
+                        backgroundColor: theme.isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginBottom: 12,
+                      }}
+                    >
+                      <Trash2 size={28} color={theme.danger} />
+                    </View>
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: '700',
+                        color: theme.textDark,
+                        textAlign: 'center',
+                      }}
+                    >
+                      Hapus Data Payroll?
+                    </Text>
+                  </View>
+
+                  {/* Body Content */}
+                  {deleteTarget.type === 'SINGLE' && deleteTarget.record && (
+                    <View
+                      style={{
+                        backgroundColor: theme.subtleBg,
+                        borderRadius: 10,
+                        padding: 14,
+                        marginBottom: 16,
+                        borderWidth: 1,
+                        borderColor: theme.borderColor,
+                        gap: 6,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, color: theme.textMuted }}>
+                        Karyawan:{' '}
+                        <Text style={{ fontWeight: '700', color: theme.textDark }}>
+                          {deleteTarget.record.name}
+                        </Text>
+                      </Text>
+                      <Text style={{ fontSize: 13, color: theme.textMuted }}>
+                        Periode:{' '}
+                        <Text style={{ fontWeight: '600', color: theme.textDark }}>
+                          {deleteTarget.record.period}
+                        </Text>
+                      </Text>
+                      <Text style={{ fontSize: 13, color: theme.textMuted }}>
+                        Gaji Bersih:{' '}
+                        <Text style={{ fontWeight: '700', color: theme.primaryBlue }}>
+                          {formatRupiah(deleteTarget.record.netSalary)}
+                        </Text>
+                      </Text>
+                      {deleteTarget.record.status === 'PAID' && (
+                        <View
+                          style={{
+                            marginTop: 6,
+                            padding: 8,
+                            borderRadius: 6,
+                            backgroundColor: theme.isDark ? 'rgba(234, 179, 8, 0.15)' : '#fef9c3',
+                            borderWidth: 1,
+                            borderColor: theme.isDark ? '#eab308' : '#fde047',
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, color: '#ca8a04', fontWeight: '600' }}>
+                            ⚠️ Perhatian: Slip gaji ini berstatus SUDAH DIBAYAR (PAID).
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {deleteTarget.type === 'BULK' && (
+                    <View
+                      style={{
+                        backgroundColor: theme.subtleBg,
+                        borderRadius: 10,
+                        padding: 14,
+                        marginBottom: 16,
+                        borderWidth: 1,
+                        borderColor: theme.borderColor,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, color: theme.textDark, textAlign: 'center' }}>
+                        Anda akan menghapus{' '}
+                        <Text style={{ fontWeight: '700', color: theme.danger }}>
+                          {deleteTarget.ids?.length || 0} data payroll
+                        </Text>{' '}
+                        yang telah dipilih.
+                      </Text>
+                    </View>
+                  )}
+
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: theme.textMuted,
+                      textAlign: 'center',
+                      marginBottom: 20,
+                    }}
+                  >
+                    Data payroll yang dihapus dapat digenerate ulang sewaktu-waktu. Tindakan ini tidak dapat dibatalkan.
+                  </Text>
+
+                  {/* Action Buttons */}
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity
+                      disabled={isDeleting}
+                      onPress={() => setDeleteTarget(null)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 11,
+                        backgroundColor: theme.subtleBg,
+                        borderWidth: 1,
+                        borderColor: theme.borderColor,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                        opacity: isDeleting ? 0.6 : 1,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
+                        Batal
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      disabled={isDeleting}
+                      onPress={handleConfirmDelete}
+                      style={{
+                        flex: 1,
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: 6,
+                        paddingVertical: 11,
+                        backgroundColor: theme.danger,
+                        borderRadius: 8,
+                        opacity: isDeleting ? 0.6 : 1,
+                      }}
+                    >
+                      {isDeleting ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Trash2 size={16} color="#fff" />
+                      )}
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>
+                        {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
                       </Text>
                     </TouchableOpacity>
                   </View>

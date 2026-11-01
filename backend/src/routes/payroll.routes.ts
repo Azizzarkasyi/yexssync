@@ -6,6 +6,7 @@ import {
   getAllPayrolls,
   getPayrollById,
   deletePayroll,
+  deleteBulkPayrolls,
   markAsPaid,
   exportExcel,
   exportMyExcel,
@@ -29,6 +30,8 @@ router.get('/export/excel', authenticate, authorizeAdmin, exportExcel);
 router.get('/user/:userId', authenticate, authorizeAdmin, getUserPayrolls);
 router.get('/:id', authenticate, authorizeAdmin, getPayrollById);
 router.patch('/:id/pay', authenticate, authorizeAdmin, upload.single('paymentProof'), markAsPaid);
+router.delete('/bulk', authenticate, authorizeAdmin, deleteBulkPayrolls);
 router.delete('/:id', authenticate, authorizeAdmin, deletePayroll);
+router.delete('/', authenticate, authorizeAdmin, deleteBulkPayrolls); // Fallback for bulk DELETE /payroll with body
 
 export default router;
