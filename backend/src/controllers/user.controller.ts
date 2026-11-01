@@ -232,6 +232,8 @@ export const getProfile = async (req: Request, res: Response) => {
         workRadius: true,
         workLocations: true,
         maxBreakMinutes: true,
+        latePenalty: true,
+        lateThresholdCount: true,
         isActive: true,
         employeeId: true,
         department: true,
@@ -299,6 +301,8 @@ export const updateProfile = async (req: Request, res: Response) => {
         workLongitude: true,
         workRadius: true,
         maxBreakMinutes: true,
+        latePenalty: true,
+        lateThresholdCount: true,
         employeeId: true,
         department: true,
         position: true,
@@ -350,6 +354,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
         workLocations: true,
         maxBreakMinutes: true,
         latePenalty: true,
+        lateThresholdCount: true,
         employeeId: true,
         department: true,
         position: true,
@@ -408,6 +413,7 @@ export const getUserById = async (req: Request, res: Response) => {
         workLocations: true,
         maxBreakMinutes: true,
         latePenalty: true,
+        lateThresholdCount: true,
         employeeId: true,
         department: true,
         position: true,
@@ -461,6 +467,7 @@ export const createUser = async (req: Request, res: Response) => {
       startWorkTime,
       endWorkTime,
       latePenalty,
+      lateThresholdCount,
       workLatitude,
       workLongitude,
       workRadius,
@@ -555,8 +562,9 @@ export const createUser = async (req: Request, res: Response) => {
         overrideLocation: hasAnyCustomLocation,
         locationName: hasAnyCustomLocation ? (locationName || null) : null,
         ...(hasAnyCustomLocation && parsedWorkLocations ? {workLocations: parsedWorkLocations} : {}),
-        latePenalty: latePenalty ? parseFloat(latePenalty) : 0,
-        maxBreakMinutes: maxBreakMinutes !== undefined && maxBreakMinutes !== "" ? parseInt(maxBreakMinutes, 10) : null,
+        latePenalty: latePenalty !== undefined && latePenalty !== "" ? parseFloat(latePenalty) : 0,
+        lateThresholdCount: lateThresholdCount !== undefined && lateThresholdCount !== "" ? parseInt(lateThresholdCount, 10) : 1,
+        maxBreakMinutes: maxBreakMinutes !== undefined && maxBreakMinutes !== "" && maxBreakMinutes !== "0" && maxBreakMinutes !== 0 ? parseInt(maxBreakMinutes, 10) : 0,
         employeeId: employeeId || null,
         department: department || null,
         position: position || null,
@@ -589,6 +597,7 @@ export const createUser = async (req: Request, res: Response) => {
         locationName: true,
         maxBreakMinutes: true,
         latePenalty: true,
+        lateThresholdCount: true,
         employeeId: true,
         department: true,
         position: true,
@@ -634,6 +643,7 @@ export const updateUser = async (req: Request, res: Response) => {
       startWorkTime,
       endWorkTime,
       latePenalty,
+      lateThresholdCount,
       isActive,
       workLatitude,
       workLongitude,
@@ -702,8 +712,11 @@ export const updateUser = async (req: Request, res: Response) => {
         ...(salary !== undefined && {salary: parseFloat(salary)}),
         ...(startWorkTime && {startWorkTime}),
         ...(endWorkTime && {endWorkTime}),
-        ...(latePenalty !== undefined && {
-          latePenalty: parseFloat(latePenalty),
+        ...((latePenalty !== undefined) && {
+          latePenalty: latePenalty === "" ? 0 : parseFloat(latePenalty),
+        }),
+        ...((lateThresholdCount !== undefined) && {
+          lateThresholdCount: lateThresholdCount === "" ? 1 : parseInt(lateThresholdCount, 10),
         }),
         ...(isActive !== undefined && {isActive}),
         ...(shouldUpdateLocationFields
@@ -728,8 +741,8 @@ export const updateUser = async (req: Request, res: Response) => {
               locationName: hasAnyCustomLocation ? (locationName || null) : null,
             }
           : {}),
-        ...(maxBreakMinutes !== undefined && {
-          maxBreakMinutes: maxBreakMinutes === null || maxBreakMinutes === "" ? null : parseInt(maxBreakMinutes, 10)
+        ...((maxBreakMinutes !== undefined) && {
+          maxBreakMinutes: maxBreakMinutes === null || maxBreakMinutes === "" || maxBreakMinutes === "0" || maxBreakMinutes === 0 ? 0 : parseInt(maxBreakMinutes, 10)
         }),
         ...(employeeId !== undefined && {employeeId: employeeId || null}),
         ...(department !== undefined && {department: department || null}),
@@ -764,6 +777,7 @@ export const updateUser = async (req: Request, res: Response) => {
         locationName: true,
         maxBreakMinutes: true,
         latePenalty: true,
+        lateThresholdCount: true,
         employeeId: true,
         department: true,
         position: true,

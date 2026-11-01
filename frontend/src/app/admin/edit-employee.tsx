@@ -68,6 +68,7 @@ export default function EditEmployeeScreen() {
     salaryType: 'MONTHLY',
     salary: '0',
     latePenalty: '0',
+    lateThresholdCount: '1',
     
     // Waktu
     startWorkTime: '09:00',
@@ -201,9 +202,10 @@ export default function EditEmployeeScreen() {
           salaryType: u.salaryType || 'MONTHLY',
           salary: u.salary?.toString() || '0',
           latePenalty: u.latePenalty?.toString() || '0',
+          lateThresholdCount: u.lateThresholdCount?.toString() || '1',
           startWorkTime: u.startWorkTime || '',
           endWorkTime: u.endWorkTime || '',
-          maxBreakMinutes: u.maxBreakMinutes?.toString() || '60',
+          maxBreakMinutes: u.maxBreakMinutes !== null && u.maxBreakMinutes !== undefined ? u.maxBreakMinutes.toString() : '',
           workLatitude: u.workLatitude?.toString() || '',
           workLongitude: u.workLongitude?.toString() || '',
           workRadius: u.workRadius?.toString() || '50'
@@ -268,8 +270,9 @@ export default function EditEmployeeScreen() {
       const payload: any = {
         ...formData,
         salary: parseFloat(formData.salary) || 0,
-        latePenalty: parseFloat(formData.latePenalty) || 0,
-        maxBreakMinutes: parseInt(formData.maxBreakMinutes) || 60,
+        latePenalty: formData.latePenalty?.trim() === '' ? 0 : parseFloat(formData.latePenalty) || 0,
+        lateThresholdCount: formData.lateThresholdCount?.trim() === '' ? 1 : parseInt(formData.lateThresholdCount, 10) || 1,
+        maxBreakMinutes: formData.maxBreakMinutes?.trim() === '' || formData.maxBreakMinutes?.trim() === '0' ? 0 : parseInt(formData.maxBreakMinutes, 10),
         overrideLocation: hasCustomLocation,
         workLatitude: hasCustomLocation && formData.workLatitude?.trim() ? parseFloat(formData.workLatitude) : null,
         workLongitude: hasCustomLocation && formData.workLongitude?.trim() ? parseFloat(formData.workLongitude) : null,
@@ -549,11 +552,29 @@ export default function EditEmployeeScreen() {
               <View className="flex-1 min-w-[200px]">
                 <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Denda Terlambat (Rp/kejadian)</Text>
                 <Input 
-                  placeholder="0"
+                  placeholder="0 (Bisa dikosongkan jika bebas denda)"
                   value={formData.latePenalty}
                   keyboardType="numeric"
                   onChangeText={(val) => setFormData({ ...formData, latePenalty: val })}
                 />
+                <Text className="text-[11px] text-slate-400 mt-1 ml-1">
+                  * Kosongkan atau isi 0 jika karyawan bebas dari denda keterlambatan.
+                </Text>
+              </View>
+            </View>
+
+            <View className="mt-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <View className="flex-1 min-w-[200px]">
+                <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Toleransi Keterlambatan (Mulai Didenda Setelah Telat Ke-)</Text>
+                <Input 
+                  placeholder="1"
+                  value={formData.lateThresholdCount}
+                  keyboardType="numeric"
+                  onChangeText={(val) => setFormData({ ...formData, lateThresholdCount: val })}
+                />
+                <Text className="text-[11px] text-slate-400 mt-1 ml-1">
+                  * Contoh: Isi 1 jika telat 1x langsung didenda. Isi 3 jika telat 3x baru didenda (telat ke-1 &amp; ke-2 bebas denda).
+                </Text>
               </View>
             </View>
           </View>
@@ -682,11 +703,14 @@ export default function EditEmployeeScreen() {
               <View className="flex-1 min-w-[140px]">
                 <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Batas Istirahat (Menit)</Text>
                 <Input 
-                  placeholder="60"
+                  placeholder="Kosongkan jika tanpa istirahat"
                   value={formData.maxBreakMinutes}
                   keyboardType="numeric"
                   onChangeText={(val) => setFormData({ ...formData, maxBreakMinutes: val })}
                 />
+                <Text className="text-[11px] text-slate-400 mt-1 ml-1">
+                  * Kosongkan atau isi 0 jika karyawan di jadwalnya tidak ada istirahat.
+                </Text>
               </View>
             </View>
             <Text className="text-[11px] text-slate-400 mt-2 ml-1">

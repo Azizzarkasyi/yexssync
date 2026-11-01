@@ -86,6 +86,7 @@ model User {
   startWorkTime String     @default("09:00")
   endWorkTime   String     @default("17:00")
   latePenalty   Float      @default(0)
+  lateThresholdCount Int?  @default(1)
   
   // Break Time Override
   maxBreakMinutes Int?

@@ -287,6 +287,8 @@ export default function AddEmployeeScreen() {
   // Form States - Informasi Gaji (Payroll)
   const [salaryType, setSalaryType] = useState('MONTHLY');
   const [basicSalary, setBasicSalary] = useState('7500000');
+  const [latePenalty, setLatePenalty] = useState('0');
+  const [lateThresholdCount, setLateThresholdCount] = useState('1');
   const [bankName, setBankName] = useState('bca');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
 
@@ -436,9 +438,11 @@ export default function AddEmployeeScreen() {
         jobType: jobLabel,
         salaryType,
         salary: parseFloat(basicSalary) || 0,
+        latePenalty: latePenalty.trim() === '' ? 0 : parseFloat(latePenalty) || 0,
+        lateThresholdCount: lateThresholdCount.trim() === '' ? 1 : parseInt(lateThresholdCount, 10) || 1,
         startWorkTime: startWorkTime.trim() || '08:00',
         endWorkTime: endWorkTime.trim() || '17:00',
-        maxBreakMinutes: parseInt(maxBreakMinutes, 10) || 60,
+        maxBreakMinutes: maxBreakMinutes.trim() === '' || maxBreakMinutes.trim() === '0' ? 0 : parseInt(maxBreakMinutes, 10),
         bankName,
         bankAccountNumber,
         overrideLocation: hasCustomLoc,
@@ -1340,7 +1344,7 @@ export default function AddEmployeeScreen() {
                   Batas Istirahat (Menit)
                 </Text>
                 <TextInput
-                  placeholder="60"
+                  placeholder="Kosongkan jika tanpa istirahat"
                   placeholderTextColor={theme.placeholder}
                   value={maxBreakMinutes}
                   keyboardType="numeric"
@@ -1358,7 +1362,7 @@ export default function AddEmployeeScreen() {
                   } as any}
                 />
                 <Text style={{ fontSize: 11, color: theme.textMuted }}>
-                  Durasi istirahat (menit) yang diizinkan per hari.
+                  Durasi istirahat (menit). Kosongkan atau isi 0 jika karyawan di jadwalnya tidak ada istirahat.
                 </Text>
               </View>
             </View>
@@ -2019,6 +2023,87 @@ export default function AddEmployeeScreen() {
                     } as any}
                   />
                 </View>
+              </View>
+            </View>
+
+            {/* Denda & Toleransi Keterlambatan */}
+            <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginBottom: 20 }}>
+              {/* Denda Terlambat */}
+              <View style={{ flex: 1, gap: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
+                  Denda Terlambat (Rp/kejadian)
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: theme.borderColor,
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <View
+                    style={{
+                      paddingVertical: 12,
+                      paddingHorizontal: 12,
+                      backgroundColor: theme.subtleBg,
+                      borderRightWidth: 1,
+                      borderRightColor: theme.borderColor,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textMuted }}>
+                      Rp
+                    </Text>
+                  </View>
+                  <TextInput
+                    placeholder="0"
+                    placeholderTextColor={theme.placeholder}
+                    value={latePenalty}
+                    onChangeText={setLatePenalty}
+                    keyboardType="numeric"
+                    style={{
+                      flex: 1,
+                      paddingVertical: 12,
+                      paddingHorizontal: 15,
+                      fontSize: 14,
+                      color: theme.textDark,
+                      backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
+                      outlineStyle: 'none',
+                    } as any}
+                  />
+                </View>
+                <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                  Bisa dikosongkan atau diisi 0 jika karyawan bebas denda keterlambatan.
+                </Text>
+              </View>
+
+              {/* Toleransi Keterlambatan */}
+              <View style={{ flex: 1, gap: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
+                  Mulai Didenda Setelah Telat Ke- (kali)
+                </Text>
+                <TextInput
+                  placeholder="1"
+                  placeholderTextColor={theme.placeholder}
+                  value={lateThresholdCount}
+                  onChangeText={setLateThresholdCount}
+                  keyboardType="numeric"
+                  style={{
+                    paddingVertical: 12,
+                    paddingHorizontal: 15,
+                    borderWidth: 1,
+                    borderColor: theme.borderColor,
+                    borderRadius: 8,
+                    fontSize: 14,
+                    color: theme.textDark,
+                    backgroundColor: theme.isDark ? '#1e293b' : '#f9fafb',
+                    outlineStyle: 'none',
+                  } as any}
+                />
+                <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                  Cth: Isi 1 = telat 1x langsung denda. Isi 3 = telat 3x baru didenda (telat 1x &amp; 2x bebas denda).
+                </Text>
               </View>
             </View>
 

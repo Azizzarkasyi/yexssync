@@ -80,12 +80,21 @@ export const startBreak = async (req: Request, res: Response) => {
 
     // Check max break minutes
     const config = await prisma.companyConfig.findFirst();
-    const maxBreakMinutes = user.maxBreakMinutes ?? config?.maxBreakMinutesPerDay ?? 60;
+    const maxBreakMinutes = user.maxBreakMinutes !== null && user.maxBreakMinutes !== undefined
+      ? user.maxBreakMinutes
+      : (config?.maxBreakMinutesPerDay ?? 60);
+
+    if (maxBreakMinutes === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Jadwal kerja Anda tidak memiliki alokasi jam istirahat',
+      });
+    }
 
     if (attendance.totalBreakMinutes >= maxBreakMinutes) {
       return res.status(400).json({
         success: false,
-        message: `You have reached the maximum break time of ${maxBreakMinutes} minutes for today`,
+        message: `Batas waktu istirahat harian Anda (${maxBreakMinutes} menit) sudah habis`,
       });
     }
 

@@ -246,7 +246,9 @@ export default function PayrollScreen() {
           overtimeBonus: p.overtimeBonus ?? p.allowance ?? 0,
           overtimeDetail: p.overtimeHours ? `(${p.overtimeHours} jam)` : '',
           lateDeduction: p.lateDeductions ?? p.deduction ?? 0,
-          lateDetail: (p.lateDeductions ?? 0) > 0 ? `(${Math.round(p.lateDeductions / 25000)}x Telat)` : '',
+          lateDetail: (p.lateDeductions ?? 0) > 0
+            ? (p.user?.latePenalty ? `(${Math.round(p.lateDeductions / p.user.latePenalty)}x Denda)` : `(Denda)`)
+            : (p.lateCount && p.lateCount > 0 ? `(${p.lateCount}x Telat - Bebas Denda)` : ''),
           netSalary: p.netSalary || 0,
           status: p.paymentStatus === 'PAID' ? 'PAID' : 'PENDING',
           bankName: p.user?.bankName || p.bankName || 'BCA',

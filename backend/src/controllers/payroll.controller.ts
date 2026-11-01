@@ -112,7 +112,19 @@ export const generatePayroll = async (req: Request, res: Response) => {
           break;
       }
 
-      const lateDeductions = lateCount * (user.latePenalty || 0);
+      // Calculate late deduction based on custom penalty and threshold
+      const penaltyPerLate = user.latePenalty || 0;
+      const threshold = user.lateThresholdCount !== null && user.lateThresholdCount !== undefined
+        ? Number(user.lateThresholdCount)
+        : 1;
+
+      let penalizedCount = 0;
+      let lateDeductions = 0;
+
+      if (penaltyPerLate > 0 && threshold > 0 && lateCount >= threshold) {
+        penalizedCount = lateCount - (threshold - 1);
+        lateDeductions = Math.max(0, penalizedCount * penaltyPerLate);
+      }
       const expectedHours = workingDays * 8;
       const overtimeHours = Math.max(0, workingHours - expectedHours);
 
@@ -311,6 +323,9 @@ export const getAllPayrolls = async (req: Request, res: Response) => {
             bankName: true,
             bankAccountNumber: true,
             bankAccountHolder: true,
+            salaryType: true,
+            latePenalty: true,
+            lateThresholdCount: true,
           },
         },
       },
