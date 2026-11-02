@@ -56,19 +56,67 @@ export default function AttendanceScreen() {
   // Detail Modal
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  // Date Navigation State (Bisa lihat hari-hari sebelumnya)
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    return new Date().toISOString().split('T')[0];
-  });
+  // Helper local date string (YYYY-MM-DD) avoiding UTC shifts
+  const getLocalDateString = (d: Date = new Date()) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Date Navigation State (Bisa lihat hari-hari sebelumnya & berikutnya)
+  const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
+
+  // Interactive Calendar Picker State
+  const [showDatePickerModal, setShowDatePickerModal] = useState(false);
+  const [calMonth, setCalMonth] = useState<number>(() => new Date().getMonth());
+  const [calYear, setCalYear] = useState<number>(() => new Date().getFullYear());
 
   const changeDateOffset = (offsetDays: number) => {
-    const current = new Date(selectedDate + 'T00:00:00');
-    current.setDate(current.getDate() + offsetDays);
-    setSelectedDate(current.toISOString().split('T')[0]);
+    if (!selectedDate || !selectedDate.includes('-')) {
+      setSelectedDate(getLocalDateString());
+      return;
+    }
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const next = new Date(y, m - 1, d + offsetDays);
+    setSelectedDate(getLocalDateString(next));
   };
 
   const setTodayDate = () => {
-    setSelectedDate(new Date().toISOString().split('T')[0]);
+    setSelectedDate(getLocalDateString());
+  };
+
+  const openDatePicker = () => {
+    if (selectedDate && selectedDate.includes('-')) {
+      const parts = selectedDate.split('-').map(Number);
+      if (parts.length === 3) {
+        setCalYear(parts[0] || new Date().getFullYear());
+        setCalMonth((parts[1] || 1) - 1);
+      }
+    }
+    setShowDatePickerModal(true);
+  };
+
+  const handleSelectCalendarDay = (day: number) => {
+    const formatted = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setSelectedDate(formatted);
+    setShowDatePickerModal(false);
+  };
+
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes('-')) return dateStr;
+    try {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      return dateObj.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    } catch {
+      return dateStr;
+    }
   };
 
   useEffect(() => {
@@ -109,7 +157,7 @@ export default function AttendanceScreen() {
         const url = window.URL.createObjectURL(new Blob([res.data]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `Laporan_Presensi_${new Date().toISOString().split('T')[0]}.xlsx`);
+        link.setAttribute('download', `Laporan_Presensi_${selectedDate}.xlsx`);
         document.body.appendChild(link);
         link.click();
       } else {
@@ -256,7 +304,7 @@ export default function AttendanceScreen() {
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
           />
 
-          {/* Date Navigation Bar (Lihat Hari-Hari Sebelumnya) */}
+          {/* Date Navigation Bar (Lihat Hari-Hari Sebelumnya & Berikutnya + Pick Tanggal) */}
           <View
             style={{
               backgroundColor: theme.cardBg,
@@ -272,11 +320,16 @@ export default function AttendanceScreen() {
               gap: 12,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            {/* Clickable Date Banner */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={openDatePicker}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+            >
               <View
                 style={{
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   borderRadius: 8,
                   backgroundColor: theme.activeNavBg,
                   alignItems: 'center',
@@ -289,21 +342,31 @@ export default function AttendanceScreen() {
                 <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: '500' }}>
                   Tanggal Presensi Ditampilkan:
                 </Text>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.textDark }}>
-                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('id-ID', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: theme.textDark }}>
+                    {formatDisplayDate(selectedDate)}
+                  </Text>
+                  <View
+                    style={{
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      borderRadius: 4,
+                      backgroundColor: theme.activeNavBg,
+                    }}
+                  >
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primaryBlue }}>
+                      Kalender ▾
+                    </Text>
+                  </View>
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               {/* Prev Day */}
               <TouchableOpacity
                 onPress={() => changeDateOffset(-1)}
+                activeOpacity={0.7}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -325,17 +388,18 @@ export default function AttendanceScreen() {
               {/* Hari Ini */}
               <TouchableOpacity
                 onPress={setTodayDate}
+                activeOpacity={0.7}
                 style={{
                   paddingVertical: 7,
                   paddingHorizontal: 12,
                   borderRadius: 6,
                   backgroundColor:
-                    selectedDate === new Date().toISOString().split('T')[0]
+                    selectedDate === getLocalDateString()
                       ? theme.primaryBlue
                       : theme.subtleBg,
                   borderWidth: 1,
                   borderColor:
-                    selectedDate === new Date().toISOString().split('T')[0]
+                    selectedDate === getLocalDateString()
                       ? theme.primaryBlue
                       : theme.borderColor,
                 }}
@@ -345,7 +409,7 @@ export default function AttendanceScreen() {
                     fontSize: 12,
                     fontWeight: '700',
                     color:
-                      selectedDate === new Date().toISOString().split('T')[0]
+                      selectedDate === getLocalDateString()
                         ? '#fff'
                         : theme.textDark,
                   }}
@@ -357,6 +421,7 @@ export default function AttendanceScreen() {
               {/* Next Day */}
               <TouchableOpacity
                 onPress={() => changeDateOffset(1)}
+                activeOpacity={0.7}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -375,26 +440,27 @@ export default function AttendanceScreen() {
                 <ChevronRight size={14} color={theme.textDark} />
               </TouchableOpacity>
 
-              {/* Input Tanggal Manual */}
-              <TextInput
-                value={selectedDate}
-                onChangeText={setSelectedDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={theme.placeholder}
+              {/* Pick Tanggal Button */}
+              <TouchableOpacity
+                onPress={openDatePicker}
+                activeOpacity={0.8}
                 style={{
-                  paddingVertical: 6,
-                  paddingHorizontal: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  paddingVertical: 7,
+                  paddingHorizontal: 12,
                   borderRadius: 6,
                   borderWidth: 1,
-                  borderColor: theme.borderColor,
-                  backgroundColor: theme.cardBg,
-                  fontSize: 12,
-                  color: theme.textDark,
-                  width: 105,
-                  textAlign: 'center',
-                  outlineStyle: 'none',
-                } as any}
-              />
+                  borderColor: theme.primaryBlue,
+                  backgroundColor: theme.activeNavBg,
+                }}
+              >
+                <Calendar size={14} color={theme.primaryBlue} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: theme.primaryBlue }}>
+                  Pilih Tanggal
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -1087,6 +1153,199 @@ export default function AttendanceScreen() {
                   >
                     <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Tutup</Text>
                   </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          )}
+
+          {/* MODAL: Kalender Interaktif untuk Memilih Tanggal Presensi */}
+          {showDatePickerModal && (
+            <Modal
+              transparent
+              visible
+              animationType="fade"
+              onRequestClose={() => setShowDatePickerModal(false)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 16,
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: theme.cardBg,
+                    borderRadius: 16,
+                    width: '100%',
+                    maxWidth: 380,
+                    padding: 20,
+                    borderWidth: 1,
+                    borderColor: theme.borderColor,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 20,
+                    elevation: 10,
+                  }}
+                >
+                  {/* Calendar Header with Month & Year Navigation */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 16,
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (calMonth === 0) {
+                          setCalMonth(11);
+                          setCalYear((y) => y - 1);
+                        } else {
+                          setCalMonth((m) => m - 1);
+                        }
+                      }}
+                      style={{ padding: 6, borderRadius: 6, backgroundColor: theme.subtleBg }}
+                    >
+                      <ChevronLeft size={18} color={theme.textDark} />
+                    </TouchableOpacity>
+
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: theme.textDark }}>
+                      {[
+                        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                      ][calMonth]}{' '}
+                      {calYear}
+                    </Text>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (calMonth === 11) {
+                          setCalMonth(0);
+                          setCalYear((y) => y + 1);
+                        } else {
+                          setCalMonth((m) => m + 1);
+                        }
+                      }}
+                      style={{ padding: 6, borderRadius: 6, backgroundColor: theme.subtleBg }}
+                    >
+                      <ChevronRight size={18} color={theme.textDark} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Day Names Row */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                    {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
+                      <View key={d} style={{ width: `${100 / 7}%`, alignItems: 'center' }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: theme.textMuted }}>{d}</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Calendar Days Grid */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                    {(() => {
+                      const firstDay = new Date(calYear, calMonth, 1).getDay();
+                      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+                      const cells = [];
+                      for (let i = 0; i < firstDay; i++) {
+                        cells.push(<View key={`empty-${i}`} style={{ width: `${100 / 7}%`, height: 38 }} />);
+                      }
+
+                      for (let d = 1; d <= daysInMonth; d++) {
+                        const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                        const isSelected = selectedDate === dateStr;
+                        const isToday = dateStr === getLocalDateString();
+
+                        cells.push(
+                          <TouchableOpacity
+                            key={`day-${d}`}
+                            onPress={() => handleSelectCalendarDay(d)}
+                            style={{
+                              width: `${100 / 7}%`,
+                              height: 38,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 16,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                backgroundColor: isSelected
+                                  ? theme.primaryBlue
+                                  : isToday
+                                  ? theme.activeNavBg
+                                  : 'transparent',
+                                borderWidth: isToday && !isSelected ? 1 : 0,
+                                borderColor: theme.primaryBlue,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: isSelected || isToday ? '700' : '500',
+                                  color: isSelected
+                                    ? '#fff'
+                                    : isToday
+                                    ? theme.primaryBlue
+                                    : theme.textDark,
+                                }}
+                              >
+                                {d}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      }
+                      return cells;
+                    })()}
+                  </View>
+
+                  {/* Footer Action Buttons */}
+                  <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setTodayDate();
+                        setShowDatePickerModal(false);
+                      }}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 9,
+                        backgroundColor: theme.subtleBg,
+                        borderWidth: 1,
+                        borderColor: theme.borderColor,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: theme.textDark }}>
+                        Pilih Hari Ini
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => setShowDatePickerModal(false)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 9,
+                        backgroundColor: theme.primaryBlue,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>
+                        Tutup
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             </Modal>
