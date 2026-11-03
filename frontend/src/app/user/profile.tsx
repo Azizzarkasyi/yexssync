@@ -47,6 +47,7 @@ import {FaceCamera} from "@/components/FaceCamera";
 import api from "@/lib/api";
 import {useGlobalModal} from "@/context/GlobalModalContext";
 import UserAvatar from "@/components/UserAvatar";
+import UserTopHeader from "@/components/UserTopHeader";
 import {APP_ENV} from "@/config/env";
 
 export default function ProfileScreen() {
@@ -304,16 +305,20 @@ export default function ProfileScreen() {
         style={{flex: 1, height: "100%", minHeight: 0}}
       >
         {/* Header disamakan persis dengan halaman lain */}
-        <View className="flex-row justify-between items-center px-6 pt-5 pb-4 bg-[#f4f7fb] dark:bg-slate-950 z-10">
-          <Text className="text-[18px] font-bold text-[#222222] dark:text-white">
-            Profil Saya
-          </Text>
-
-          <View className="flex-row items-center gap-[15px]">
+        <UserTopHeader
+          title="Profil Saya"
+          showAvatar={false}
+          rightAction={
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => setShowSettingsModal(true)}
-              className="items-center justify-center"
+              style={{
+                width: 32,
+                height: 32,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              title="Pengaturan"
             >
               <Settings
                 size={20}
@@ -321,8 +326,8 @@ export default function ProfileScreen() {
                 strokeWidth={2}
               />
             </TouchableOpacity>
-          </View>
-        </View>
+          }
+        />
 
         {/* Scrollable Main Content */}
         <ScrollView

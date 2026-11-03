@@ -43,6 +43,7 @@ import {
   notifyClockOutSuccess,
 } from '@/lib/notifications';
 import UserAvatar from '@/components/UserAvatar';
+import UserTopHeader from '@/components/UserTopHeader';
 import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export default function UserHomeScreen() {
@@ -855,18 +856,9 @@ export default function UserHomeScreen() {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-[#f8fafc] dark:bg-slate-950 items-center" style={{ flex: 1, height: '100%', minHeight: '100%' }}>
       <View className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm" style={{ flex: 1, height: '100%', minHeight: 0 }}>
-        <View className="flex-row justify-between items-center px-5 pt-4 pb-3 bg-[#f4f7fb] dark:bg-slate-950 z-10">
-          <View className="flex-row items-center gap-2">
-            <YexsLogo size={24} rounded />
-            <Text className="text-[18px] font-bold text-[#2a75d3] tracking-tight">YEXSSYNC</Text>
-          </View>
-          <View className="flex-row items-center gap-3">
-            <TouchableOpacity activeOpacity={0.7} onPress={() => showInfo('Notifikasi', 'Tidak ada notifikasi baru untuk Anda saat ini.')}>
-              <Bell size={20} color={isDark ? '#cbd5e1' : '#222222'} />
-            </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/user/profile')}>
-              <UserAvatar name={user?.name || userName} photo={user?.photo || user?.avatar} size={32} />
-            </TouchableOpacity>
+        <UserTopHeader
+          showLogo={true}
+          rightAction={
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={handleLogout}
@@ -882,8 +874,8 @@ export default function UserHomeScreen() {
             >
               <LogOut size={16} color="#ef4444" strokeWidth={2.2} />
             </TouchableOpacity>
-          </View>
-        </View>
+          }
+        />
 
         <ScrollView className="flex-1 px-5" style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} colors={['#2a75d3']} tintColor="#2a75d3" />}>
           <View className="flex-row items-center gap-[15px] my-5">

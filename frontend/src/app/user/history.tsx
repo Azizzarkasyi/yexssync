@@ -29,6 +29,7 @@ import {
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
 import UserAvatar from '@/components/UserAvatar';
+import UserTopHeader from '@/components/UserTopHeader';
 import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export default function HistoryScreen() {
@@ -278,18 +279,7 @@ export default function HistoryScreen() {
       <View className="w-full max-w-3xl flex-1 bg-[#f4f7fb] dark:bg-slate-950 border-x border-[#eef1f6] dark:border-slate-800 shadow-sm" style={{ flex: 1, height: '100%', minHeight: 0 }}>
         
         {/* Top Header */}
-        <View className="flex-row justify-between items-center px-5 pt-4 pb-3 bg-[#f4f7fb] dark:bg-slate-950 z-10">
-          <Text className="text-[18px] font-bold text-[#222222] dark:text-white">
-            Riwayat & Koreksi
-          </Text>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push('/user/profile')}
-          >
-            <UserAvatar name={user?.name} photo={user?.photo || user?.avatar} size={32} />
-          </TouchableOpacity>
-        </View>
+        <UserTopHeader title="Riwayat & Koreksi" />
 
         {/* Main Content */}
         <ScrollView

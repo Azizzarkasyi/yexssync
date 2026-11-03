@@ -34,6 +34,7 @@ import {
 import { AuthContext } from '@/context/AuthContext';
 import api from '@/lib/api';
 import UserAvatar from '@/components/UserAvatar';
+import UserTopHeader from '@/components/UserTopHeader';
 import { useGlobalModal } from '@/context/GlobalModalContext';
 
 export interface TaskItem {
@@ -289,18 +290,7 @@ export default function UserTasksScreen() {
         style={{ flex: 1, height: '100%', minHeight: 0 }}
       >
         {/* Header */}
-        <View className="flex-row justify-between items-center px-6 pt-5 pb-4 bg-[#f4f7fb] dark:bg-slate-950 z-10 border-b border-[#eef1f6] dark:border-slate-800">
-          <Text className="text-[20px] font-bold text-[#222222] dark:text-white tracking-tight">
-            Tugas Saya
-          </Text>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push('/user/profile')}
-          >
-            <UserAvatar name={user?.name} photo={user?.photo || user?.avatar} size={36} />
-          </TouchableOpacity>
-        </View>
+        <UserTopHeader title="Tugas Saya" />
 
         {/* Tabs: Segmented Control */}
         <View className="px-6 pt-4 pb-2">
