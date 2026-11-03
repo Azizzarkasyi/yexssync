@@ -143,7 +143,10 @@ export async function autoMigrateTenants() {
           ADD COLUMN IF NOT EXISTS "jobType" VARCHAR(100) DEFAULT 'Full Time (Tetap)',
           ADD COLUMN IF NOT EXISTS "overrideLocation" BOOLEAN DEFAULT false,
           ADD COLUMN IF NOT EXISTS "locationName" VARCHAR(200),
-          ADD COLUMN IF NOT EXISTS "lateThresholdCount" INTEGER DEFAULT 1`,
+          ADD COLUMN IF NOT EXISTS "lateThresholdCount" INTEGER DEFAULT 1,
+          ADD COLUMN IF NOT EXISTS "contractNumber" VARCHAR(100),
+          ADD COLUMN IF NOT EXISTS "contractEndDate" TIMESTAMP(3),
+          ADD COLUMN IF NOT EXISTS "contractDocument" TEXT`,
         )
         .catch(() => {});
 

@@ -114,6 +114,11 @@ model User {
   bankAccountNumber String?
   bankAccountHolder String?
 
+  // Contract Information
+  contractNumber    String?
+  contractEndDate   DateTime?
+  contractDocument  String?
+
   payrolls Payroll[]
 }
 

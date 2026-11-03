@@ -243,6 +243,12 @@ export const getProfile = async (req: Request, res: Response) => {
         bankName: true,
         bankAccountNumber: true,
         bankAccountHolder: true,
+        jobType: true,
+        nik: true,
+        address: true,
+        contractNumber: true,
+        contractEndDate: true,
+        contractDocument: true,
         createdAt: true,
       },
     });
@@ -274,7 +280,7 @@ export const updateProfile = async (req: Request, res: Response) => {
   try {
     const prisma = req.prisma!;
     const userId = req.user!.id;
-    const {name, startWorkTime, phone, bankName, bankAccountNumber, bankAccountHolder} = req.body;
+    const {name, startWorkTime, phone, address, bankName, bankAccountNumber, bankAccountHolder} = req.body;
     const photo = req.file ? req.file.filename : undefined;
 
     const user = await prisma.user.update({
@@ -284,6 +290,7 @@ export const updateProfile = async (req: Request, res: Response) => {
         ...(photo && {photo}),
         ...(startWorkTime && {startWorkTime}),
         ...(phone !== undefined && {phone}),
+        ...(address !== undefined && {address}),
         ...(bankName !== undefined && {bankName}),
         ...(bankAccountNumber !== undefined && {bankAccountNumber}),
         ...(bankAccountHolder !== undefined && {bankAccountHolder}),
@@ -311,6 +318,12 @@ export const updateProfile = async (req: Request, res: Response) => {
         bankName: true,
         bankAccountNumber: true,
         bankAccountHolder: true,
+        jobType: true,
+        nik: true,
+        address: true,
+        contractNumber: true,
+        contractEndDate: true,
+        contractDocument: true,
       },
     });
 
@@ -366,6 +379,9 @@ export const getAllUsers = async (req: Request, res: Response) => {
         nik: true,
         address: true,
         jobType: true,
+        contractNumber: true,
+        contractEndDate: true,
+        contractDocument: true,
         overrideLocation: true,
         locationName: true,
         createdAt: true,
@@ -425,6 +441,9 @@ export const getUserById = async (req: Request, res: Response) => {
         nik: true,
         address: true,
         jobType: true,
+        contractNumber: true,
+        contractEndDate: true,
+        contractDocument: true,
         overrideLocation: true,
         locationName: true,
         createdAt: true,
@@ -484,6 +503,9 @@ export const createUser = async (req: Request, res: Response) => {
       nik,
       address,
       jobType,
+      contractNumber,
+      contractEndDate,
+      contractDocument,
       overrideLocation,
       locationName,
       avatar,
@@ -661,6 +683,9 @@ export const updateUser = async (req: Request, res: Response) => {
       nik,
       address,
       jobType,
+      contractNumber,
+      contractEndDate,
+      contractDocument,
       overrideLocation,
       locationName,
       avatar,
