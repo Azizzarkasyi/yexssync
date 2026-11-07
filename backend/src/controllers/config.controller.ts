@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { getPublicPrisma } from '../prisma/tenant-prisma';
-import { getTenantSubscriptionStatus } from '../utils/subscription';
+import { getTenantSubscriptionStatus, calculateSubscriptionPrice } from '../utils/subscription';
 
 /**
  * Get company config
@@ -158,11 +158,19 @@ export const getBillingStatus = async (req: Request, res: Response) => {
       publicPrisma.superAdmin.findFirst()
     ]);
 
+    const pricing = unpaidBilling ? calculateSubscriptionPrice(unpaidBilling.activeUserCount) : null;
+
     res.json({
       success: true,
       data: {
         hasUnpaidBilling: !!unpaidBilling,
-        billing: unpaidBilling,
+        billing: unpaidBilling ? {
+          ...unpaidBilling,
+          tierQuota: pricing?.tierQuota,
+          packageName: pricing?.packageName,
+          ratePerUser: pricing?.ratePerUser,
+          isMicro: pricing?.isMicro,
+        } : null,
         subscriptionStatus,
         bankDetails: superAdmin ? {
           bankName: superAdmin.bankName,

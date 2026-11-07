@@ -156,3 +156,78 @@ export async function getTenantSubscriptionStatus(tenantId: number): Promise<Ten
     };
   }
 }
+
+export interface SubscriptionCalculation {
+  userCount: number;
+  tierQuota: number;
+  isMicro: boolean;
+  packageName: string;
+  ratePerUser: number;
+  totalAmount: number;
+}
+
+/**
+ * Kalkulasi Harga Langganan Aplikasi:
+ * 1. Kurang dari 10 karyawan (< 10): Rp 10.000 / karyawan / bulan.
+ * 2. 10 karyawan atau lebih: Kuota dihitung berdasarkan kelipatan 10 (10, 20, 30, 40, 50, dst.).
+ *    Jika jumlah karyawan tidak pas di kelipatan 10 (misal 14 atau 25 karyawan),
+ *    dibulatkan ke kuota kelipatan 10 di atasnya (14 -> 20 karyawan; 25 -> 30 karyawan).
+ * 3. Skema tarif kelipatan 10:
+ *    - 10 karyawan: Rp 100.000 / bulan
+ *    - >= 20 karyawan: (tierQuota / 10) * Rp 90.000 / bulan
+ *      Contoh:
+ *      - 20 karyawan: Rp 180.000
+ *      - 30 karyawan: Rp 270.000
+ *      - 40 karyawan: Rp 360.000
+ *      - 50 karyawan: Rp 450.000
+ *      - 100 karyawan: Rp 900.000
+ */
+export function calculateSubscriptionPrice(userCount: number): SubscriptionCalculation {
+  const count = Math.max(0, Math.floor(userCount));
+
+  if (count === 0) {
+    return {
+      userCount: 0,
+      tierQuota: 0,
+      isMicro: true,
+      packageName: 'Paket Bebas (0 Karyawan)',
+      ratePerUser: 0,
+      totalAmount: 0,
+    };
+  }
+
+  // Kurang dari 10 karyawan (< 10): Rp 10.000 per karyawan
+  if (count < 10) {
+    const total = count * 10000;
+    return {
+      userCount: count,
+      tierQuota: count,
+      isMicro: true,
+      packageName: `Paket Starter (${count} Karyawan)`,
+      ratePerUser: 10000,
+      totalAmount: total,
+    };
+  }
+
+  // 10 ke atas: Dibulatkan ke kuota kelipatan 10 di atasnya
+  const tierQuota = Math.ceil(count / 10) * 10;
+
+  // Harga untuk kelipatan 10:
+  // 10 karyawan: Rp 100.000
+  // >= 20 karyawan: (tierQuota / 10) * 90.000
+  let totalAmount = 0;
+  if (tierQuota === 10) {
+    totalAmount = 100000;
+  } else {
+    totalAmount = (tierQuota / 10) * 90000;
+  }
+
+  return {
+    userCount: count,
+    tierQuota,
+    isMicro: false,
+    packageName: `Paket ${tierQuota} Karyawan`,
+    ratePerUser: Math.round(totalAmount / tierQuota),
+    totalAmount,
+  };
+}

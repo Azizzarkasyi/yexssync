@@ -1,8 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { getTenantPrisma } from "../prisma/tenant-prisma";
+import { calculateSubscriptionPrice } from "../utils/subscription";
 
 const publicPrisma = new PrismaClient();
-const COST_PER_USER = 10000;
 
 async function generateMonthlyBillings() {
   console.log("Memulai pencetakan tagihan bulanan...");
@@ -45,8 +45,8 @@ async function generateMonthlyBillings() {
         where: { isActive: true },
       });
 
-      // Walaupun usernya 0, tetap buat tagihan (total Rp 0) sebagai rekam jejak
-      const totalAmount = activeUserCount * COST_PER_USER;
+      const pricing = calculateSubscriptionPrice(activeUserCount);
+      const totalAmount = pricing.totalAmount;
 
       // 4. Buat record Tagihan di schema public
       await publicPrisma.subscriptionBilling.create({
@@ -60,7 +60,7 @@ async function generateMonthlyBillings() {
         },
       });
 
-      console.log(`➜ Sukses! Tercetak tagihan untuk ${activeUserCount} Karyawan (Total: Rp ${totalAmount.toLocaleString('id-ID')})`);
+      console.log(`➜ Sukses! Tercetak tagihan ${pricing.packageName} untuk ${activeUserCount} Karyawan (Total: Rp ${totalAmount.toLocaleString('id-ID')})`);
       successCount++;
     } catch (error: any) {
       console.error(`➜ Gagal memproses ${tenant.name}:`, error.message);

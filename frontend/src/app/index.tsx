@@ -51,12 +51,16 @@ import {
   HeartHandshake,
   Mail,
   Phone,
+  Calculator,
+  Minus,
+  Plus,
 } from 'lucide-react-native';
 import { AuthContext } from '@/context/AuthContext';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { YexsLogo } from '@/components/YexsLogo';
 import api from '@/lib/api';
+import { calculateSubscriptionPrice, formatRupiah } from '@/lib/pricing';
 
 export default function LandingPage() {
   const insets = useSafeAreaInsets();
@@ -79,6 +83,7 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
+  const [simUserCount, setSimUserCount] = useState<number>(20);
 
   // Demo Registration Modal
   const [showDemoModal, setShowDemoModal] = useState(false);
@@ -1217,6 +1222,200 @@ export default function LandingPage() {
             </View>
           </View>
 
+          {/* Kalkulator Simulasi Biaya Langganan Interaktif */}
+          {(() => {
+            const isYearly = billingCycle === 'yearly';
+            const simResult = calculateSubscriptionPrice(simUserCount, billingCycle);
+            const currentPrice = isYearly ? simResult.totalAmountYearly : simResult.totalAmountMonthly;
+            const presets = [5, 10, 20, 35, 50, 100];
+
+            return (
+              <View
+                style={{
+                  backgroundColor: theme.cardBg,
+                  borderRadius: 18,
+                  padding: isMobile ? 18 : 28,
+                  borderWidth: 1.5,
+                  borderColor: theme.primaryBlue + '40',
+                  marginBottom: 32,
+                  shadowColor: theme.primaryBlue,
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 16,
+                  elevation: 4,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: theme.primaryBlue + '15', alignItems: 'center', justifyContent: 'center' }}>
+                    <Calculator size={20} color={theme.primaryBlue} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 17, fontWeight: '800', color: theme.textDark }}>
+                      Kalkulator Simulasi Biaya Langganan
+                    </Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                      Hitung estimasi investasi langganan sesuai jumlah karyawan Anda secara transparan & otomatis.
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Counter & Preset Chips */}
+                <View style={{ flexDirection: width >= 768 ? 'row' : 'column', gap: 20, marginTop: 16, alignItems: width >= 768 ? 'center' : 'stretch' }}>
+                  {/* Stepper Input */}
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: theme.textDark, marginBottom: 8 }}>
+                      Jumlah Karyawan Aktif:
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <TouchableOpacity
+                        onPress={() => setSimUserCount(Math.max(1, simUserCount - 1))}
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 8,
+                          backgroundColor: theme.subtleBg,
+                          borderWidth: 1,
+                          borderColor: theme.borderColor,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Minus size={18} color={theme.textDark} />
+                      </TouchableOpacity>
+                      <TextInput
+                        value={String(simUserCount)}
+                        onChangeText={(txt) => {
+                          const num = parseInt(txt.replace(/[^0-9]/g, ''), 10);
+                          setSimUserCount(isNaN(num) ? 1 : Math.max(1, Math.min(1000, num)));
+                        }}
+                        keyboardType="numeric"
+                        style={{
+                          flex: 1,
+                          height: 42,
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: theme.borderColor,
+                          backgroundColor: theme.cardBg,
+                          textAlign: 'center',
+                          fontSize: 18,
+                          fontWeight: '800',
+                          color: theme.textDark,
+                        }}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setSimUserCount(Math.min(1000, simUserCount + 1))}
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 8,
+                          backgroundColor: theme.subtleBg,
+                          borderWidth: 1,
+                          borderColor: theme.borderColor,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Plus size={18} color={theme.textDark} />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Quick Preset Chips */}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                      {presets.map((count) => {
+                        const isSelected = simUserCount === count;
+                        return (
+                          <TouchableOpacity
+                            key={count}
+                            onPress={() => setSimUserCount(count)}
+                            style={{
+                              paddingVertical: 5,
+                              paddingHorizontal: 10,
+                              borderRadius: 6,
+                              backgroundColor: isSelected ? theme.primaryBlue : theme.subtleBg,
+                              borderWidth: 1,
+                              borderColor: isSelected ? theme.primaryBlue : theme.borderColor,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                fontWeight: '700',
+                                color: isSelected ? '#ffffff' : theme.textMuted,
+                              }}
+                            >
+                              {count < 10 ? `${count} Orang (< 10)` : `${count} Orang`}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Result Display Box */}
+                  <View
+                    style={{
+                      flex: 1.2,
+                      backgroundColor: theme.subtleBg,
+                      borderRadius: 14,
+                      padding: 16,
+                      borderWidth: 1,
+                      borderColor: theme.borderColor,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <Text style={{ fontSize: 12, color: theme.textMuted }}>Kategori Kuota:</Text>
+                      <View style={{ backgroundColor: theme.primaryBlue + '20', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: theme.primaryBlue }}>
+                          {simResult.packageName}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <Text style={{ fontSize: 12, color: theme.textMuted }}>Skema Tarif:</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: theme.textDark }}>
+                        {formatRupiah(simResult.ratePerUser)} / karyawan / bln
+                      </Text>
+                    </View>
+
+                    <View style={{ borderTopWidth: 1, borderTopColor: theme.borderColor, paddingTop: 10, marginTop: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                      <View>
+                        <Text style={{ fontSize: 11, color: theme.textMuted }}>Total Biaya Langganan:</Text>
+                        <Text style={{ fontSize: 22, fontWeight: '900', color: theme.primaryBlue }}>
+                          {formatRupiah(currentPrice)}
+                          <Text style={{ fontSize: 12, fontWeight: '500', color: theme.textMuted }}> / bln</Text>
+                        </Text>
+                        {isYearly && (
+                          <Text style={{ fontSize: 10, color: '#16a34a', fontWeight: '700', marginTop: 2 }}>
+                            ✓ Diskon 20% Paket Tahunan aktif
+                          </Text>
+                        )}
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setDemoUserCount(String(simUserCount));
+                          setShowDemoModal(true);
+                        }}
+                        style={{
+                          backgroundColor: theme.primaryBlue,
+                          paddingVertical: 9,
+                          paddingHorizontal: 16,
+                          borderRadius: 8,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '800' }}>
+                          Mulai Uji Coba
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            );
+          })()}
+
           {/* Pricing Cards */}
           <View
             style={{
@@ -1228,7 +1427,7 @@ export default function LandingPage() {
               width: '100%',
             }}
           >
-            {/* Basic Plan */}
+            {/* Card 1: Paket Starter (< 10 Karyawan) */}
             <View
               style={{
                 flex: width >= 980 ? 1 : undefined,
@@ -1242,28 +1441,35 @@ export default function LandingPage() {
             >
               <View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textDark }}>Basic Plan</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textDark }}>Paket Starter</Text>
                   <View style={{ backgroundColor: theme.isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 }}>
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primaryBlue }}>Semua Fitur</Text>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primaryBlue }}>&lt; 10 Karyawan</Text>
                   </View>
                 </View>
-                <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>Ideal untuk rintisan toko, kafe & UKM</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', marginVertical: 20 }}>
-                  <Text style={{ fontSize: isSmallMobile ? 26 : 30, fontWeight: '900', color: theme.textDark }}>
-                    {billingCycle === 'yearly' ? 'Rp 400.000' : 'Rp 500.000'}
+                <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>Khusus UMKM, toko, kafe & tim mikro</Text>
+                
+                <View style={{ marginVertical: 20 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                    <Text style={{ fontSize: isSmallMobile ? 24 : 28, fontWeight: '900', color: theme.textDark }}>
+                      {billingCycle === 'yearly' ? 'Rp 8.000' : 'Rp 10.000'}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted }}> / karyawan / bln</Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 3 }}>
+                    Bayar pas sesuai jumlah karyawan (contoh: 5 orang = {billingCycle === 'yearly' ? 'Rp 40.000' : 'Rp 50.000'}/bln)
                   </Text>
-                  <Text style={{ fontSize: 13, color: theme.textMuted }}> / bulan</Text>
                 </View>
+
                 <View style={{ gap: 10, marginBottom: 24 }}>
                   {[
                     { text: 'Akses Penuh 100% Seluruh Fitur', highlight: true },
-                    { text: 'Kapasitas Hingga 20 Karyawan Aktif', highlight: false },
+                    { text: 'Kapasitas 1 s/d 9 Karyawan Aktif', highlight: false },
                     { text: 'Presensi GPS Geofencing & Anti-Fake GPS', highlight: false },
                     { text: 'Verifikasi Wajah Biometrik On-Device', highlight: false },
                     { text: 'Smart Payroll & Cetak Slip Gaji PDF', highlight: false },
-                    { text: 'Manajemen Cuti, Izin, Lembur & Multi-Lokasi', highlight: false },
-                    { text: 'Aplikasi Android Mobile & Web Dashboard', highlight: false },
-                    { text: 'Standard Support via Email & Chat', highlight: false },
+                    { text: 'Manajemen Cuti, Izin & Lembur', highlight: false },
+                    { text: 'Aplikasi Android & Web Dashboard', highlight: false },
+                    { text: 'Standard Support via WhatsApp', highlight: false },
                   ].map((f, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Check size={16} color={f.highlight ? theme.primaryBlue : '#16a34a'} style={{ flexShrink: 0 }} />
@@ -1276,7 +1482,10 @@ export default function LandingPage() {
               </View>
 
               <TouchableOpacity
-                onPress={() => setShowDemoModal(true)}
+                onPress={() => {
+                  setDemoUserCount('7');
+                  setShowDemoModal(true);
+                }}
                 style={{
                   backgroundColor: theme.subtleBg,
                   borderWidth: 1,
@@ -1286,11 +1495,11 @@ export default function LandingPage() {
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: theme.textDark }}>Pilih Paket Basic</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: theme.textDark }}>Pilih Paket Starter</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Pro Plan (Popular) */}
+            {/* Card 2: Paket Bisnis (Kelipatan 10) (Popular) */}
             <View
               style={{
                 flex: width >= 980 ? 1 : undefined,
@@ -1335,28 +1544,35 @@ export default function LandingPage() {
 
               <View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: theme.primaryBlue }}>Pro Plan</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: theme.primaryBlue }}>Paket Bisnis</Text>
                   <View style={{ backgroundColor: theme.isDark ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 }}>
-                    <Text style={{ fontSize: 10, fontWeight: '800', color: theme.primaryBlue }}>Semua Fitur</Text>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: theme.primaryBlue }}>Kelipatan 10</Text>
                   </View>
                 </View>
-                <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>Untuk perusahaan berkembang & multi-cabang</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', marginVertical: 20 }}>
-                  <Text style={{ fontSize: isSmallMobile ? 26 : 30, fontWeight: '900', color: theme.primaryBlue }}>
-                    {billingCycle === 'yearly' ? 'Rp 1.200.000' : 'Rp 1.500.000'}
+                <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>Untuk tim 10 s/d 50 karyawan aktif</Text>
+                
+                <View style={{ marginVertical: 20 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                    <Text style={{ fontSize: isSmallMobile ? 24 : 28, fontWeight: '900', color: theme.primaryBlue }}>
+                      {billingCycle === 'yearly' ? 'Rp 360.000' : 'Rp 450.000'}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted }}> / 50 karyawan / bln</Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 3 }}>
+                    Paket: 10 user = 100k • 20 user = 180k • 50 user = 450k (Hanya Rp 9.000/user)
                   </Text>
-                  <Text style={{ fontSize: 13, color: theme.textMuted }}> / bulan</Text>
                 </View>
+
                 <View style={{ gap: 10, marginBottom: 24 }}>
                   {[
                     { text: 'Akses Penuh 100% Seluruh Fitur', highlight: true },
-                    { text: 'Kapasitas Hingga 100 Karyawan Aktif', highlight: false },
+                    { text: 'Kuota Bertingkat 10 s/d 50 Karyawan', highlight: false },
                     { text: 'Presensi GPS Geofencing & Anti-Fake GPS', highlight: false },
                     { text: 'Verifikasi Wajah Biometrik On-Device', highlight: false },
                     { text: 'Smart Payroll & Cetak Slip Gaji PDF', highlight: false },
-                    { text: 'Manajemen Cuti, Izin, Lembur & Multi-Lokasi', highlight: false },
-                    { text: 'Aplikasi Android Mobile & Web Dashboard', highlight: false },
-                    { text: 'Prioritas Support WhatsApp & Fast Response', highlight: true },
+                    { text: 'Multi-Lokasi Kantor / Cabang', highlight: false },
+                    { text: 'Aplikasi Android & Web Dashboard', highlight: false },
+                    { text: 'Prioritas Fast Support WhatsApp', highlight: true },
                   ].map((f, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Check size={16} color={theme.primaryBlue} style={{ flexShrink: 0 }} />
@@ -1369,7 +1585,10 @@ export default function LandingPage() {
               </View>
 
               <TouchableOpacity
-                onPress={() => setShowDemoModal(true)}
+                onPress={() => {
+                  setDemoUserCount('30');
+                  setShowDemoModal(true);
+                }}
                 style={{
                   backgroundColor: theme.primaryBlue,
                   paddingVertical: 12,
@@ -1377,11 +1596,11 @@ export default function LandingPage() {
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: '800', color: '#ffffff' }}>Mulai Uji Coba Pro</Text>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#ffffff' }}>Mulai Uji Coba Bisnis</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Enterprise Plan */}
+            {/* Card 3: Paket Enterprise (60 s/d 100+ Karyawan) */}
             <View
               style={{
                 flex: width >= 980 ? 1 : undefined,
@@ -1397,24 +1616,33 @@ export default function LandingPage() {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textDark }}>Enterprise</Text>
                   <View style={{ backgroundColor: theme.isDark ? 'rgba(16, 185, 129, 0.15)' : '#dcfce7', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 }}>
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#16a34a' }}>Semua Fitur</Text>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#16a34a' }}>60 - 100+ Karyawan</Text>
                   </View>
                 </View>
-                <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>Korporat besar, pabrik & ribuan pegawai</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', marginVertical: 20 }}>
-                  <Text style={{ fontSize: isSmallMobile ? 26 : 30, fontWeight: '900', color: theme.textDark }}>Kustom</Text>
-                  <Text style={{ fontSize: 13, color: theme.textMuted }}> / sesuai kebutuhan</Text>
+                <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>Korporat skala besar, pabrik & multi-cabang</Text>
+                
+                <View style={{ marginVertical: 20 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                    <Text style={{ fontSize: isSmallMobile ? 24 : 28, fontWeight: '900', color: theme.textDark }}>
+                      {billingCycle === 'yearly' ? 'Rp 720.000' : 'Rp 900.000'}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted }}> / 100 karyawan / bln</Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 3 }}>
+                    Mulai 60 user = 540k • 100 user = 900k • &gt;100 kustom kelipatan 10
+                  </Text>
                 </View>
+
                 <View style={{ gap: 10, marginBottom: 24 }}>
                   {[
                     { text: 'Akses Penuh 100% Seluruh Fitur', highlight: true },
-                    { text: 'Kapasitas Karyawan Tanpa Batas (Unlimited)', highlight: true },
+                    { text: 'Kapasitas 60 s/d 100+ Karyawan Aktif', highlight: true },
                     { text: 'Presensi GPS Geofencing & Anti-Fake GPS', highlight: false },
                     { text: 'Verifikasi Wajah Biometrik On-Device', highlight: false },
                     { text: 'Smart Payroll & Cetak Slip Gaji PDF', highlight: false },
-                    { text: 'Manajemen Cuti, Izin, Lembur & Multi-Lokasi', highlight: false },
+                    { text: 'Manajemen Multi Cabang / Divisi Tanpa Batas', highlight: false },
                     { text: 'Custom Domain Perusahaan Sendiri (Opsional)', highlight: false },
-                    { text: 'Dedicated Account Manager & SLA 99.9% 24/7', highlight: true },
+                    { text: 'Dedicated Account Manager & SLA 99.9%', highlight: true },
                   ].map((f, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Check size={16} color="#16a34a" style={{ flexShrink: 0 }} />

@@ -31,6 +31,7 @@ import AdminSidebar from '@/components/AdminSidebar';
 import AdminTopHeader from '@/components/AdminTopHeader';
 import api from '@/lib/api';
 import { useGlobalModal } from '@/context/GlobalModalContext';
+import { calculateSubscriptionPrice } from '@/lib/pricing';
 
 export default function AdminBillingScreen() {
   const insets = useSafeAreaInsets();
@@ -192,6 +193,7 @@ export default function AdminBillingScreen() {
   const billing = billingData?.billing;
   const subStatus = billingData?.subscriptionStatus;
   const bank = billingData?.bankDetails;
+  const pricingCalc = billing ? calculateSubscriptionPrice(billing.userCount || 0) : null;
 
   const isBlocked = subStatus?.isBlocked;
   const isInGrace = subStatus?.isInGracePeriod;
@@ -361,8 +363,21 @@ export default function AdminBillingScreen() {
                   </View>
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                    <Text style={{ fontSize: 13, color: theme.textMuted }}>Tarif per Karyawan:</Text>
-                    <Text style={{ fontSize: 13, color: theme.textDark }}>{formatRupiah(billing.costPerUser)} / bulan</Text>
+                    <Text style={{ fontSize: 13, color: theme.textMuted }}>Kategori Kuota Langganan:</Text>
+                    <View style={{ backgroundColor: theme.primaryBlue + '15', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: theme.primaryBlue }}>
+                        {pricingCalc?.packageName || (billing.userCount < 10 ? 'Paket Starter' : `Paket Kuota ${billing.tierQuota || billing.userCount}`)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 13, color: theme.textMuted }}>Skema Tarif Efektif:</Text>
+                    <Text style={{ fontSize: 13, color: theme.textDark }}>
+                      {pricingCalc?.isMicro
+                        ? 'Rp 10.000 / karyawan / bln'
+                        : `${formatRupiah(pricingCalc?.ratePerUser || billing.costPerUser)} / karyawan / bln (Flat kelipatan 10)`}
+                    </Text>
                   </View>
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>

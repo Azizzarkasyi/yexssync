@@ -57,6 +57,7 @@ import { useSuperAdminTheme } from '@/hooks/useSuperAdminTheme';
 import SuperAdminSidebar from '@/components/SuperAdminSidebar';
 import SuperAdminTopHeader from '@/components/SuperAdminTopHeader';
 import api from '@/lib/api';
+import { calculateSubscriptionPrice } from '@/lib/pricing';
 
 // Interfaces
 interface PlanData {
@@ -1021,8 +1022,13 @@ export default function SuperAdminBillingScreen() {
                         <Text style={{ fontSize: 12, color: theme.text, fontWeight: '600' }}>
                           {b.userCount} Karyawan
                         </Text>
-                        <Text style={{ fontSize: 11, color: theme.textMuted }}>
-                          @{formatRupiah(b.costPerUser)}
+                        <View style={{ marginTop: 2, alignSelf: 'flex-start', backgroundColor: theme.subtleBg, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 1, borderColor: theme.border }}>
+                          <Text style={{ fontSize: 10, color: theme.accent, fontWeight: '700' }}>
+                            {b.userCount < 10 ? 'Starter' : `Paket ${Math.ceil(b.userCount / 10) * 10}`}
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>
+                          {b.userCount < 10 ? '@Rp 10.000' : `@${formatRupiah(b.costPerUser)}`}
                         </Text>
                       </View>
 
@@ -1257,6 +1263,9 @@ export default function SuperAdminBillingScreen() {
                       color: theme.text,
                     }}
                   />
+                  <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 4, lineHeight: 16 }}>
+                    Sistem otomatis menghitung kelipatan 10: &lt;10 karyawan = Rp 10.000/karyawan, 10 = Rp 100.000, 20 = Rp 180.000, 50 = Rp 450.000, dst.
+                  </Text>
                 </View>
 
                 {/* Toggle Blokir Absensi */}
@@ -1508,8 +1517,16 @@ export default function SuperAdminBillingScreen() {
                       <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text }}>{selectedBilling.userCount} Orang</Text>
                     </View>
                     <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={{ fontSize: 12, color: theme.textMuted }}>Tarif per Karyawan:</Text>
-                      <Text style={{ fontSize: 12, color: theme.text }}>{formatRupiah(selectedBilling.costPerUser)} / bulan</Text>
+                      <Text style={{ fontSize: 12, color: theme.textMuted }}>Kategori Kuota Langganan:</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: theme.accent }}>
+                        {selectedBilling.userCount < 10 ? 'Paket Starter (< 10 Karyawan)' : `Paket Kuota ${Math.ceil(selectedBilling.userCount / 10) * 10} Karyawan`}
+                      </Text>
+                    </View>
+                    <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 12, color: theme.textMuted }}>Skema Tarif Efektif:</Text>
+                      <Text style={{ fontSize: 12, color: theme.text }}>
+                        {selectedBilling.userCount < 10 ? 'Rp 10.000 / karyawan / bln' : `${formatRupiah(selectedBilling.costPerUser)} / karyawan / bln (Flat kelipatan 10)`}
+                      </Text>
                     </View>
                     <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
                       <Text style={{ fontSize: 12, color: theme.textMuted }}>Jatuh Tempo:</Text>

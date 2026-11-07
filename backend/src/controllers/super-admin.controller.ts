@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import {getPublicPrisma} from "../prisma/tenant-prisma";
 import {tenantService} from "../prisma/tenant-service";
+import {calculateSubscriptionPrice} from "../utils/subscription";
 
 const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || "super-admin-secret";
@@ -536,7 +537,8 @@ export async function generateBillings(req: Request, res: Response) {
           where: { isActive: true },
         });
 
-        const totalAmount = activeUserCount * COST_PER_USER;
+        const pricing = calculateSubscriptionPrice(activeUserCount);
+        const totalAmount = pricing.totalAmount;
         const dueDate = new Date(Date.UTC(currentYear, currentMonth - 1, defaultDueDay, 0, 0, 0));
         const gracePeriodDays = tenant.customGracePeriodDays ?? defaultGracePeriod;
 
@@ -554,7 +556,13 @@ export async function generateBillings(req: Request, res: Response) {
         });
 
         successCount++;
-        details.push({ tenant: tenant.name, amount: totalAmount, users: activeUserCount });
+        details.push({
+          tenant: tenant.name,
+          amount: totalAmount,
+          users: activeUserCount,
+          tierQuota: pricing.tierQuota,
+          packageName: pricing.packageName,
+        });
       } catch (error: any) {
         console.error(`Failed to process bill for ${tenant.name}:`, error.message);
       }
@@ -614,8 +622,14 @@ export async function getAllBillings(req: Request, res: Response) {
         ? Math.floor((now.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
         : 0;
 
+      const pricing = calculateSubscriptionPrice(b.activeUserCount);
+
       return {
         ...b,
+        tierQuota: pricing.tierQuota,
+        packageName: pricing.packageName,
+        ratePerUser: pricing.ratePerUser,
+        isMicro: pricing.isMicro,
         dueDate: dueDate.toISOString(),
         deadlineDate: deadlineDate.toISOString(),
         gracePeriodDays: gracePeriod,

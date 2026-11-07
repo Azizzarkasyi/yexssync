@@ -26,6 +26,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import api from '@/lib/api';
 import { useGlobalModal } from '@/context/GlobalModalContext';
+import { calculateSubscriptionPrice } from '@/lib/pricing';
 
 export interface TenantPaymentModalProps {
   visible: boolean;
@@ -198,6 +199,7 @@ export default function TenantPaymentModal({
   const bank = billingData?.bankDetails;
 
   const isBlocked = subStatus?.isBlocked;
+  const pricingCalc = billing ? calculateSubscriptionPrice(billing.userCount || 0) : null;
   const isInGrace = subStatus?.isInGracePeriod;
   const daysLeft = subStatus?.daysLeftInGrace ?? 0;
 
@@ -380,8 +382,18 @@ export default function TenantPaymentModal({
                   <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textDark }}>{billing.userCount} Orang</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 12, color: theme.textMuted }}>Tarif per Karyawan:</Text>
-                  <Text style={{ fontSize: 12, color: theme.textDark }}>{formatRupiah(billing.costPerUser)} / bulan</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted }}>Kategori Kuota:</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: theme.primaryBlue }}>
+                    {pricingCalc?.packageName || (billing.userCount < 10 ? 'Paket Starter' : `Paket Kuota ${billing.tierQuota || billing.userCount}`)}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 12, color: theme.textMuted }}>Skema Tarif Efektif:</Text>
+                  <Text style={{ fontSize: 12, color: theme.textDark }}>
+                    {pricingCalc?.isMicro
+                      ? 'Rp 10.000 / karyawan / bln'
+                      : `${formatRupiah(pricingCalc?.ratePerUser || billing.costPerUser)} / karyawan / bln (Flat kelipatan 10)`}
+                  </Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <Text style={{ fontSize: 12, color: theme.textMuted }}>Batas Akhir Toleransi (Masa Tenggat):</Text>
